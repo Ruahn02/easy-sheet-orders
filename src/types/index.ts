@@ -1,0 +1,34 @@
+export interface Loja {
+  id: string;
+  nome: string;
+  status: 'ativo' | 'inativo';
+  criadoEm: Date;
+}
+
+export interface Produto {
+  id: string;
+  codigo: string;
+  nome: string;
+  qtdMaxima: number;
+  fotoUrl?: string;
+  status: 'disponivel' | 'indisponivel';
+  criadoEm: Date;
+}
+
+export interface PedidoItem {
+  produtoId: string;
+  quantidade: number;
+}
+
+export interface Pedido {
+  id: string;
+  lojaId: string;
+  data: Date;
+  status: 'pendente' | 'feito';
+  corLinha?: string;
+  itens: PedidoItem[];
+}
+
+export interface PedidoComDetalhes extends Pedido {
+  loja: Loja;
+}
