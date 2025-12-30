@@ -1,15 +1,17 @@
 import { Minus, Plus, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Produto } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface ProductCardProps {
   produto: Produto;
   quantidade: number;
   onQuantityChange: (produtoId: string, quantidade: number) => void;
+  disabled?: boolean;
 }
 
-export function ProductCard({ produto, quantidade, onQuantityChange }: ProductCardProps) {
-  const isDisabled = produto.status === 'indisponivel';
+export function ProductCard({ produto, quantidade, onQuantityChange, disabled }: ProductCardProps) {
+  const isDisabled = produto.status === 'indisponivel' || disabled;
   
   const handleDecrement = () => {
     if (quantidade > 0) {
@@ -25,9 +27,12 @@ export function ProductCard({ produto, quantidade, onQuantityChange }: ProductCa
 
   return (
     <div
-      className={`flex items-center gap-3 rounded-lg border bg-card p-3 transition-all ${
-        isDisabled ? 'opacity-50' : quantidade > 0 ? 'border-primary shadow-card' : 'border-border'
-      }`}
+      className={cn(
+        "flex items-center gap-3 rounded-lg border bg-card p-3 transition-all",
+        isDisabled && "opacity-50",
+        !isDisabled && quantidade > 0 && "border-primary shadow-card",
+        !isDisabled && quantidade === 0 && "border-border"
+      )}
     >
       {/* Product Image */}
       <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-secondary">
@@ -63,7 +68,10 @@ export function ProductCard({ produto, quantidade, onQuantityChange }: ProductCa
           <Minus className="h-4 w-4" />
         </Button>
         
-        <span className={`w-8 text-center font-bold ${quantidade > 0 ? 'text-primary' : 'text-foreground'}`}>
+        <span className={cn(
+          "w-8 text-center font-bold",
+          quantidade > 0 ? "text-primary" : "text-foreground"
+        )}>
           {quantidade}
         </span>
         

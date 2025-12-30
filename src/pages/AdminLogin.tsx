@@ -1,31 +1,44 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, LogIn, UserPlus, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, ArrowLeft, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useAppStore } from '@/store/useAppStore';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+  const { codigoAdmin } = useAppStore();
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [codigo, setCodigo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // Mock login - accepts any credentials
+
     await new Promise((resolve) => setTimeout(resolve, 500));
-    
+
+    // Verifica o código admin
+    if (codigo !== codigoAdmin) {
+      toast({
+        title: 'Código Admin inválido',
+        description: 'O código de acesso está incorreto. Solicite ao administrador.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     toast({
       title: 'Login realizado!',
       description: 'Bem-vindo ao painel administrativo.',
     });
-    
+
     navigate('/admin/dashboard');
     setIsLoading(false);
   };
@@ -33,14 +46,25 @@ export default function AdminLogin() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     await new Promise((resolve) => setTimeout(resolve, 500));
-    
+
+    // Verifica o código admin
+    if (codigo !== codigoAdmin) {
+      toast({
+        title: 'Código Admin inválido',
+        description: 'O código de acesso está incorreto. Solicite ao administrador.',
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     toast({
       title: 'Conta criada!',
       description: 'Você já pode acessar o sistema.',
     });
-    
+
     navigate('/admin/dashboard');
     setIsLoading(false);
   };
@@ -107,6 +131,26 @@ export default function AdminLogin() {
                   </div>
                 </div>
 
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    Código Admin
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Digite o código de acesso"
+                      value={codigo}
+                      onChange={(e) => setCodigo(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Solicite o código ao administrador do sistema
+                  </p>
+                </div>
+
                 <Button
                   type="submit"
                   className="w-full gradient-primary text-primary-foreground font-semibold h-12"
@@ -151,6 +195,26 @@ export default function AdminLogin() {
                       required
                     />
                   </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-2 block">
+                    Código Admin
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="Digite o código de acesso"
+                      value={codigo}
+                      onChange={(e) => setCodigo(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Solicite o código ao administrador do sistema
+                  </p>
                 </div>
 
                 <Button
