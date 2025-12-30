@@ -7,6 +7,12 @@ interface AppState {
   produtos: Produto[];
   pedidos: Pedido[];
   
+  // Controle global de pedidos
+  pedidosAbertos: boolean;
+  
+  // Código admin
+  codigoAdmin: string;
+  
   // Actions
   addLoja: (loja: Loja) => void;
   updateLoja: (id: string, loja: Partial<Loja>) => void;
@@ -19,12 +25,20 @@ interface AppState {
   addPedido: (pedido: Pedido) => void;
   updatePedidoStatus: (id: string, status: 'pendente' | 'feito') => void;
   updatePedidoCor: (id: string, cor: string | undefined) => void;
+  
+  // Controle global
+  setPedidosAbertos: (abertos: boolean) => void;
+  
+  // Código admin
+  setCodigoAdmin: (codigo: string) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   lojas: mockLojas,
   produtos: mockProdutos,
   pedidos: mockPedidos,
+  pedidosAbertos: true,
+  codigoAdmin: 'ADMIN2024',
   
   addLoja: (loja) => set((state) => ({ lojas: [...state.lojas, loja] })),
   updateLoja: (id, lojaData) => set((state) => ({
@@ -49,4 +63,7 @@ export const useAppStore = create<AppState>((set) => ({
   updatePedidoCor: (id, cor) => set((state) => ({
     pedidos: state.pedidos.map((p) => p.id === id ? { ...p, corLinha: cor } : p),
   })),
+  
+  setPedidosAbertos: (abertos) => set({ pedidosAbertos: abertos }),
+  setCodigoAdmin: (codigo) => set({ codigoAdmin: codigo }),
 }));
