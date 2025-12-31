@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Power, PowerOff, Calendar } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -12,17 +12,21 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 
 export default function Dashboard() {
-  const { pedidos, lojas, produtos, pedidosAbertos, setPedidosAbertos } = useAppStore();
+  const { pedidos, lojas, produtos, entidades } = useAppStore();
 
   // Filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
   const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
   const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
+  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
 
   // Pedidos filtrados
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((pedido) => {
+      // Filtro por entidade
+      if (entidadeFiltro !== 'todas' && pedido.entidadeId !== entidadeFiltro) return false;
+
       // Filtro por data
       const dataPedido = new Date(pedido.data);
       if (dataInicio) {
@@ -47,18 +51,18 @@ export default function Dashboard() {
 
       return true;
     });
-  }, [pedidos, dataInicio, dataFim, lojaFiltro, produtoFiltro]);
+  }, [pedidos, dataInicio, dataFim, lojaFiltro, produtoFiltro, entidadeFiltro]);
 
   // Estatísticas baseadas nos filtros
   const stats = useMemo(() => {
     const lojasQuePediram = new Set(pedidosFiltrados.map((p) => p.lojaId));
-    const produtosDisponiveis = produtos.filter((p) => p.status === 'disponivel');
+    const produtosAbertos = produtos.filter((p) => p.status === 'aberto');
 
     return {
       totalPedidos: pedidos.length,
       pedidosFiltrados: pedidosFiltrados.length,
       lojasQuePediram: lojasQuePediram.size,
-      produtosDisponiveis: produtosDisponiveis.length,
+      produtosAbertos: produtosAbertos.length,
     };
   }, [pedidos, pedidosFiltrados, produtos]);
 
@@ -119,42 +123,23 @@ export default function Dashboard() {
     setDataFim(undefined);
     setLojaFiltro('todas');
     setProdutoFiltro('todos');
+    setEntidadeFiltro('todas');
   };
 
-  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos';
+  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadeFiltro !== 'todas';
+
+  // Produtos filtrados por entidade para o select
+  const produtosFiltradosParaSelect = entidadeFiltro !== 'todas' 
+    ? produtos.filter(p => p.entidadeId === entidadeFiltro)
+    : produtos;
 
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header com botão de abrir/fechar pedidos */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground">Visão geral do sistema</p>
-          </div>
-
-          {/* Botão de controle de pedidos */}
-          <Button
-            onClick={() => setPedidosAbertos(!pedidosAbertos)}
-            className={cn(
-              "h-12 px-6 font-semibold text-base gap-2",
-              pedidosAbertos
-                ? "bg-green-500 hover:bg-green-600 text-white"
-                : "bg-red-500 hover:bg-red-600 text-white"
-            )}
-          >
-            {pedidosAbertos ? (
-              <>
-                <Power className="h-5 w-5" />
-                🟢 PEDIDOS ABERTOS
-              </>
-            ) : (
-              <>
-                <PowerOff className="h-5 w-5" />
-                🔴 PEDIDOS FECHADOS
-              </>
-            )}
-          </Button>
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Visão geral do sistema</p>
         </div>
 
         {/* Filtros */}
@@ -166,7 +151,25 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              {/* Filtro Entidade */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Entidade</label>
+                <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Todas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as entidades</SelectItem>
+                    {entidades.map((ent) => (
+                      <SelectItem key={ent.id} value={ent.id}>
+                        {ent.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               {/* Data Início */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Data Início</label>
@@ -250,7 +253,7 @@ export default function Dashboard() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="todos">Todos os produtos</SelectItem>
-                    {produtos.map((produto) => (
+                    {produtosFiltradosParaSelect.map((produto) => (
                       <SelectItem key={produto.id} value={produto.id}>
                         {produto.nome}
                       </SelectItem>
@@ -294,7 +297,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-primary">{stats.pedidosFiltrados}</p>
-                  <p className="text-xs text-muted-foreground">No Período</p>
+                  <p className="text-xs text-muted-foreground">Filtrados</p>
                 </div>
               </div>
             </CardContent>
@@ -321,8 +324,8 @@ export default function Dashboard() {
                   <Package className="h-5 w-5 text-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{stats.produtosDisponiveis}</p>
-                  <p className="text-xs text-muted-foreground">Produtos</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.produtosAbertos}</p>
+                  <p className="text-xs text-muted-foreground">Produtos Abertos</p>
                 </div>
               </div>
             </CardContent>

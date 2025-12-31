@@ -33,16 +33,26 @@ const CORES_DISPONIVEIS = [
 ];
 
 export default function Pedidos() {
-  const { pedidos, lojas, produtos, updatePedidoStatus, updatePedidoCor } = useAppStore();
+  const { pedidos, lojas, produtos, entidades, updatePedidoStatus, updatePedidoCor } = useAppStore();
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLojaId, setSelectedLojaId] = useState<string>('all');
+  const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('all');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
 
+  // Filtra produtos por entidade selecionada
+  const produtosFiltrados = useMemo(() => {
+    if (selectedEntidadeId === 'all') return produtos;
+    return produtos.filter((p) => p.entidadeId === selectedEntidadeId);
+  }, [produtos, selectedEntidadeId]);
+
   const filteredPedidos = useMemo(() => {
     return pedidos.filter((pedido) => {
+      // Filter by entity
+      if (selectedEntidadeId !== 'all' && pedido.entidadeId !== selectedEntidadeId) return false;
+
       // Filter by store
       if (selectedLojaId !== 'all' && pedido.lojaId !== selectedLojaId) return false;
 
@@ -77,7 +87,7 @@ export default function Pedidos() {
 
       return true;
     });
-  }, [pedidos, selectedLojaId, startDate, endDate, searchQuery, produtos]);
+  }, [pedidos, selectedLojaId, selectedEntidadeId, startDate, endDate, searchQuery, produtos]);
 
   const handleMarcarFeito = (pedidoId: string) => {
     updatePedidoStatus(pedidoId, 'feito');
@@ -97,6 +107,10 @@ export default function Pedidos() {
     return item?.quantidade || 0;
   };
 
+  const getEntidadeNome = (entidadeId: string) => {
+    return entidades.find((e) => e.id === entidadeId)?.nome || '-';
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
@@ -112,7 +126,22 @@ export default function Pedidos() {
         </div>
 
         {/* Filters */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {/* Filtro por Entidade */}
+          <Select value={selectedEntidadeId} onValueChange={setSelectedEntidadeId}>
+            <SelectTrigger className="bg-card">
+              <SelectValue placeholder="Todas as entidades" />
+            </SelectTrigger>
+            <SelectContent className="bg-popover z-50">
+              <SelectItem value="all">Todas as entidades</SelectItem>
+              {entidades.map((ent) => (
+                <SelectItem key={ent.id} value={ent.id}>
+                  {ent.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -150,6 +179,7 @@ export default function Pedidos() {
                 selected={startDate}
                 onSelect={setStartDate}
                 locale={ptBR}
+                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
@@ -167,6 +197,7 @@ export default function Pedidos() {
                 selected={endDate}
                 onSelect={setEndDate}
                 locale={ptBR}
+                className="pointer-events-auto"
               />
             </PopoverContent>
           </Popover>
@@ -180,8 +211,10 @@ export default function Pedidos() {
                 <th className="px-4 py-3 text-left font-medium text-foreground">Data</th>
                 <th className="px-4 py-3 text-left font-medium text-foreground">Hora</th>
                 <th className="px-4 py-3 text-left font-medium text-foreground">Loja</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">Entidade</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">Observações</th>
                 <th className="px-4 py-3 text-left font-medium text-foreground">Status</th>
-                {produtos.map((produto) => (
+                {produtosFiltrados.map((produto) => (
                   <th key={produto.id} className="px-3 py-3 text-center font-medium text-foreground whitespace-nowrap">
                     {produto.codigo}
                   </th>
@@ -210,6 +243,14 @@ export default function Pedidos() {
                       </td>
                       <td className="px-4 py-3 text-foreground">{loja?.nome || '-'}</td>
                       <td className="px-4 py-3">
+                        <Badge variant="outline" className="text-xs">
+                          {getEntidadeNome(pedido.entidadeId)}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-3 text-foreground max-w-[150px] truncate">
+                        {pedido.observacoes || '-'}
+                      </td>
+                      <td className="px-4 py-3">
                         <Badge
                           variant={pedido.status === 'feito' ? 'default' : 'secondary'}
                           className={cn(
@@ -221,7 +262,7 @@ export default function Pedidos() {
                           {pedido.status === 'feito' ? 'Feito' : 'Pendente'}
                         </Badge>
                       </td>
-                      {produtos.map((produto) => {
+                      {produtosFiltrados.map((produto) => {
                         const qty = getQuantidadeProduto(pedido.id, produto.id);
                         return (
                           <td key={produto.id} className="px-3 py-3 text-center">
@@ -276,7 +317,7 @@ export default function Pedidos() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={produtos.length + 5} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={produtosFiltrados.length + 7} className="px-4 py-8 text-center text-muted-foreground">
                     Nenhum pedido encontrado.
                   </td>
                 </tr>

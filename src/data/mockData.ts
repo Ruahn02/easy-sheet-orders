@@ -1,4 +1,11 @@
-import { Loja, Produto, Pedido } from '@/types';
+import { Entidade, Loja, Produto, Pedido } from '@/types';
+
+export const mockEntidades: Entidade[] = [
+  { id: 'ent1', nome: 'Material de Escritório', status: 'ativo', criadoEm: new Date('2024-01-01') },
+  { id: 'ent2', nome: 'Uso e Consumo', status: 'ativo', criadoEm: new Date('2024-01-01') },
+  { id: 'ent3', nome: 'Copa e Cozinha', status: 'ativo', criadoEm: new Date('2024-01-05') },
+  { id: 'ent4', nome: 'Manutenção', status: 'inativo', criadoEm: new Date('2024-01-10') },
+];
 
 export const mockLojas: Loja[] = [
   { id: '1', nome: 'Matriz - Centro', status: 'ativo', criadoEm: new Date('2024-01-15') },
@@ -12,53 +19,59 @@ export const mockLojas: Loja[] = [
 ];
 
 export const mockProdutos: Produto[] = [
-  { id: '1', codigo: 'P001', nome: 'Arroz Integral 5kg', qtdMaxima: 50, fotoUrl: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-01') },
-  { id: '2', codigo: 'P002', nome: 'Feijão Preto 1kg', qtdMaxima: 100, fotoUrl: 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-01') },
-  { id: '3', codigo: 'P003', nome: 'Óleo de Soja 900ml', qtdMaxima: 80, fotoUrl: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-01') },
-  { id: '4', codigo: 'P004', nome: 'Açúcar Refinado 1kg', qtdMaxima: 120, fotoUrl: 'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-02') },
-  { id: '5', codigo: 'P005', nome: 'Café Torrado 500g', qtdMaxima: 60, fotoUrl: 'https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-02') },
-  { id: '6', codigo: 'P006', nome: 'Leite UHT 1L', qtdMaxima: 200, fotoUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-03') },
-  { id: '7', codigo: 'P007', nome: 'Macarrão Espaguete 500g', qtdMaxima: 150, fotoUrl: 'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-03') },
-  { id: '8', codigo: 'P008', nome: 'Molho de Tomate 340g', qtdMaxima: 100, fotoUrl: 'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=100&h=100&fit=crop', status: 'disponivel', criadoEm: new Date('2024-01-04') },
-  { id: '9', codigo: 'P009', nome: 'Sal Refinado 1kg', qtdMaxima: 80, status: 'disponivel', criadoEm: new Date('2024-01-04') },
-  { id: '10', codigo: 'P010', nome: 'Farinha de Trigo 1kg', qtdMaxima: 100, fotoUrl: 'https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=100&h=100&fit=crop', status: 'indisponivel', criadoEm: new Date('2024-01-05') },
-  { id: '11', codigo: 'P011', nome: 'Biscoito Cream Cracker', qtdMaxima: 120, status: 'disponivel', criadoEm: new Date('2024-01-05') },
-  { id: '12', codigo: 'P012', nome: 'Margarina 500g', qtdMaxima: 80, status: 'disponivel', criadoEm: new Date('2024-01-06') },
+  // Material de Escritório (ent1)
+  { id: '1', codigo: 'ESC001', nome: 'Caneta Azul', qtdMaxima: 100, status: 'aberto', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '2', codigo: 'ESC002', nome: 'Lápis Preto', qtdMaxima: 200, status: 'aberto', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '3', codigo: 'ESC003', nome: 'Borracha Branca', qtdMaxima: 150, status: 'aberto', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '4', codigo: 'ESC004', nome: 'Grampeador', qtdMaxima: 20, status: 'fechado', entidadeId: 'ent1', criadoEm: new Date('2024-01-02') },
+  
+  // Uso e Consumo (ent2)
+  { id: '5', codigo: 'UC001', nome: 'Papel Toalha', qtdMaxima: 50, status: 'aberto', entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
+  { id: '6', codigo: 'UC002', nome: 'Detergente 500ml', qtdMaxima: 30, status: 'aberto', entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
+  { id: '7', codigo: 'UC003', nome: 'Álcool 70%', qtdMaxima: 40, status: 'aberto', entidadeId: 'ent2', criadoEm: new Date('2024-01-02') },
+  
+  // Copa e Cozinha (ent3)
+  { id: '8', codigo: 'COPA001', nome: 'Café 500g', qtdMaxima: 20, status: 'aberto', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '9', codigo: 'COPA002', nome: 'Açúcar 1kg', qtdMaxima: 30, status: 'aberto', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '10', codigo: 'COPA003', nome: 'Copo Descartável 200ml', qtdMaxima: 100, status: 'aberto', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
 ];
 
 export const mockPedidos: Pedido[] = [
   {
     id: '1',
     lojaId: '1',
+    entidadeId: 'ent1',
+    observacoes: 'Urgente para reunião',
     data: new Date('2024-12-27T10:30:00'),
     status: 'feito',
     corLinha: '#dcfce7',
     itens: [
       { produtoId: '1', quantidade: 10 },
       { produtoId: '2', quantidade: 20 },
-      { produtoId: '5', quantidade: 15 },
     ],
   },
   {
     id: '2',
     lojaId: '2',
+    entidadeId: 'ent2',
     data: new Date('2024-12-27T14:15:00'),
     status: 'pendente',
     itens: [
-      { produtoId: '3', quantidade: 25 },
-      { produtoId: '4', quantidade: 30 },
-      { produtoId: '6', quantidade: 50 },
+      { produtoId: '5', quantidade: 5 },
+      { produtoId: '6', quantidade: 10 },
     ],
   },
   {
     id: '3',
     lojaId: '3',
+    entidadeId: 'ent3',
+    observacoes: 'Para evento de fim de ano',
     data: new Date('2024-12-28T09:00:00'),
     status: 'pendente',
     itens: [
-      { produtoId: '1', quantidade: 15 },
-      { produtoId: '7', quantidade: 40 },
-      { produtoId: '8', quantidade: 35 },
+      { produtoId: '8', quantidade: 5 },
+      { produtoId: '9', quantidade: 10 },
+      { produtoId: '10', quantidade: 50 },
     ],
   },
 ];
