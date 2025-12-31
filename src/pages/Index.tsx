@@ -1,161 +1,78 @@
-import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, AlertCircle } from 'lucide-react';
+import { Settings, Package } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
-import { OrderHeader } from '@/components/order/OrderHeader';
-import { StoreSelect } from '@/components/order/StoreSelect';
-import { ProductSearch } from '@/components/order/ProductSearch';
-import { ProductCard } from '@/components/order/ProductCard';
-import { OrderFooter } from '@/components/order/OrderFooter';
-import { useToast } from '@/hooks/use-toast';
-import { PedidoItem } from '@/types';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
-  const { lojas, produtos, addPedido, pedidosAbertos } = useAppStore();
-  const { toast } = useToast();
+  const { entidades } = useAppStore();
 
-  const [selectedLojaId, setSelectedLojaId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [quantities, setQuantities] = useState<Record<string, number>>({});
-
-  const produtosDisponiveis = produtos.filter((p) => p.status === 'disponivel');
-
-  const filteredProdutos = useMemo(() => {
-    if (!searchQuery.trim()) return produtosDisponiveis;
-
-    const query = searchQuery.toLowerCase();
-    return produtosDisponiveis.filter(
-      (p) =>
-        p.nome.toLowerCase().includes(query) ||
-        p.codigo.toLowerCase().includes(query)
-    );
-  }, [produtosDisponiveis, searchQuery]);
-
-  const handleQuantityChange = (produtoId: string, quantidade: number) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [produtoId]: quantidade,
-    }));
-  };
-
-  const selectedItems = Object.entries(quantities).filter(([_, qty]) => qty > 0);
-  const itemCount = selectedItems.reduce((acc, [_, qty]) => acc + qty, 0);
-
-  const handleSubmit = () => {
-    // Verifica se pedidos estão abertos
-    if (!pedidosAbertos) {
-      toast({
-        title: 'Pedidos fechados',
-        description: 'Os pedidos estão fechados no momento. Aguarde a próxima abertura.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!selectedLojaId) {
-      toast({
-        title: 'Selecione uma loja',
-        description: 'Por favor, escolha uma loja antes de enviar o pedido.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (selectedItems.length === 0) {
-      toast({
-        title: 'Nenhum item selecionado',
-        description: 'Adicione pelo menos um produto ao pedido.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const itens: PedidoItem[] = selectedItems.map(([produtoId, quantidade]) => ({
-      produtoId,
-      quantidade,
-    }));
-
-    const novoPedido = {
-      id: Date.now().toString(),
-      lojaId: selectedLojaId,
-      data: new Date(),
-      status: 'pendente' as const,
-      itens,
-    };
-
-    addPedido(novoPedido);
-
-    // Reset form
-    setSelectedLojaId(null);
-    setQuantities({});
-    setSearchQuery('');
-
-    toast({
-      title: 'Pedido enviado com sucesso!',
-      description: `${selectedItems.length} produto(s) foram solicitados.`,
-    });
-  };
+  const entidadesAtivas = entidades.filter((e) => e.status === 'ativo');
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <OrderHeader />
-
-      {/* Admin Link */}
-      <div className="absolute right-4 top-4">
-        <Link
-          to="/admin"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-colors"
-        >
-          <Settings className="h-5 w-5" />
-        </Link>
-      </div>
-
-      {/* Alerta de pedidos fechados */}
-      {!pedidosAbertos && (
-        <div className="px-4 py-2">
-          <Alert variant="destructive" className="bg-red-50 border-red-200">
-            <AlertCircle className="h-5 w-5" />
-            <AlertTitle className="font-semibold">Pedidos Fechados</AlertTitle>
-            <AlertDescription>
-              Os pedidos estão fechados no momento. Aguarde a próxima abertura para fazer sua solicitação.
-            </AlertDescription>
-          </Alert>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="gradient-primary px-4 py-6 shadow-lg relative">
+        <div className="absolute right-4 top-4">
+          <Link
+            to="/admin"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-colors"
+          >
+            <Settings className="h-5 w-5" />
+          </Link>
         </div>
-      )}
+        <div className="text-center pt-4">
+          <h1 className="text-2xl font-bold text-primary-foreground">Sistema de Pedidos</h1>
+          <p className="text-sm text-primary-foreground/80 mt-1">
+            Escolha o tipo de pedido abaixo
+          </p>
+        </div>
+      </header>
 
-      <StoreSelect
-        lojas={lojas}
-        selectedId={selectedLojaId}
-        onSelect={setSelectedLojaId}
-      />
-
-      <ProductSearch value={searchQuery} onChange={setSearchQuery} />
-
-      <div className="space-y-3 px-4 py-2">
-        {filteredProdutos.map((produto) => (
-          <ProductCard
-            key={produto.id}
-            produto={produto}
-            quantidade={quantities[produto.id] || 0}
-            onQuantityChange={handleQuantityChange}
-            disabled={!pedidosAbertos}
-          />
-        ))}
-
-        {filteredProdutos.length === 0 && (
-          <div className="py-8 text-center text-muted-foreground">
-            Nenhum produto encontrado.
+      {/* Lista de Entidades */}
+      <div className="p-4 space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">Tipos de Pedido Disponíveis</h2>
+        
+        {entidadesAtivas.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {entidadesAtivas.map((entidade) => (
+              <Link
+                key={entidade.id}
+                to={`/pedido/${entidade.id}`}
+                className="block"
+              >
+                <div className="rounded-lg border border-border bg-card p-4 transition-all hover:border-primary hover:shadow-card">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg gradient-primary">
+                      <Package className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                      <p className="text-sm text-muted-foreground">Clique para fazer pedido</p>
+                    </div>
+                    <Badge className="bg-accent text-accent-foreground">Aberto</Badge>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 text-muted-foreground">
+            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Nenhuma entidade de pedido disponível no momento.</p>
           </div>
         )}
       </div>
 
-      <OrderFooter
-        itemCount={itemCount}
-        onSubmit={handleSubmit}
-        disabled={!selectedLojaId || selectedItems.length === 0 || !pedidosAbertos}
-        pedidosFechados={!pedidosAbertos}
-      />
+      {/* Link para Admin */}
+      <div className="p-4">
+        <Link to="/admin">
+          <Button variant="outline" className="w-full">
+            <Settings className="h-4 w-4 mr-2" />
+            Acessar área administrativa
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 };

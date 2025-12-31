@@ -1,6 +1,10 @@
 import { ShoppingCart } from 'lucide-react';
 
-export function OrderHeader() {
+interface OrderHeaderProps {
+  title?: string;
+}
+
+export function OrderHeader({ title }: OrderHeaderProps) {
   return (
     <header className="gradient-primary px-4 py-4 shadow-lg">
       <div className="flex items-center gap-3">
@@ -8,7 +12,9 @@ export function OrderHeader() {
           <ShoppingCart className="h-5 w-5 text-primary-foreground" />
         </div>
         <div>
-          <h1 className="text-xl font-bold text-primary-foreground">Sistema de Pedidos</h1>
+          <h1 className="text-xl font-bold text-primary-foreground">
+            {title || 'Sistema de Pedidos'}
+          </h1>
           <p className="text-sm text-primary-foreground/80">Faça seu pedido abaixo</p>
         </div>
       </div>

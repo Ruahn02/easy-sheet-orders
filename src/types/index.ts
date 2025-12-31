@@ -1,3 +1,10 @@
+export interface Entidade {
+  id: string;
+  nome: string;
+  status: 'ativo' | 'inativo';
+  criadoEm: Date;
+}
+
 export interface Loja {
   id: string;
   nome: string;
@@ -11,7 +18,8 @@ export interface Produto {
   nome: string;
   qtdMaxima: number;
   fotoUrl?: string;
-  status: 'disponivel' | 'indisponivel';
+  status: 'aberto' | 'fechado';
+  entidadeId: string;
   criadoEm: Date;
 }
 
@@ -23,6 +31,8 @@ export interface PedidoItem {
 export interface Pedido {
   id: string;
   lojaId: string;
+  entidadeId: string;
+  observacoes?: string;
   data: Date;
   status: 'pendente' | 'feito';
   corLinha?: string;
@@ -31,4 +41,5 @@ export interface Pedido {
 
 export interface PedidoComDetalhes extends Pedido {
   loja: Loja;
+  entidade: Entidade;
 }
