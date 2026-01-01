@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink } from 'lucide-react';
+import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,15 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Entidade } from '@/types';
 
@@ -30,8 +33,12 @@ export default function Entidades() {
   const [editingEntidade, setEditingEntidade] = useState<Entidade | null>(null);
   const [formData, setFormData] = useState({
     nome: '',
-    status: 'ativo' as 'ativo' | 'inativo',
+    aceitandoPedidos: true,
   });
+
+  // Confirmações
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [toggleConfirm, setToggleConfirm] = useState<Entidade | null>(null);
 
   const baseUrl = window.location.origin;
 
@@ -40,11 +47,11 @@ export default function Entidades() {
       setEditingEntidade(entidade);
       setFormData({
         nome: entidade.nome,
-        status: entidade.status,
+        aceitandoPedidos: entidade.aceitandoPedidos,
       });
     } else {
       setEditingEntidade(null);
-      setFormData({ nome: '', status: 'ativo' });
+      setFormData({ nome: '', aceitandoPedidos: true });
     }
     setIsModalOpen(true);
   };
@@ -62,7 +69,7 @@ export default function Entidades() {
       const novaEntidade: Entidade = {
         id: 'ent' + Date.now().toString(),
         nome: formData.nome,
-        status: formData.status,
+        aceitandoPedidos: formData.aceitandoPedidos,
         criadoEm: new Date(),
       };
       addEntidade(novaEntidade);
@@ -72,7 +79,7 @@ export default function Entidades() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeleteClick = (id: string) => {
     const produtosVinculados = produtos.filter(p => p.entidadeId === id);
     if (produtosVinculados.length > 0) {
       toast({ 
@@ -82,8 +89,34 @@ export default function Entidades() {
       });
       return;
     }
-    deleteEntidade(id);
-    toast({ title: 'Entidade excluída!' });
+    setDeleteConfirm(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirm) {
+      deleteEntidade(deleteConfirm);
+      toast({ title: 'Entidade excluída!' });
+      setDeleteConfirm(null);
+    }
+  };
+
+  const handleToggleClick = (entidade: Entidade) => {
+    if (entidade.aceitandoPedidos) {
+      // Vai fechar - pedir confirmação
+      setToggleConfirm(entidade);
+    } else {
+      // Vai abrir - pode fazer direto
+      updateEntidade(entidade.id, { aceitandoPedidos: true });
+      toast({ title: 'Pedidos abertos!' });
+    }
+  };
+
+  const handleToggleConfirm = () => {
+    if (toggleConfirm) {
+      updateEntidade(toggleConfirm.id, { aceitandoPedidos: false });
+      toast({ title: 'Pedidos fechados!' });
+      setToggleConfirm(null);
+    }
   };
 
   const copyLink = (entidadeId: string) => {
@@ -101,8 +134,8 @@ export default function Entidades() {
     return produtos.filter(p => p.entidadeId === entidadeId).length;
   };
 
-  const getProdutosAbertosCount = (entidadeId: string) => {
-    return produtos.filter(p => p.entidadeId === entidadeId && p.status === 'aberto').length;
+  const getProdutosAtivosCount = (entidadeId: string) => {
+    return produtos.filter(p => p.entidadeId === entidadeId && p.status === 'ativo').length;
   };
 
   return (
@@ -130,20 +163,29 @@ export default function Entidades() {
                 <div>
                   <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {getProdutosCount(entidade.id)} produtos ({getProdutosAbertosCount(entidade.id)} abertos)
+                    {getProdutosCount(entidade.id)} produtos ({getProdutosAtivosCount(entidade.id)} ativos)
                   </p>
                 </div>
-                <Badge
-                  variant={entidade.status === 'ativo' ? 'default' : 'secondary'}
-                  className={
-                    entidade.status === 'ativo'
-                      ? 'bg-accent text-accent-foreground'
-                      : 'bg-muted text-muted-foreground'
-                  }
-                >
-                  {entidade.status === 'ativo' ? 'Ativo' : 'Inativo'}
-                </Badge>
               </div>
+
+              {/* Botão Aceitando Pedidos */}
+              <button
+                onClick={() => handleToggleClick(entidade)}
+                className={`w-full flex items-center justify-between p-3 rounded-lg border transition-all ${
+                  entidade.aceitandoPedidos
+                    ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                    : 'bg-red-50 border-red-200 hover:bg-red-100'
+                }`}
+              >
+                <span className={`font-medium ${entidade.aceitandoPedidos ? 'text-green-700' : 'text-red-700'}`}>
+                  {entidade.aceitandoPedidos ? '🟢 Aceitando pedidos' : '🔴 Pedidos fechados'}
+                </span>
+                {entidade.aceitandoPedidos ? (
+                  <ToggleRight className="h-6 w-6 text-green-600" />
+                ) : (
+                  <ToggleLeft className="h-6 w-6 text-red-600" />
+                )}
+              </button>
 
               {/* Link público */}
               <div className="flex items-center gap-2 p-2 rounded-md bg-secondary text-xs">
@@ -151,7 +193,7 @@ export default function Entidades() {
                 <span className="truncate text-foreground">/pedido/{entidade.id}</span>
               </div>
 
-              {/* Ações */}
+              {/* Ações de Link */}
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -182,7 +224,7 @@ export default function Entidades() {
                   size="sm"
                   variant="ghost"
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  onClick={() => handleDelete(entidade.id)}
+                  onClick={() => handleDeleteClick(entidade.id)}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Excluir
@@ -198,7 +240,7 @@ export default function Entidades() {
           </div>
         )}
 
-        {/* Modal */}
+        {/* Modal Criar/Editar */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
           <DialogContent className="bg-card">
             <DialogHeader>
@@ -213,26 +255,6 @@ export default function Entidades() {
                   placeholder="Ex: Material de Escritório"
                 />
               </div>
-              <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Status</label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      status: value as 'ativo' | 'inativo',
-                    }))
-                  }
-                >
-                  <SelectTrigger className="bg-background">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="ativo">Ativo</SelectItem>
-                    <SelectItem value="inativo">Inativo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
@@ -244,6 +266,44 @@ export default function Entidades() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Confirmação de Exclusão */}
+        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <AlertDialogContent className="bg-card">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. A entidade será excluída permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+                Sim, excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirmação de Fechar Pedidos */}
+        <AlertDialog open={!!toggleConfirm} onOpenChange={() => setToggleConfirm(null)}>
+          <AlertDialogContent className="bg-card">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Fechar pedidos?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ao fechar, as lojas NÃO poderão mais fazer pedidos para "{toggleConfirm?.nome}".
+                <br />
+                Você poderá abrir novamente quando quiser.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleToggleConfirm} className="bg-amber-500 text-white hover:bg-amber-600">
+                Sim, fechar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

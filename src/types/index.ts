@@ -1,7 +1,7 @@
 export interface Entidade {
   id: string;
   nome: string;
-  status: 'ativo' | 'inativo';
+  aceitandoPedidos: boolean; // Controla se o link está aberto para pedidos
   criadoEm: Date;
 }
 
@@ -18,7 +18,8 @@ export interface Produto {
   nome: string;
   qtdMaxima: number;
   fotoUrl?: string;
-  status: 'aberto' | 'fechado';
+  status: 'ativo' | 'inativo'; // Apenas visibilidade
+  permiteObservacao: boolean; // Se permite observação escrita no produto
   entidadeId: string;
   criadoEm: Date;
 }
@@ -26,6 +27,7 @@ export interface Produto {
 export interface PedidoItem {
   produtoId: string;
   quantidade: number;
+  observacaoItem?: string; // Observação específica do produto
 }
 
 export interface Pedido {
