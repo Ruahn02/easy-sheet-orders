@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Pencil, Trash2, Package, Lock, Unlock } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, MessageSquare } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -13,12 +13,23 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Produto } from '@/types';
 
@@ -33,9 +44,37 @@ export default function Produtos() {
     nome: '',
     qtdMaxima: 100,
     fotoUrl: '',
-    status: 'aberto' as 'aberto' | 'fechado',
+    status: 'ativo' as 'ativo' | 'inativo',
+    permiteObservacao: false,
     entidadeId: '',
   });
+
+  // Filtros
+  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
+  const [busca, setBusca] = useState('');
+
+  // Confirmações
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [inativarConfirm, setInativarConfirm] = useState<Produto | null>(null);
+
+  // Produtos filtrados
+  const produtosFiltrados = useMemo(() => {
+    let lista = produtos;
+    
+    if (entidadeFiltro) {
+      lista = lista.filter(p => p.entidadeId === entidadeFiltro);
+    }
+    
+    if (busca.trim()) {
+      const q = busca.toLowerCase();
+      lista = lista.filter(p => 
+        p.codigo.toLowerCase().includes(q) || 
+        p.nome.toLowerCase().includes(q)
+      );
+    }
+    
+    return lista;
+  }, [produtos, entidadeFiltro, busca]);
 
   const handleOpenModal = (produto?: Produto) => {
     if (produto) {
@@ -46,6 +85,7 @@ export default function Produtos() {
         qtdMaxima: produto.qtdMaxima,
         fotoUrl: produto.fotoUrl || '',
         status: produto.status,
+        permiteObservacao: produto.permiteObservacao,
         entidadeId: produto.entidadeId,
       });
     } else {
@@ -55,8 +95,9 @@ export default function Produtos() {
         nome: '',
         qtdMaxima: 100,
         fotoUrl: '',
-        status: 'aberto',
-        entidadeId: entidades.length > 0 ? entidades[0].id : '',
+        status: 'ativo',
+        permiteObservacao: false,
+        entidadeId: entidadeFiltro || (entidades.length > 0 ? entidades[0].id : ''),
       });
     }
     setIsModalOpen(true);
@@ -86,6 +127,7 @@ export default function Produtos() {
         qtdMaxima: formData.qtdMaxima,
         fotoUrl: formData.fotoUrl || undefined,
         status: formData.status,
+        permiteObservacao: formData.permiteObservacao,
         entidadeId: formData.entidadeId,
         criadoEm: new Date(),
       };
@@ -96,15 +138,35 @@ export default function Produtos() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteProduto(id);
-    toast({ title: 'Produto excluído!' });
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirm) {
+      deleteProduto(deleteConfirm);
+      toast({ title: 'Produto excluído!' });
+      setDeleteConfirm(null);
+    }
   };
 
   const handleToggleStatus = (produto: Produto) => {
-    const novoStatus = produto.status === 'aberto' ? 'fechado' : 'aberto';
-    updateProduto(produto.id, { status: novoStatus });
-    toast({ title: `Produto ${novoStatus === 'aberto' ? 'aberto' : 'fechado'}!` });
+    if (produto.status === 'ativo') {
+      // Vai inativar - pedir confirmação
+      setInativarConfirm(produto);
+    } else {
+      // Vai ativar - pode fazer direto
+      updateProduto(produto.id, { status: 'ativo' });
+      toast({ title: 'Produto ativado!' });
+    }
+  };
+
+  const handleInativarConfirm = () => {
+    if (inativarConfirm) {
+      updateProduto(inativarConfirm.id, { status: 'inativo' });
+      toast({ title: 'Produto inativado!' });
+      setInativarConfirm(null);
+    }
   };
 
   const getEntidadeNome = (entidadeId: string) => {
@@ -125,6 +187,38 @@ export default function Produtos() {
           </Button>
         </div>
 
+        {/* Filtros */}
+        <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg bg-secondary/30 border border-border">
+          <div className="flex-1">
+            <label className="text-sm font-medium text-foreground mb-1 block">Filtrar por Entidade</label>
+            <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="Todas as entidades" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">Todas as entidades</SelectItem>
+                {entidades.map((ent) => (
+                  <SelectItem key={ent.id} value={ent.id}>
+                    {ent.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex-1">
+            <label className="text-sm font-medium text-foreground mb-1 block">Buscar</label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={busca}
+                onChange={(e) => setBusca(e.target.value)}
+                placeholder="Código ou nome..."
+                className="pl-10 bg-background"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* List */}
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
@@ -135,12 +229,13 @@ export default function Produtos() {
                   <th className="px-4 py-3 text-left font-medium text-foreground">Nome</th>
                   <th className="px-4 py-3 text-left font-medium text-foreground">Entidade</th>
                   <th className="px-4 py-3 text-left font-medium text-foreground">Qtd. Máx.</th>
+                  <th className="px-4 py-3 text-left font-medium text-foreground">Obs?</th>
                   <th className="px-4 py-3 text-left font-medium text-foreground">Status</th>
                   <th className="px-4 py-3 text-right font-medium text-foreground">Ações</th>
                 </tr>
               </thead>
               <tbody>
-                {produtos.map((produto) => (
+                {produtosFiltrados.map((produto) => (
                   <tr key={produto.id} className="border-b border-border">
                     <td className="px-4 py-3">
                       <span className="font-mono text-primary">{produto.codigo}</span>
@@ -166,15 +261,22 @@ export default function Produtos() {
                     </td>
                     <td className="px-4 py-3 text-foreground">{produto.qtdMaxima}</td>
                     <td className="px-4 py-3">
+                      {produto.permiteObservacao ? (
+                        <MessageSquare className="h-4 w-4 text-primary" />
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
                       <Badge
-                        variant={produto.status === 'aberto' ? 'default' : 'secondary'}
+                        variant={produto.status === 'ativo' ? 'default' : 'secondary'}
                         className={
-                          produto.status === 'aberto'
+                          produto.status === 'ativo'
                             ? 'bg-accent text-accent-foreground'
                             : 'bg-muted text-muted-foreground'
                         }
                       >
-                        {produto.status === 'aberto' ? '🟢 Aberto' : '🔴 Fechado'}
+                        {produto.status === 'ativo' ? '🟢 Ativo' : '🔴 Inativo'}
                       </Badge>
                     </td>
                     <td className="px-4 py-3">
@@ -183,9 +285,10 @@ export default function Produtos() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleToggleStatus(produto)}
-                          className={produto.status === 'aberto' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}
+                          className={produto.status === 'ativo' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}
+                          title={produto.status === 'ativo' ? 'Inativar' : 'Ativar'}
                         >
-                          {produto.status === 'aberto' ? <Lock className="h-4 w-4" /> : <Unlock className="h-4 w-4" />}
+                          {produto.status === 'ativo' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
                         <Button size="sm" variant="outline" onClick={() => handleOpenModal(produto)}>
                           <Pencil className="h-4 w-4" />
@@ -194,7 +297,7 @@ export default function Produtos() {
                           size="sm"
                           variant="outline"
                           className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                          onClick={() => handleDelete(produto.id)}
+                          onClick={() => handleDeleteClick(produto.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -205,6 +308,14 @@ export default function Produtos() {
               </tbody>
             </table>
           </div>
+
+          {produtosFiltrados.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              {produtos.length === 0 
+                ? 'Nenhum produto cadastrado.' 
+                : 'Nenhum produto encontrado com os filtros aplicados.'}
+            </div>
+          )}
         </div>
 
         {/* Modal */}
@@ -270,6 +381,20 @@ export default function Produtos() {
                   placeholder="https://..."
                 />
               </div>
+
+              {/* Permite Observação */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                <div>
+                  <p className="font-medium text-foreground">Permite observação escrita?</p>
+                  <p className="text-sm text-muted-foreground">A loja poderá escrever uma nota para este item</p>
+                </div>
+                <Switch
+                  checked={formData.permiteObservacao}
+                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, permiteObservacao: checked }))}
+                />
+              </div>
+
+              {/* Status */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">Status</label>
                 <Select
@@ -277,7 +402,7 @@ export default function Produtos() {
                   onValueChange={(value) =>
                     setFormData((prev) => ({
                       ...prev,
-                      status: value as 'aberto' | 'fechado',
+                      status: value as 'ativo' | 'inativo',
                     }))
                   }
                 >
@@ -285,8 +410,8 @@ export default function Produtos() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="bg-popover z-50">
-                    <SelectItem value="aberto">🟢 Aberto</SelectItem>
-                    <SelectItem value="fechado">🔴 Fechado</SelectItem>
+                    <SelectItem value="ativo">🟢 Ativo</SelectItem>
+                    <SelectItem value="inativo">🔴 Inativo</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -301,6 +426,44 @@ export default function Produtos() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Confirmação de Exclusão */}
+        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <AlertDialogContent className="bg-card">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. O produto será excluído permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+                Sim, excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Confirmação de Inativar */}
+        <AlertDialog open={!!inativarConfirm} onOpenChange={() => setInativarConfirm(null)}>
+          <AlertDialogContent className="bg-card">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Inativar produto?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Ao inativar, o produto "{inativarConfirm?.nome}" NÃO aparecerá mais no formulário de pedidos.
+                <br />
+                Você poderá ativar novamente quando quiser.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleInativarConfirm} className="bg-amber-500 text-white hover:bg-amber-600">
+                Sim, inativar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

@@ -1,10 +1,10 @@
 import { Entidade, Loja, Produto, Pedido } from '@/types';
 
 export const mockEntidades: Entidade[] = [
-  { id: 'ent1', nome: 'Material de Escritório', status: 'ativo', criadoEm: new Date('2024-01-01') },
-  { id: 'ent2', nome: 'Uso e Consumo', status: 'ativo', criadoEm: new Date('2024-01-01') },
-  { id: 'ent3', nome: 'Copa e Cozinha', status: 'ativo', criadoEm: new Date('2024-01-05') },
-  { id: 'ent4', nome: 'Manutenção', status: 'inativo', criadoEm: new Date('2024-01-10') },
+  { id: 'ent1', nome: 'Material de Escritório', aceitandoPedidos: true, criadoEm: new Date('2024-01-01') },
+  { id: 'ent2', nome: 'Uso e Consumo', aceitandoPedidos: true, criadoEm: new Date('2024-01-01') },
+  { id: 'ent3', nome: 'Copa e Cozinha', aceitandoPedidos: true, criadoEm: new Date('2024-01-05') },
+  { id: 'ent4', nome: 'Manutenção', aceitandoPedidos: false, criadoEm: new Date('2024-01-10') },
 ];
 
 export const mockLojas: Loja[] = [
@@ -20,20 +20,20 @@ export const mockLojas: Loja[] = [
 
 export const mockProdutos: Produto[] = [
   // Material de Escritório (ent1)
-  { id: '1', codigo: 'ESC001', nome: 'Caneta Azul', qtdMaxima: 100, status: 'aberto', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
-  { id: '2', codigo: 'ESC002', nome: 'Lápis Preto', qtdMaxima: 200, status: 'aberto', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
-  { id: '3', codigo: 'ESC003', nome: 'Borracha Branca', qtdMaxima: 150, status: 'aberto', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
-  { id: '4', codigo: 'ESC004', nome: 'Grampeador', qtdMaxima: 20, status: 'fechado', entidadeId: 'ent1', criadoEm: new Date('2024-01-02') },
+  { id: '1', codigo: 'ESC001', nome: 'Caneta Azul', qtdMaxima: 100, status: 'ativo', permiteObservacao: false, entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '2', codigo: 'ESC002', nome: 'Lápis Preto', qtdMaxima: 200, status: 'ativo', permiteObservacao: false, entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '3', codigo: 'ESC003', nome: 'Borracha Branca', qtdMaxima: 150, status: 'ativo', permiteObservacao: false, entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '4', codigo: 'ESC004', nome: 'Grampeador', qtdMaxima: 20, status: 'inativo', permiteObservacao: true, entidadeId: 'ent1', criadoEm: new Date('2024-01-02') },
   
   // Uso e Consumo (ent2)
-  { id: '5', codigo: 'UC001', nome: 'Papel Toalha', qtdMaxima: 50, status: 'aberto', entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
-  { id: '6', codigo: 'UC002', nome: 'Detergente 500ml', qtdMaxima: 30, status: 'aberto', entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
-  { id: '7', codigo: 'UC003', nome: 'Álcool 70%', qtdMaxima: 40, status: 'aberto', entidadeId: 'ent2', criadoEm: new Date('2024-01-02') },
+  { id: '5', codigo: 'UC001', nome: 'Papel Toalha', qtdMaxima: 50, status: 'ativo', permiteObservacao: false, entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
+  { id: '6', codigo: 'UC002', nome: 'Detergente 500ml', qtdMaxima: 30, status: 'ativo', permiteObservacao: true, entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
+  { id: '7', codigo: 'UC003', nome: 'Álcool 70%', qtdMaxima: 40, status: 'ativo', permiteObservacao: false, entidadeId: 'ent2', criadoEm: new Date('2024-01-02') },
   
   // Copa e Cozinha (ent3)
-  { id: '8', codigo: 'COPA001', nome: 'Café 500g', qtdMaxima: 20, status: 'aberto', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
-  { id: '9', codigo: 'COPA002', nome: 'Açúcar 1kg', qtdMaxima: 30, status: 'aberto', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
-  { id: '10', codigo: 'COPA003', nome: 'Copo Descartável 200ml', qtdMaxima: 100, status: 'aberto', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '8', codigo: 'COPA001', nome: 'Café 500g', qtdMaxima: 20, status: 'ativo', permiteObservacao: true, entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '9', codigo: 'COPA002', nome: 'Açúcar 1kg', qtdMaxima: 30, status: 'ativo', permiteObservacao: false, entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '10', codigo: 'COPA003', nome: 'Copo Descartável 200ml', qtdMaxima: 100, status: 'ativo', permiteObservacao: false, entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
 ];
 
 export const mockPedidos: Pedido[] = [
@@ -58,7 +58,7 @@ export const mockPedidos: Pedido[] = [
     status: 'pendente',
     itens: [
       { produtoId: '5', quantidade: 5 },
-      { produtoId: '6', quantidade: 10 },
+      { produtoId: '6', quantidade: 10, observacaoItem: 'Preferência por neutro' },
     ],
   },
   {
@@ -69,7 +69,7 @@ export const mockPedidos: Pedido[] = [
     data: new Date('2024-12-28T09:00:00'),
     status: 'pendente',
     itens: [
-      { produtoId: '8', quantidade: 5 },
+      { produtoId: '8', quantidade: 5, observacaoItem: 'Café forte' },
       { produtoId: '9', quantidade: 10 },
       { produtoId: '10', quantidade: 50 },
     ],

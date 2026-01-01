@@ -13,6 +13,16 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -29,6 +39,9 @@ export default function Lojas() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoja, setEditingLoja] = useState<Loja | null>(null);
   const [formData, setFormData] = useState({ nome: '', status: 'ativo' as 'ativo' | 'inativo' });
+
+  // Confirmação
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   const handleOpenModal = (loja?: Loja) => {
     if (loja) {
@@ -64,9 +77,16 @@ export default function Lojas() {
     setIsModalOpen(false);
   };
 
-  const handleDelete = (id: string) => {
-    deleteLoja(id);
-    toast({ title: 'Loja excluída!' });
+  const handleDeleteClick = (id: string) => {
+    setDeleteConfirm(id);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (deleteConfirm) {
+      deleteLoja(deleteConfirm);
+      toast({ title: 'Loja excluída!' });
+      setDeleteConfirm(null);
+    }
   };
 
   return (
@@ -125,7 +145,7 @@ export default function Lojas() {
                         size="sm"
                         variant="outline"
                         className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        onClick={() => handleDelete(loja.id)}
+                        onClick={() => handleDeleteClick(loja.id)}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -135,6 +155,12 @@ export default function Lojas() {
               ))}
             </tbody>
           </table>
+
+          {lojas.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              Nenhuma loja cadastrada.
+            </div>
+          )}
         </div>
 
         {/* Modal */}
@@ -180,6 +206,24 @@ export default function Lojas() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Confirmação de Exclusão */}
+        <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
+          <AlertDialogContent className="bg-card">
+            <AlertDialogHeader>
+              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Esta ação não pode ser desfeita. A loja será excluída permanentemente.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
+                Sim, excluir
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </AdminLayout>
   );

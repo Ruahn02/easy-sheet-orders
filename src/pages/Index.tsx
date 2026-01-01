@@ -1,13 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Settings, Package } from 'lucide-react';
+import { Settings, Package, Lock } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   const { entidades } = useAppStore();
-
-  const entidadesAtivas = entidades.filter((e) => e.status === 'ativo');
 
   return (
     <div className="min-h-screen bg-background">
@@ -31,26 +29,43 @@ const Index = () => {
 
       {/* Lista de Entidades */}
       <div className="p-4 space-y-4">
-        <h2 className="text-lg font-semibold text-foreground">Tipos de Pedido Disponíveis</h2>
+        <h2 className="text-lg font-semibold text-foreground">Tipos de Pedido</h2>
         
-        {entidadesAtivas.length > 0 ? (
+        {entidades.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            {entidadesAtivas.map((entidade) => (
+            {entidades.map((entidade) => (
               <Link
                 key={entidade.id}
-                to={`/pedido/${entidade.id}`}
-                className="block"
+                to={entidade.aceitandoPedidos ? `/pedido/${entidade.id}` : '#'}
+                className={`block ${!entidade.aceitandoPedidos ? 'pointer-events-none' : ''}`}
               >
-                <div className="rounded-lg border border-border bg-card p-4 transition-all hover:border-primary hover:shadow-card">
+                <div className={`rounded-lg border bg-card p-4 transition-all ${
+                  entidade.aceitandoPedidos 
+                    ? 'border-border hover:border-primary hover:shadow-card cursor-pointer' 
+                    : 'border-border/50 opacity-60'
+                }`}>
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg gradient-primary">
-                      <Package className="h-6 w-6 text-primary-foreground" />
+                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${
+                      entidade.aceitandoPedidos ? 'gradient-primary' : 'bg-muted'
+                    }`}>
+                      {entidade.aceitandoPedidos ? (
+                        <Package className="h-6 w-6 text-primary-foreground" />
+                      ) : (
+                        <Lock className="h-6 w-6 text-muted-foreground" />
+                      )}
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
-                      <p className="text-sm text-muted-foreground">Clique para fazer pedido</p>
+                      <p className="text-sm text-muted-foreground">
+                        {entidade.aceitandoPedidos ? 'Clique para fazer pedido' : 'Pedidos fechados'}
+                      </p>
                     </div>
-                    <Badge className="bg-accent text-accent-foreground">Aberto</Badge>
+                    <Badge className={entidade.aceitandoPedidos 
+                      ? 'bg-accent text-accent-foreground' 
+                      : 'bg-muted text-muted-foreground'
+                    }>
+                      {entidade.aceitandoPedidos ? '🟢 Aberto' : '🔴 Fechado'}
+                    </Badge>
                   </div>
                 </div>
               </Link>
@@ -59,7 +74,7 @@ const Index = () => {
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma entidade de pedido disponível no momento.</p>
+            <p>Nenhuma entidade de pedido cadastrada.</p>
           </div>
         )}
       </div>
