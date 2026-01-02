@@ -26,7 +26,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Entidade } from '@/types';
 
 export default function Entidades() {
-  const { entidades, addEntidade, updateEntidade, deleteEntidade, produtos } = useAppStore();
+  const { entidades, addEntidade, updateEntidade, deleteEntidade, produtos, pedidos } = useAppStore();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -80,22 +80,19 @@ export default function Entidades() {
   };
 
   const handleDeleteClick = (id: string) => {
-    const produtosVinculados = produtos.filter(p => p.entidadeId === id);
-    if (produtosVinculados.length > 0) {
-      toast({ 
-        title: 'Não é possível excluir', 
-        description: `Existem ${produtosVinculados.length} produto(s) vinculados a esta entidade.`,
-        variant: 'destructive' 
-      });
-      return;
-    }
     setDeleteConfirm(id);
+  };
+
+  const getDeleteInfo = (id: string) => {
+    const produtosVinculados = produtos.filter(p => p.entidadeId === id).length;
+    const pedidosVinculados = pedidos.filter(p => p.entidadeId === id).length;
+    return { produtosVinculados, pedidosVinculados };
   };
 
   const handleDeleteConfirm = () => {
     if (deleteConfirm) {
       deleteEntidade(deleteConfirm);
-      toast({ title: 'Entidade excluída!' });
+      toast({ title: 'Entidade excluída!', description: 'Todos os produtos e pedidos vinculados foram removidos.' });
       setDeleteConfirm(null);
     }
   };
@@ -143,12 +140,12 @@ export default function Entidades() {
       <div className="space-y-6 animate-fade-in">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Entidades de Pedido</h1>
-            <p className="text-muted-foreground">Cada entidade gera um link público próprio</p>
+            <h1 className="text-2xl font-bold text-foreground">Tipos de Pedido</h1>
+            <p className="text-muted-foreground">Controle central do sistema - cada tipo gera um link público próprio</p>
           </div>
           <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
             <Plus className="h-4 w-4 mr-2" />
-            Nova Entidade
+            Novo Tipo
           </Button>
         </div>
 
@@ -271,15 +268,29 @@ export default function Entidades() {
         <AlertDialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
           <AlertDialogContent className="bg-card">
             <AlertDialogHeader>
-              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Esta ação não pode ser desfeita. A entidade será excluída permanentemente.
+              <AlertDialogTitle>⚠️ Excluir tipo de pedido?</AlertDialogTitle>
+              <AlertDialogDescription asChild>
+                <div className="space-y-2">
+                  <p>Esta ação <strong>NÃO pode ser desfeita</strong>.</p>
+                  {deleteConfirm && (
+                    <>
+                      <p className="text-destructive font-medium">
+                        Serão excluídos PERMANENTEMENTE:
+                      </p>
+                      <ul className="list-disc list-inside text-sm">
+                        <li>O tipo de pedido</li>
+                        <li>{getDeleteInfo(deleteConfirm).produtosVinculados} produto(s) vinculado(s)</li>
+                        <li>{getDeleteInfo(deleteConfirm).pedidosVinculados} pedido(s) vinculado(s)</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancelar</AlertDialogCancel>
               <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground">
-                Sim, excluir
+                Sim, excluir TUDO
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

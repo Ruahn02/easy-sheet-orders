@@ -12,7 +12,6 @@ import Pedidos from "./pages/admin/Pedidos";
 import Lojas from "./pages/admin/Lojas";
 import Produtos from "./pages/admin/Produtos";
 import Entidades from "./pages/admin/Entidades";
-import Links from "./pages/admin/Links";
 
 const queryClient = new QueryClient();
 
@@ -31,7 +30,6 @@ const App = () => (
           <Route path="/admin/lojas" element={<Lojas />} />
           <Route path="/admin/produtos" element={<Produtos />} />
           <Route path="/admin/entidades" element={<Entidades />} />
-          <Route path="/admin/links" element={<Links />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

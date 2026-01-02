@@ -48,7 +48,10 @@ export const useAppStore = create<AppState>((set) => ({
     entidades: state.entidades.map((e) => e.id === id ? { ...e, ...entidadeData } : e),
   })),
   deleteEntidade: (id) => set((state) => ({
+    // Excluir entidade E todos os produtos e pedidos vinculados
     entidades: state.entidades.filter((e) => e.id !== id),
+    produtos: state.produtos.filter((p) => p.entidadeId !== id),
+    pedidos: state.pedidos.filter((p) => p.entidadeId !== id),
   })),
   
   // Loja actions

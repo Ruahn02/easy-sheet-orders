@@ -12,7 +12,6 @@ import { PedidoItem } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 
 const FormularioPedido = () => {
   const { entidadeId } = useParams<{ entidadeId: string }>();
@@ -23,7 +22,6 @@ const FormularioPedido = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState('');
-  const [observacoesItens, setObservacoesItens] = useState<Record<string, string>>({});
 
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
@@ -48,13 +46,6 @@ const FormularioPedido = () => {
     setQuantities((prev) => ({
       ...prev,
       [produtoId]: quantidade,
-    }));
-  };
-
-  const handleObservacaoItemChange = (produtoId: string, obs: string) => {
-    setObservacoesItens((prev) => ({
-      ...prev,
-      [produtoId]: obs,
     }));
   };
 
@@ -86,7 +77,6 @@ const FormularioPedido = () => {
     const itens: PedidoItem[] = selectedItems.map(([produtoId, quantidade]) => ({
       produtoId,
       quantidade,
-      observacaoItem: observacoesItens[produtoId] || undefined,
     }));
 
     const novoPedido = {
@@ -106,7 +96,6 @@ const FormularioPedido = () => {
     setQuantities({});
     setSearchQuery('');
     setObservacoes('');
-    setObservacoesItens({});
 
     toast({
       title: 'Pedido enviado com sucesso!',
@@ -157,30 +146,32 @@ const FormularioPedido = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <OrderHeader title={entidade.nome} />
-
-      {/* Botão Voltar */}
-      <div className="absolute left-4 top-4">
-        <Link to="/">
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="text-primary-foreground hover:bg-primary-foreground/20"
+      {/* Header com botão voltar visível */}
+      <div className="gradient-primary text-primary-foreground">
+        <div className="px-4 py-3">
+          <Link to="/">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-primary-foreground hover:bg-primary-foreground/20 mb-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Voltar e escolher outro tipo de pedido
+            </Button>
+          </Link>
+        </div>
+        <div className="px-4 pb-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">{entidade.nome}</h1>
+            <p className="text-sm text-primary-foreground/80">Formulário de Pedido</p>
+          </div>
+          <Link
+            to="/admin"
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-colors"
           >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            Trocar tipo
-          </Button>
-        </Link>
-      </div>
-
-      {/* Admin Link */}
-      <div className="absolute right-4 top-4">
-        <Link
-          to="/admin"
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30 transition-colors"
-        >
-          <Settings className="h-5 w-5" />
-        </Link>
+            <Settings className="h-5 w-5" />
+          </Link>
+        </div>
       </div>
 
       {/* Alerta se não há produtos ativos */}
@@ -206,24 +197,12 @@ const FormularioPedido = () => {
 
       <div className="space-y-3 px-4 py-2">
         {filteredProdutos.map((produto) => (
-          <div key={produto.id} className="space-y-2">
-            <ProductCard
-              produto={produto}
-              quantidade={quantities[produto.id] || 0}
-              onQuantityChange={handleQuantityChange}
-            />
-            {/* Campo de observação do item se permitido E se tem quantidade */}
-            {produto.permiteObservacao && quantities[produto.id] > 0 && (
-              <div className="ml-4 pl-4 border-l-2 border-primary/30">
-                <Input
-                  value={observacoesItens[produto.id] || ''}
-                  onChange={(e) => handleObservacaoItemChange(produto.id, e.target.value)}
-                  placeholder={`Observação para ${produto.nome}...`}
-                  className="bg-card text-sm"
-                />
-              </div>
-            )}
-          </div>
+          <ProductCard
+            key={produto.id}
+            produto={produto}
+            quantidade={quantities[produto.id] || 0}
+            onQuantityChange={handleQuantityChange}
+          />
         ))}
 
         {filteredProdutos.length === 0 && produtosDisponiveis.length > 0 && (
@@ -233,11 +212,11 @@ const FormularioPedido = () => {
         )}
       </div>
 
-      {/* Campo de Observações Gerais */}
+      {/* Campo ÚNICO de Observações - no final */}
       {produtosDisponiveis.length > 0 && (
-        <div className="px-4 py-4">
+        <div className="px-4 py-4 border-t border-border mt-4">
           <label className="text-sm font-medium text-foreground mb-2 block">
-            Observações Gerais (opcional)
+            Observações (opcional)
           </label>
           <Textarea
             value={observacoes}

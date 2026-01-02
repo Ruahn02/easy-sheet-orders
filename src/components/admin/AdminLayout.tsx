@@ -5,7 +5,7 @@ import {
   ClipboardList,
   Store,
   Package,
-  Link2,
+  FolderOpen,
   LogOut,
   Menu,
 } from 'lucide-react';
@@ -19,10 +19,10 @@ interface AdminLayoutProps {
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
+  { icon: FolderOpen, label: 'Tipos de Pedido', path: '/admin/entidades' },
   { icon: ClipboardList, label: 'Pedidos', path: '/admin/pedidos' },
   { icon: Store, label: 'Lojas', path: '/admin/lojas' },
   { icon: Package, label: 'Produtos', path: '/admin/produtos' },
-  { icon: Link2, label: 'Links', path: '/admin/links' },
 ];
 
 function SidebarContent() {
