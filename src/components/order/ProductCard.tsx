@@ -11,7 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ produto, quantidade, onQuantityChange, disabled }: ProductCardProps) {
-  const isDisabled = produto.status === 'fechado' || disabled;
+  const isDisabled = produto.status === 'inativo' || disabled;
   
   const handleDecrement = () => {
     if (quantidade > 0) {

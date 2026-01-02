@@ -56,13 +56,13 @@ export default function Dashboard() {
   // Estatísticas baseadas nos filtros
   const stats = useMemo(() => {
     const lojasQuePediram = new Set(pedidosFiltrados.map((p) => p.lojaId));
-    const produtosAbertos = produtos.filter((p) => p.status === 'aberto');
+    const produtosAtivos = produtos.filter((p) => p.status === 'ativo');
 
     return {
       totalPedidos: pedidos.length,
       pedidosFiltrados: pedidosFiltrados.length,
       lojasQuePediram: lojasQuePediram.size,
-      produtosAbertos: produtosAbertos.length,
+      produtosAtivos: produtosAtivos.length,
     };
   }, [pedidos, pedidosFiltrados, produtos]);
 
@@ -324,8 +324,8 @@ export default function Dashboard() {
                   <Package className="h-5 w-5 text-foreground" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-foreground">{stats.produtosAbertos}</p>
-                  <p className="text-xs text-muted-foreground">Produtos Abertos</p>
+                  <p className="text-2xl font-bold text-foreground">{stats.produtosAtivos}</p>
+                  <p className="text-xs text-muted-foreground">Produtos Ativos</p>
                 </div>
               </div>
             </CardContent>
