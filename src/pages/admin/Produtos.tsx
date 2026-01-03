@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, MessageSquare } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Produto } from '@/types';
 
@@ -45,7 +44,6 @@ export default function Produtos() {
     qtdMaxima: 100,
     fotoUrl: '',
     status: 'ativo' as 'ativo' | 'inativo',
-    permiteObservacao: false,
     entidadeId: '',
   });
 
@@ -85,7 +83,6 @@ export default function Produtos() {
         qtdMaxima: produto.qtdMaxima,
         fotoUrl: produto.fotoUrl || '',
         status: produto.status,
-        permiteObservacao: produto.permiteObservacao,
         entidadeId: produto.entidadeId,
       });
     } else {
@@ -96,7 +93,6 @@ export default function Produtos() {
         qtdMaxima: 100,
         fotoUrl: '',
         status: 'ativo',
-        permiteObservacao: false,
         entidadeId: entidadeFiltro || (entidades.length > 0 ? entidades[0].id : ''),
       });
     }
@@ -127,7 +123,6 @@ export default function Produtos() {
         qtdMaxima: formData.qtdMaxima,
         fotoUrl: formData.fotoUrl || undefined,
         status: formData.status,
-        permiteObservacao: formData.permiteObservacao,
         entidadeId: formData.entidadeId,
         criadoEm: new Date(),
       };
@@ -229,7 +224,6 @@ export default function Produtos() {
                   <th className="px-4 py-3 text-left font-medium text-foreground">Nome</th>
                   <th className="px-4 py-3 text-left font-medium text-foreground">Entidade</th>
                   <th className="px-4 py-3 text-left font-medium text-foreground">Qtd. Máx.</th>
-                  <th className="px-4 py-3 text-left font-medium text-foreground">Obs?</th>
                   <th className="px-4 py-3 text-left font-medium text-foreground">Status</th>
                   <th className="px-4 py-3 text-right font-medium text-foreground">Ações</th>
                 </tr>
@@ -260,13 +254,6 @@ export default function Produtos() {
                       </Badge>
                     </td>
                     <td className="px-4 py-3 text-foreground">{produto.qtdMaxima}</td>
-                    <td className="px-4 py-3">
-                      {produto.permiteObservacao ? (
-                        <MessageSquare className="h-4 w-4 text-primary" />
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </td>
                     <td className="px-4 py-3">
                       <Badge
                         variant={produto.status === 'ativo' ? 'default' : 'secondary'}
@@ -382,17 +369,6 @@ export default function Produtos() {
                 />
               </div>
 
-              {/* Permite Observação */}
-              <div className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                <div>
-                  <p className="font-medium text-foreground">Permite observação escrita?</p>
-                  <p className="text-sm text-muted-foreground">A loja poderá escrever uma nota para este item</p>
-                </div>
-                <Switch
-                  checked={formData.permiteObservacao}
-                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, permiteObservacao: checked }))}
-                />
-              </div>
 
               {/* Status */}
               <div>
