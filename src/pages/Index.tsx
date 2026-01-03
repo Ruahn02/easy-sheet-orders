@@ -1,11 +1,26 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Settings, Package, Lock } from 'lucide-react';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 const Index = () => {
   const { entidades } = useAppStore();
+  const [entidadeFechadaDialog, setEntidadeFechadaDialog] = useState<string | null>(null);
+
+  const handleEntidadeClick = (entidade: typeof entidades[0]) => {
+    if (!entidade.aceitandoPedidos) {
+      setEntidadeFechadaDialog(entidade.nome);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,41 +49,53 @@ const Index = () => {
         {entidades.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {entidades.map((entidade) => (
-              <Link
-                key={entidade.id}
-                to={entidade.aceitandoPedidos ? `/pedido/${entidade.id}` : '#'}
-                className={`block ${!entidade.aceitandoPedidos ? 'pointer-events-none' : ''}`}
-              >
-                <div className={`rounded-lg border bg-card p-4 transition-all ${
-                  entidade.aceitandoPedidos 
-                    ? 'border-border hover:border-primary hover:shadow-card cursor-pointer' 
-                    : 'border-border/50 opacity-60'
-                }`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`flex h-12 w-12 items-center justify-center rounded-lg ${
-                      entidade.aceitandoPedidos ? 'gradient-primary' : 'bg-muted'
-                    }`}>
-                      {entidade.aceitandoPedidos ? (
+              entidade.aceitandoPedidos ? (
+                <Link
+                  key={entidade.id}
+                  to={`/pedido/${entidade.id}`}
+                  className="block"
+                >
+                  <div className="rounded-lg border bg-card p-4 transition-all border-border hover:border-primary hover:shadow-card cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg gradient-primary">
                         <Package className="h-6 w-6 text-primary-foreground" />
-                      ) : (
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Clique para fazer pedido
+                        </p>
+                      </div>
+                      <Badge className="bg-accent text-accent-foreground">
+                        🟢 Aberto
+                      </Badge>
+                    </div>
+                  </div>
+                </Link>
+              ) : (
+                <div
+                  key={entidade.id}
+                  onClick={() => handleEntidadeClick(entidade)}
+                  className="block cursor-pointer"
+                >
+                  <div className="rounded-lg border bg-card p-4 transition-all border-border/50 opacity-60 hover:opacity-80">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
                         <Lock className="h-6 w-6 text-muted-foreground" />
-                      )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Pedidos fechados
+                        </p>
+                      </div>
+                      <Badge className="bg-muted text-muted-foreground">
+                        🔴 Fechado
+                      </Badge>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {entidade.aceitandoPedidos ? 'Clique para fazer pedido' : 'Pedidos fechados'}
-                      </p>
-                    </div>
-                    <Badge className={entidade.aceitandoPedidos 
-                      ? 'bg-accent text-accent-foreground' 
-                      : 'bg-muted text-muted-foreground'
-                    }>
-                      {entidade.aceitandoPedidos ? '🟢 Aberto' : '🔴 Fechado'}
-                    </Badge>
                   </div>
                 </div>
-              </Link>
+              )
             ))}
           </div>
         ) : (
@@ -88,6 +115,23 @@ const Index = () => {
           </Button>
         </Link>
       </div>
+
+      {/* Dialog para entidade fechada */}
+      <Dialog open={!!entidadeFechadaDialog} onOpenChange={() => setEntidadeFechadaDialog(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Pedidos Fechados</DialogTitle>
+            <DialogDescription className="pt-2">
+              Os pedidos para <strong>"{entidadeFechadaDialog}"</strong> estão fechados no momento.
+              <br /><br />
+              Aguarde a próxima abertura.
+            </DialogDescription>
+          </DialogHeader>
+          <Button onClick={() => setEntidadeFechadaDialog(null)}>
+            Entendi
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
