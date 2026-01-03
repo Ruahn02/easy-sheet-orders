@@ -19,7 +19,6 @@ export interface Produto {
   qtdMaxima: number;
   fotoUrl?: string;
   status: 'ativo' | 'inativo'; // Apenas visibilidade
-  permiteObservacao: boolean; // Se permite observação escrita no produto
   entidadeId: string;
   criadoEm: Date;
 }
@@ -27,7 +26,6 @@ export interface Produto {
 export interface PedidoItem {
   produtoId: string;
   quantidade: number;
-  observacaoItem?: string; // Observação específica do produto
 }
 
 export interface Pedido {
