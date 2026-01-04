@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Copy, Link as LinkIcon, Key } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -10,11 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+
 
 export default function Dashboard() {
-  const { pedidos, lojas, produtos, entidades, codigoAdmin } = useAppStore();
-  const { toast } = useToast();
+  const { pedidos, lojas, produtos, entidades } = useAppStore();
 
   // Filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -22,16 +21,6 @@ export default function Dashboard() {
   const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
   const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
   const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
-
-  const baseUrl = window.location.origin;
-
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    toast({
-      title: 'Copiado!',
-      description: `${label} copiado para a área de transferência.`,
-    });
-  };
 
   // Pedidos filtrados
   const pedidosFiltrados = useMemo(() => {
@@ -153,73 +142,6 @@ export default function Dashboard() {
           <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground">Visão geral do sistema</p>
         </div>
-
-        {/* Seção de Links e Código Admin */}
-        <Card className="border-primary">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-lg">
-              <LinkIcon className="h-5 w-5 text-primary" />
-              Informações do Sistema
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {/* Link Público */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Link Público (Formulário)</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm truncate">
-                    {baseUrl}/pedido
-                  </code>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => copyToClipboard(`${baseUrl}/pedido`, 'Link público')}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Link Admin */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground">Link Admin</label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm truncate">
-                    {baseUrl}/admin
-                  </code>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => copyToClipboard(`${baseUrl}/admin`, 'Link admin')}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Código Admin */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-foreground flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Código de Admin
-                </label>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
-                    {codigoAdmin}
-                  </code>
-                  <Button
-                    size="icon"
-                    variant="outline"
-                    onClick={() => copyToClipboard(codigoAdmin, 'Código admin')}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {/* Filtros */}
         <Card>
