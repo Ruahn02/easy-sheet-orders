@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useAppStore } from '@/store/useAppStore';
+import { useEntidades, useProdutos } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +33,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Produto } from '@/types';
 
 export default function Produtos() {
-  const { produtos, entidades, addProduto, updateProduto, deleteProduto } = useAppStore();
+  const { produtos, loading, addProduto, updateProduto, deleteProduto } = useProdutos();
+  const { entidades } = useEntidades();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -46,6 +47,7 @@ export default function Produtos() {
     status: 'ativo' as 'ativo' | 'inativo',
     entidadeId: '',
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Filtros
   const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
@@ -59,7 +61,7 @@ export default function Produtos() {
   const produtosFiltrados = useMemo(() => {
     let lista = produtos;
     
-    if (entidadeFiltro) {
+    if (entidadeFiltro && entidadeFiltro !== 'all') {
       lista = lista.filter(p => p.entidadeId === entidadeFiltro);
     }
     
@@ -93,13 +95,13 @@ export default function Produtos() {
         qtdMaxima: 100,
         fotoUrl: '',
         status: 'ativo',
-        entidadeId: entidadeFiltro || (entidades.length > 0 ? entidades[0].id : ''),
+        entidadeId: entidadeFiltro && entidadeFiltro !== 'all' ? entidadeFiltro : (entidades.length > 0 ? entidades[0].id : ''),
       });
     }
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.codigo.trim() || !formData.nome.trim()) {
       toast({ title: 'Código e nome são obrigatórios', variant: 'destructive' });
       return;
@@ -109,27 +111,33 @@ export default function Produtos() {
       return;
     }
 
+    setIsSaving(true);
+
     if (editingProduto) {
-      updateProduto(editingProduto.id, {
-        ...formData,
-        fotoUrl: formData.fotoUrl || undefined,
-      });
-      toast({ title: 'Produto atualizado!' });
-    } else {
-      const novoProduto: Produto = {
-        id: Date.now().toString(),
+      const success = await updateProduto(editingProduto.id, {
         codigo: formData.codigo,
         nome: formData.nome,
         qtdMaxima: formData.qtdMaxima,
-        fotoUrl: formData.fotoUrl || undefined,
         status: formData.status,
         entidadeId: formData.entidadeId,
-        criadoEm: new Date(),
-      };
-      addProduto(novoProduto);
-      toast({ title: 'Produto criado!' });
+      });
+      if (success) {
+        toast({ title: 'Produto atualizado!' });
+      }
+    } else {
+      const result = await addProduto({
+        codigo: formData.codigo,
+        nome: formData.nome,
+        qtdMaxima: formData.qtdMaxima,
+        status: formData.status,
+        entidadeId: formData.entidadeId,
+      });
+      if (result) {
+        toast({ title: 'Produto criado!' });
+      }
     }
 
+    setIsSaving(false);
     setIsModalOpen(false);
   };
 
@@ -137,10 +145,12 @@ export default function Produtos() {
     setDeleteConfirm(id);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteConfirm) {
-      deleteProduto(deleteConfirm);
-      toast({ title: 'Produto excluído!' });
+      const success = await deleteProduto(deleteConfirm);
+      if (success) {
+        toast({ title: 'Produto excluído!' });
+      }
       setDeleteConfirm(null);
     }
   };
@@ -151,15 +161,23 @@ export default function Produtos() {
       setInativarConfirm(produto);
     } else {
       // Vai ativar - pode fazer direto
-      updateProduto(produto.id, { status: 'ativo' });
+      handleAtivar(produto);
+    }
+  };
+
+  const handleAtivar = async (produto: Produto) => {
+    const success = await updateProduto(produto.id, { status: 'ativo' });
+    if (success) {
       toast({ title: 'Produto ativado!' });
     }
   };
 
-  const handleInativarConfirm = () => {
+  const handleInativarConfirm = async () => {
     if (inativarConfirm) {
-      updateProduto(inativarConfirm.id, { status: 'inativo' });
-      toast({ title: 'Produto inativado!' });
+      const success = await updateProduto(inativarConfirm.id, { status: 'inativo' });
+      if (success) {
+        toast({ title: 'Produto inativado!' });
+      }
       setInativarConfirm(null);
     }
   };
@@ -167,6 +185,16 @@ export default function Produtos() {
   const getEntidadeNome = (entidadeId: string) => {
     return entidades.find(e => e.id === entidadeId)?.nome || '-';
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -396,8 +424,8 @@ export default function Produtos() {
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSubmit} className="gradient-primary text-primary-foreground">
-                {editingProduto ? 'Salvar' : 'Criar'}
+              <Button onClick={handleSubmit} className="gradient-primary text-primary-foreground" disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingProduto ? 'Salvar' : 'Criar'}
               </Button>
             </DialogFooter>
           </DialogContent>

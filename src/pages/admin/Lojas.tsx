@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Store } from 'lucide-react';
+import { Plus, Pencil, Trash2, Store, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useAppStore } from '@/store/useAppStore';
+import { useLojas } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -33,12 +33,13 @@ import { useToast } from '@/hooks/use-toast';
 import { Loja } from '@/types';
 
 export default function Lojas() {
-  const { lojas, addLoja, updateLoja, deleteLoja } = useAppStore();
+  const { lojas, loading, addLoja, updateLoja, deleteLoja } = useLojas();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoja, setEditingLoja] = useState<Loja | null>(null);
   const [formData, setFormData] = useState({ nome: '', status: 'ativo' as 'ativo' | 'inativo' });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Confirmação
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -54,26 +55,27 @@ export default function Lojas() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.nome.trim()) {
       toast({ title: 'Nome obrigatório', variant: 'destructive' });
       return;
     }
 
+    setIsSaving(true);
+
     if (editingLoja) {
-      updateLoja(editingLoja.id, formData);
-      toast({ title: 'Loja atualizada!' });
+      const success = await updateLoja(editingLoja.id, formData);
+      if (success) {
+        toast({ title: 'Loja atualizada!' });
+      }
     } else {
-      const novaLoja: Loja = {
-        id: Date.now().toString(),
-        nome: formData.nome,
-        status: formData.status,
-        criadoEm: new Date(),
-      };
-      addLoja(novaLoja);
-      toast({ title: 'Loja criada!' });
+      const result = await addLoja(formData.nome, formData.status);
+      if (result) {
+        toast({ title: 'Loja criada!' });
+      }
     }
 
+    setIsSaving(false);
     setIsModalOpen(false);
   };
 
@@ -81,13 +83,25 @@ export default function Lojas() {
     setDeleteConfirm(id);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteConfirm) {
-      deleteLoja(deleteConfirm);
-      toast({ title: 'Loja excluída!' });
+      const success = await deleteLoja(deleteConfirm);
+      if (success) {
+        toast({ title: 'Loja excluída!' });
+      }
       setDeleteConfirm(null);
     }
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -200,8 +214,8 @@ export default function Lojas() {
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSubmit} className="gradient-primary text-primary-foreground">
-                {editingLoja ? 'Salvar' : 'Criar'}
+              <Button onClick={handleSubmit} className="gradient-primary text-primary-foreground" disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingLoja ? 'Salvar' : 'Criar'}
               </Button>
             </DialogFooter>
           </DialogContent>
