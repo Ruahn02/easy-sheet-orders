@@ -25,6 +25,18 @@ export function ProductCard({ produto, quantidade, onQuantityChange, disabled }:
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    
+    if (isNaN(value) || value < 0) {
+      onQuantityChange(produto.id, 0);
+    } else if (value > produto.qtdMaxima) {
+      onQuantityChange(produto.id, produto.qtdMaxima);
+    } else {
+      onQuantityChange(produto.id, value);
+    }
+  };
+
   return (
     <div
       className={cn(
@@ -68,12 +80,19 @@ export function ProductCard({ produto, quantidade, onQuantityChange, disabled }:
           <Minus className="h-4 w-4" />
         </Button>
         
-        <span className={cn(
-          "w-8 text-center font-bold",
-          quantidade > 0 ? "text-primary" : "text-foreground"
-        )}>
-          {quantidade}
-        </span>
+        <input
+          type="number"
+          min={0}
+          max={produto.qtdMaxima}
+          value={quantidade}
+          onChange={handleInputChange}
+          onFocus={(e) => e.target.select()}
+          disabled={isDisabled}
+          className={cn(
+            "w-12 text-center font-bold border rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+            quantidade > 0 ? "text-primary border-primary" : "text-foreground border-border"
+          )}
+        />
         
         <Button
           variant="outline"
