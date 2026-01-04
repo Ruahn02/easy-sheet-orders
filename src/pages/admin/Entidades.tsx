@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAppStore } from '@/store/useAppStore';
 import { Button } from '@/components/ui/button';
@@ -26,8 +26,18 @@ import { useToast } from '@/hooks/use-toast';
 import { Entidade } from '@/types';
 
 export default function Entidades() {
-  const { entidades, addEntidade, updateEntidade, deleteEntidade, produtos, pedidos } = useAppStore();
+  const { entidades, addEntidade, updateEntidade, deleteEntidade, produtos, pedidos, codigoAdmin } = useAppStore();
   const { toast } = useToast();
+
+  const baseUrl = window.location.origin;
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: 'Copiado!',
+      description: `${label} copiado para a área de transferência.`,
+    });
+  };
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEntidade, setEditingEntidade] = useState<Entidade | null>(null);
@@ -39,8 +49,6 @@ export default function Entidades() {
   // Confirmações
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState<Entidade | null>(null);
-
-  const baseUrl = window.location.origin;
 
   const handleOpenModal = (entidade?: Entidade) => {
     if (entidade) {
@@ -138,6 +146,69 @@ export default function Entidades() {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
+        {/* Seção de Acessos do Sistema */}
+        <div className="rounded-lg border border-primary bg-card p-4 space-y-4">
+          <h2 className="font-semibold text-foreground flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-primary" />
+            Acessos do Sistema
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {/* Link Público */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Link Público (Formulário)</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm truncate">
+                  {baseUrl}/pedido
+                </code>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => copyToClipboard(`${baseUrl}/pedido`, 'Link público')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Link Admin */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">Link Admin</label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm truncate">
+                  {baseUrl}/admin
+                </code>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => copyToClipboard(`${baseUrl}/admin`, 'Link admin')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Código Admin */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                <Key className="h-3 w-3" />
+                Código de Admin
+              </label>
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
+                  {codigoAdmin}
+                </code>
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => copyToClipboard(codigoAdmin, 'Código admin')}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Tipos de Pedido</h1>
