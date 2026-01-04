@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Settings, AlertCircle, ArrowLeft } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { Settings, AlertCircle, ArrowLeft, Loader2 } from 'lucide-react';
+import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
 import { OrderHeader } from '@/components/order/OrderHeader';
 import { StoreSelect } from '@/components/order/StoreSelect';
 import { ProductSearch } from '@/components/order/ProductSearch';
@@ -15,13 +15,17 @@ import { Button } from '@/components/ui/button';
 
 const FormularioPedido = () => {
   const { entidadeId } = useParams<{ entidadeId: string }>();
-  const { lojas, produtos, entidades, addPedido } = useAppStore();
+  const { entidades, loading: loadingEntidades } = useEntidades();
+  const { lojas, loading: loadingLojas } = useLojas();
+  const { produtos, loading: loadingProdutos } = useProdutos();
+  const { addPedido } = usePedidos();
   const { toast } = useToast();
 
   const [selectedLojaId, setSelectedLojaId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
@@ -55,7 +59,7 @@ const FormularioPedido = () => {
   // Lojas ativas
   const lojasAtivas = lojas.filter((l) => l.status === 'ativo');
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selectedLojaId) {
       toast({
         title: 'Selecione uma loja',
@@ -74,34 +78,51 @@ const FormularioPedido = () => {
       return;
     }
 
+    setIsSubmitting(true);
+
     const itens: PedidoItem[] = selectedItems.map(([produtoId, quantidade]) => ({
       produtoId,
       quantidade,
     }));
 
-    const novoPedido = {
-      id: Date.now().toString(),
+    const result = await addPedido({
       lojaId: selectedLojaId,
       entidadeId: entidadeId!,
       observacoes: observacoes.trim() || undefined,
-      data: new Date(),
-      status: 'pendente' as const,
       itens,
-    };
-
-    addPedido(novoPedido);
-
-    // Reset form
-    setSelectedLojaId(null);
-    setQuantities({});
-    setSearchQuery('');
-    setObservacoes('');
-
-    toast({
-      title: 'Pedido enviado com sucesso!',
-      description: `${selectedItems.length} produto(s) foram solicitados.`,
     });
+
+    setIsSubmitting(false);
+
+    if (result) {
+      // Reset form
+      setSelectedLojaId(null);
+      setQuantities({});
+      setSearchQuery('');
+      setObservacoes('');
+
+      toast({
+        title: 'Pedido enviado com sucesso!',
+        description: `${selectedItems.length} produto(s) foram solicitados.`,
+      });
+    } else {
+      toast({
+        title: 'Erro ao enviar pedido',
+        description: 'Tente novamente.',
+        variant: 'destructive',
+      });
+    }
   };
+
+  const isLoading = loadingEntidades || loadingLojas || loadingProdutos;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   // Se entidade não existe
   if (!entidade) {
@@ -231,7 +252,7 @@ const FormularioPedido = () => {
       <OrderFooter
         itemCount={itemCount}
         onSubmit={handleSubmit}
-        disabled={!selectedLojaId || selectedItems.length === 0}
+        disabled={!selectedLojaId || selectedItems.length === 0 || isSubmitting}
         pedidosFechados={false}
       />
     </div>

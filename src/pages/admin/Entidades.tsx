@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key } from 'lucide-react';
+import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useAppStore } from '@/store/useAppStore';
+import { useEntidades, useProdutos, usePedidos, useCodigoAdmin } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +26,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Entidade } from '@/types';
 
 export default function Entidades() {
-  const { entidades, addEntidade, updateEntidade, deleteEntidade, produtos, pedidos, codigoAdmin } = useAppStore();
+  const { entidades, loading, addEntidade, updateEntidade, deleteEntidade } = useEntidades();
+  const { produtos } = useProdutos();
+  const { pedidos } = usePedidos();
+  const { codigoAdmin } = useCodigoAdmin();
   const { toast } = useToast();
 
   const baseUrl = window.location.origin;
@@ -45,6 +48,7 @@ export default function Entidades() {
     nome: '',
     aceitandoPedidos: true,
   });
+  const [isSaving, setIsSaving] = useState(false);
 
   // Confirmações
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -64,26 +68,27 @@ export default function Entidades() {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!formData.nome.trim()) {
       toast({ title: 'Nome é obrigatório', variant: 'destructive' });
       return;
     }
 
+    setIsSaving(true);
+
     if (editingEntidade) {
-      updateEntidade(editingEntidade.id, formData);
-      toast({ title: 'Entidade atualizada!' });
+      const success = await updateEntidade(editingEntidade.id, formData);
+      if (success) {
+        toast({ title: 'Entidade atualizada!' });
+      }
     } else {
-      const novaEntidade: Entidade = {
-        id: 'ent' + Date.now().toString(),
-        nome: formData.nome,
-        aceitandoPedidos: formData.aceitandoPedidos,
-        criadoEm: new Date(),
-      };
-      addEntidade(novaEntidade);
-      toast({ title: 'Entidade criada!' });
+      const result = await addEntidade(formData.nome, formData.aceitandoPedidos);
+      if (result) {
+        toast({ title: 'Entidade criada!' });
+      }
     }
 
+    setIsSaving(false);
     setIsModalOpen(false);
   };
 
@@ -97,10 +102,12 @@ export default function Entidades() {
     return { produtosVinculados, pedidosVinculados };
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteConfirm) {
-      deleteEntidade(deleteConfirm);
-      toast({ title: 'Entidade excluída!', description: 'Todos os produtos e pedidos vinculados foram removidos.' });
+      const success = await deleteEntidade(deleteConfirm);
+      if (success) {
+        toast({ title: 'Entidade excluída!', description: 'Todos os produtos e pedidos vinculados foram removidos.' });
+      }
       setDeleteConfirm(null);
     }
   };
@@ -111,15 +118,23 @@ export default function Entidades() {
       setToggleConfirm(entidade);
     } else {
       // Vai abrir - pode fazer direto
-      updateEntidade(entidade.id, { aceitandoPedidos: true });
+      handleToggleOpen(entidade);
+    }
+  };
+
+  const handleToggleOpen = async (entidade: Entidade) => {
+    const success = await updateEntidade(entidade.id, { aceitandoPedidos: true });
+    if (success) {
       toast({ title: 'Pedidos abertos!' });
     }
   };
 
-  const handleToggleConfirm = () => {
+  const handleToggleConfirm = async () => {
     if (toggleConfirm) {
-      updateEntidade(toggleConfirm.id, { aceitandoPedidos: false });
-      toast({ title: 'Pedidos fechados!' });
+      const success = await updateEntidade(toggleConfirm.id, { aceitandoPedidos: false });
+      if (success) {
+        toast({ title: 'Pedidos fechados!' });
+      }
       setToggleConfirm(null);
     }
   };
@@ -142,6 +157,16 @@ export default function Entidades() {
   const getProdutosAtivosCount = (entidadeId: string) => {
     return produtos.filter(p => p.entidadeId === entidadeId && p.status === 'ativo').length;
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -195,12 +220,13 @@ export default function Entidades() {
               </label>
               <div className="flex items-center gap-2">
                 <code className="flex-1 bg-muted px-3 py-2 rounded text-sm font-mono">
-                  {codigoAdmin}
+                  {codigoAdmin || '...'}
                 </code>
                 <Button
                   size="icon"
                   variant="outline"
                   onClick={() => copyToClipboard(codigoAdmin, 'Código admin')}
+                  disabled={!codigoAdmin}
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -328,8 +354,8 @@ export default function Entidades() {
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSubmit} className="gradient-primary text-primary-foreground">
-                {editingEntidade ? 'Salvar' : 'Criar'}
+              <Button onClick={handleSubmit} className="gradient-primary text-primary-foreground" disabled={isSaving}>
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : editingEntidade ? 'Salvar' : 'Criar'}
               </Button>
             </DialogFooter>
           </DialogContent>

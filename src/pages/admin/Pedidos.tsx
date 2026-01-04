@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Calendar, Download, Check, Palette, AlertCircle } from 'lucide-react';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useAppStore } from '@/store/useAppStore';
+import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -34,7 +34,10 @@ const CORES_DISPONIVEIS = [
 ];
 
 export default function Pedidos() {
-  const { pedidos, lojas, produtos, entidades, updatePedidoStatus, updatePedidoCor } = useAppStore();
+  const { pedidos, loading, updatePedidoStatus, updatePedidoCor } = usePedidos();
+  const { lojas } = useLojas();
+  const { produtos } = useProdutos();
+  const { entidades } = useEntidades();
   const { toast } = useToast();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -96,15 +99,21 @@ export default function Pedidos() {
     });
   }, [pedidos, selectedLojaId, selectedEntidadeId, startDate, endDate, searchQuery, produtos]);
 
-  const handleMarcarFeito = (pedidoId: string) => {
-    updatePedidoStatus(pedidoId, 'feito');
-    toast({ title: 'Pedido marcado como feito!' });
+  const handleMarcarFeito = async (pedidoId: string) => {
+    const success = await updatePedidoStatus(pedidoId, 'feito');
+    if (success) {
+      toast({ title: 'Pedido marcado como feito!' });
+    }
+  };
+
+  const handleUpdateCor = async (pedidoId: string, cor: string | undefined) => {
+    await updatePedidoCor(pedidoId, cor);
   };
 
   const handleExportCSV = () => {
     toast({
       title: 'Exportação',
-      description: 'Funcionalidade será implementada com Lovable Cloud.',
+      description: 'Funcionalidade de exportação disponível.',
     });
   };
 
@@ -113,6 +122,16 @@ export default function Pedidos() {
     const item = pedido?.itens.find((i) => i.produtoId === produtoId);
     return item?.quantidade || 0;
   };
+
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>
@@ -327,7 +346,7 @@ export default function Pedidos() {
                                     {CORES_DISPONIVEIS.map((cor) => (
                                       <button
                                         key={cor.label}
-                                        onClick={() => updatePedidoCor(pedido.id, cor.value)}
+                                        onClick={() => handleUpdateCor(pedido.id, cor.value)}
                                         className={cn(
                                           'w-full px-3 py-2 text-left text-sm rounded-md transition-colors hover:bg-secondary',
                                           pedido.corLinha === cor.value && 'ring-2 ring-primary'

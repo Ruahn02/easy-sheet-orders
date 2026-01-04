@@ -14,7 +14,185 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      configuracoes: {
+        Row: {
+          chave: string
+          id: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          id?: string
+          valor: string
+        }
+        Update: {
+          chave?: string
+          id?: string
+          valor?: string
+        }
+        Relationships: []
+      }
+      entidades: {
+        Row: {
+          aceitando_pedidos: boolean
+          criado_em: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          aceitando_pedidos?: boolean
+          criado_em?: string
+          id?: string
+          nome: string
+        }
+        Update: {
+          aceitando_pedidos?: boolean
+          criado_em?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      lojas: {
+        Row: {
+          criado_em: string
+          id: string
+          nome: string
+          status: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          nome: string
+          status?: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          nome?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      pedido_itens: {
+        Row: {
+          id: string
+          pedido_id: string
+          produto_id: string
+          quantidade: number
+        }
+        Insert: {
+          id?: string
+          pedido_id: string
+          produto_id: string
+          quantidade: number
+        }
+        Update: {
+          id?: string
+          pedido_id?: string
+          produto_id?: string
+          quantidade?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos: {
+        Row: {
+          cor_linha: string | null
+          data: string
+          entidade_id: string
+          id: string
+          loja_id: string
+          observacoes: string | null
+          status: string
+        }
+        Insert: {
+          cor_linha?: string | null
+          data?: string
+          entidade_id: string
+          id?: string
+          loja_id: string
+          observacoes?: string | null
+          status?: string
+        }
+        Update: {
+          cor_linha?: string | null
+          data?: string
+          entidade_id?: string
+          id?: string
+          loja_id?: string
+          observacoes?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          codigo: string
+          criado_em: string
+          entidade_id: string
+          id: string
+          nome: string
+          qtd_maxima: number
+          status: string
+        }
+        Insert: {
+          codigo: string
+          criado_em?: string
+          entidade_id: string
+          id?: string
+          nome: string
+          qtd_maxima?: number
+          status?: string
+        }
+        Update: {
+          codigo?: string
+          criado_em?: string
+          entidade_id?: string
+          id?: string
+          nome?: string
+          qtd_maxima?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produtos_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

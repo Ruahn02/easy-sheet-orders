@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, LogIn, UserPlus, ArrowLeft, KeyRound } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, ArrowLeft, KeyRound, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { useAppStore } from '@/store/useAppStore';
+import { useCodigoAdmin } from '@/hooks/useSupabaseData';
 
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { codigoAdmin } = useAppStore();
+  const { codigoAdmin, loading: loadingCodigo } = useCodigoAdmin();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -68,6 +68,14 @@ export default function AdminLogin() {
     navigate('/admin/dashboard');
     setIsLoading(false);
   };
+
+  if (loadingCodigo) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

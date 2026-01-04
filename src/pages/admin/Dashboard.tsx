@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useAppStore } from '@/store/useAppStore';
+import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,7 +13,10 @@ import { cn } from '@/lib/utils';
 
 
 export default function Dashboard() {
-  const { pedidos, lojas, produtos, entidades } = useAppStore();
+  const { pedidos, loading: loadingPedidos } = usePedidos();
+  const { lojas, loading: loadingLojas } = useLojas();
+  const { produtos, loading: loadingProdutos } = useProdutos();
+  const { entidades, loading: loadingEntidades } = useEntidades();
 
   // Filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -21,6 +24,8 @@ export default function Dashboard() {
   const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
   const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
   const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
+
+  const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
 
   // Pedidos filtrados
   const pedidosFiltrados = useMemo(() => {
@@ -133,6 +138,16 @@ export default function Dashboard() {
   const produtosFiltradosParaSelect = entidadeFiltro !== 'todas' 
     ? produtos.filter(p => p.entidadeId === entidadeFiltro)
     : produtos;
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </AdminLayout>
+    );
+  }
 
   return (
     <AdminLayout>

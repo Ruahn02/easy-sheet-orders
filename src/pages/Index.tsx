@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, Package, Lock } from 'lucide-react';
-import { useAppStore } from '@/store/useAppStore';
+import { Settings, Package, Lock, Loader2 } from 'lucide-react';
+import { useEntidades } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 
 const Index = () => {
-  const { entidades } = useAppStore();
+  const { entidades, loading } = useEntidades();
   const [entidadeFechadaDialog, setEntidadeFechadaDialog] = useState<string | null>(null);
 
   const handleEntidadeClick = (entidade: typeof entidades[0]) => {
@@ -21,6 +21,14 @@ const Index = () => {
       setEntidadeFechadaDialog(entidade.nome);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
