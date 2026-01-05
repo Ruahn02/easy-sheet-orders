@@ -8,14 +8,14 @@ export const mockEntidades: Entidade[] = [
 ];
 
 export const mockLojas: Loja[] = [
-  { id: '1', nome: 'Matriz - Centro', status: 'ativo', criadoEm: new Date('2024-01-15') },
-  { id: '2', nome: 'Filial Norte', status: 'ativo', criadoEm: new Date('2024-01-20') },
-  { id: '3', nome: 'Filial Sul', status: 'ativo', criadoEm: new Date('2024-02-01') },
-  { id: '4', nome: 'Filial Leste', status: 'ativo', criadoEm: new Date('2024-02-10') },
-  { id: '5', nome: 'Filial Oeste', status: 'inativo', criadoEm: new Date('2024-02-15') },
-  { id: '6', nome: 'Shopping Plaza', status: 'ativo', criadoEm: new Date('2024-03-01') },
-  { id: '7', nome: 'Centro Comercial', status: 'ativo', criadoEm: new Date('2024-03-10') },
-  { id: '8', nome: 'Atacado Regional', status: 'ativo', criadoEm: new Date('2024-03-15') },
+  { id: '1', nome: 'Matriz - Centro', status: 'ativo', codigoAcesso: 'MATRIZ01', ativo: true, criadoEm: new Date('2024-01-15') },
+  { id: '2', nome: 'Filial Norte', status: 'ativo', codigoAcesso: 'NORTE01', ativo: true, criadoEm: new Date('2024-01-20') },
+  { id: '3', nome: 'Filial Sul', status: 'ativo', codigoAcesso: 'SUL001', ativo: true, criadoEm: new Date('2024-02-01') },
+  { id: '4', nome: 'Filial Leste', status: 'ativo', codigoAcesso: 'LESTE01', ativo: true, criadoEm: new Date('2024-02-10') },
+  { id: '5', nome: 'Filial Oeste', status: 'inativo', codigoAcesso: 'OESTE01', ativo: false, criadoEm: new Date('2024-02-15') },
+  { id: '6', nome: 'Shopping Plaza', status: 'ativo', codigoAcesso: 'PLAZA01', ativo: true, criadoEm: new Date('2024-03-01') },
+  { id: '7', nome: 'Centro Comercial', status: 'ativo', codigoAcesso: 'CCOM001', ativo: true, criadoEm: new Date('2024-03-10') },
+  { id: '8', nome: 'Atacado Regional', status: 'ativo', codigoAcesso: 'ATAC001', ativo: true, criadoEm: new Date('2024-03-15') },
 ];
 
 export const mockProdutos: Produto[] = [

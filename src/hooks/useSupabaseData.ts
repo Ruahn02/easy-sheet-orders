@@ -91,6 +91,8 @@ export function useLojas() {
         id: l.id,
         nome: l.nome,
         status: l.status as 'ativo' | 'inativo',
+        codigoAcesso: l.codigo_acesso,
+        ativo: l.ativo,
         criadoEm: new Date(l.criado_em),
       })));
     }
@@ -101,10 +103,10 @@ export function useLojas() {
     fetchLojas();
   }, [fetchLojas]);
 
-  const addLoja = async (nome: string, status: 'ativo' | 'inativo') => {
+  const addLoja = async (nome: string, status: 'ativo' | 'inativo', codigoAcesso: string, ativo: boolean = true) => {
     const { data, error } = await supabase
       .from('lojas')
-      .insert({ nome, status })
+      .insert({ nome, status, codigo_acesso: codigoAcesso, ativo })
       .select()
       .single();
     
@@ -115,10 +117,16 @@ export function useLojas() {
     return null;
   };
 
-  const updateLoja = async (id: string, updates: Partial<{ nome: string; status: 'ativo' | 'inativo' }>) => {
+  const updateLoja = async (id: string, updates: Partial<{ nome: string; status: 'ativo' | 'inativo'; codigoAcesso: string; ativo: boolean }>) => {
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.codigoAcesso !== undefined) dbUpdates.codigo_acesso = updates.codigoAcesso;
+    if (updates.ativo !== undefined) dbUpdates.ativo = updates.ativo;
+
     const { error } = await supabase
       .from('lojas')
-      .update(updates)
+      .update(dbUpdates)
       .eq('id', id);
     
     if (!error) {
@@ -141,7 +149,29 @@ export function useLojas() {
     return false;
   };
 
-  return { lojas, loading, fetchLojas, addLoja, updateLoja, deleteLoja };
+  // Buscar loja por código de acesso
+  const getLojaByCodigoAcesso = async (codigo: string): Promise<Loja | null> => {
+    const { data, error } = await supabase
+      .from('lojas')
+      .select('*')
+      .eq('codigo_acesso', codigo.toUpperCase())
+      .eq('ativo', true)
+      .maybeSingle();
+    
+    if (!error && data) {
+      return {
+        id: data.id,
+        nome: data.nome,
+        status: data.status as 'ativo' | 'inativo',
+        codigoAcesso: data.codigo_acesso,
+        ativo: data.ativo,
+        criadoEm: new Date(data.criado_em),
+      };
+    }
+    return null;
+  };
+
+  return { lojas, loading, fetchLojas, addLoja, updateLoja, deleteLoja, getLojaByCodigoAcesso };
 }
 
 // ============= PRODUTOS =============
