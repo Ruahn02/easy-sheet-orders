@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Pencil, Trash2, Store, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Store, Loader2, Copy, Check } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useLojas } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
@@ -29,8 +29,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loja } from '@/types';
+
+// Gerar código aleatório
+const gerarCodigoAcesso = () => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let codigo = '';
+  for (let i = 0; i < 6; i++) {
+    codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return codigo;
+};
 
 export default function Lojas() {
   const { lojas, loading, addLoja, updateLoja, deleteLoja } = useLojas();
@@ -38,8 +49,14 @@ export default function Lojas() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLoja, setEditingLoja] = useState<Loja | null>(null);
-  const [formData, setFormData] = useState({ nome: '', status: 'ativo' as 'ativo' | 'inativo' });
+  const [formData, setFormData] = useState({ 
+    nome: '', 
+    status: 'ativo' as 'ativo' | 'inativo',
+    codigoAcesso: '',
+    ativo: true
+  });
   const [isSaving, setIsSaving] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Confirmação
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
@@ -47,10 +64,20 @@ export default function Lojas() {
   const handleOpenModal = (loja?: Loja) => {
     if (loja) {
       setEditingLoja(loja);
-      setFormData({ nome: loja.nome, status: loja.status });
+      setFormData({ 
+        nome: loja.nome, 
+        status: loja.status,
+        codigoAcesso: loja.codigoAcesso,
+        ativo: loja.ativo
+      });
     } else {
       setEditingLoja(null);
-      setFormData({ nome: '', status: 'ativo' });
+      setFormData({ 
+        nome: '', 
+        status: 'ativo',
+        codigoAcesso: gerarCodigoAcesso(),
+        ativo: true
+      });
     }
     setIsModalOpen(true);
   };
@@ -58,6 +85,11 @@ export default function Lojas() {
   const handleSubmit = async () => {
     if (!formData.nome.trim()) {
       toast({ title: 'Nome obrigatório', variant: 'destructive' });
+      return;
+    }
+
+    if (!formData.codigoAcesso.trim()) {
+      toast({ title: 'Código de acesso obrigatório', variant: 'destructive' });
       return;
     }
 
@@ -69,7 +101,7 @@ export default function Lojas() {
         toast({ title: 'Loja atualizada!' });
       }
     } else {
-      const result = await addLoja(formData.nome, formData.status);
+      const result = await addLoja(formData.nome, formData.status, formData.codigoAcesso, formData.ativo);
       if (result) {
         toast({ title: 'Loja criada!' });
       }
@@ -77,6 +109,13 @@ export default function Lojas() {
 
     setIsSaving(false);
     setIsModalOpen(false);
+  };
+
+  const handleCopyCode = (codigo: string, id: string) => {
+    navigator.clipboard.writeText(codigo);
+    setCopiedId(id);
+    toast({ title: 'Código copiado!' });
+    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const handleDeleteClick = (id: string) => {
@@ -123,7 +162,9 @@ export default function Lojas() {
             <thead>
               <tr className="border-b border-border bg-secondary/50">
                 <th className="px-4 py-3 text-left font-medium text-foreground">Nome</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">Código de Acesso</th>
                 <th className="px-4 py-3 text-left font-medium text-foreground">Status</th>
+                <th className="px-4 py-3 text-left font-medium text-foreground">Ativo</th>
                 <th className="px-4 py-3 text-right font-medium text-foreground">Ações</th>
               </tr>
             </thead>
@@ -139,6 +180,25 @@ export default function Lojas() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                        {loja.codigoAcesso}
+                      </code>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 w-7 p-0"
+                        onClick={() => handleCopyCode(loja.codigoAcesso, loja.id)}
+                      >
+                        {copiedId === loja.id ? (
+                          <Check className="h-3 w-3 text-accent" />
+                        ) : (
+                          <Copy className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
                     <Badge
                       variant={loja.status === 'ativo' ? 'default' : 'secondary'}
                       className={
@@ -148,6 +208,18 @@ export default function Lojas() {
                       }
                     >
                       {loja.status === 'ativo' ? 'Ativo' : 'Inativo'}
+                    </Badge>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge
+                      variant={loja.ativo ? 'default' : 'secondary'}
+                      className={
+                        loja.ativo
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }
+                    >
+                      {loja.ativo ? 'Liberado' : 'Bloqueado'}
                     </Badge>
                   </td>
                   <td className="px-4 py-3">
@@ -193,6 +265,26 @@ export default function Lojas() {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Código de Acesso</label>
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.codigoAcesso}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, codigoAcesso: e.target.value.toUpperCase() }))}
+                    placeholder="Ex: ABC123"
+                    className="font-mono uppercase"
+                    maxLength={20}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setFormData((prev) => ({ ...prev, codigoAcesso: gerarCodigoAcesso() }))}
+                  >
+                    Gerar
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Este código será usado pela loja para acessar o sistema.</p>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">Status</label>
                 <Select
                   value={formData.status}
@@ -208,6 +300,16 @@ export default function Lojas() {
                     <SelectItem value="inativo">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium text-foreground">Acesso Liberado</label>
+                  <p className="text-xs text-muted-foreground">Se desativado, a loja não conseguirá entrar no sistema.</p>
+                </div>
+                <Switch
+                  checked={formData.ativo}
+                  onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, ativo: checked }))}
+                />
               </div>
             </div>
             <DialogFooter>

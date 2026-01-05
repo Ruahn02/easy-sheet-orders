@@ -55,18 +55,24 @@ export type Database = {
       }
       lojas: {
         Row: {
+          ativo: boolean
+          codigo_acesso: string
           criado_em: string
           id: string
           nome: string
           status: string
         }
         Insert: {
+          ativo?: boolean
+          codigo_acesso: string
           criado_em?: string
           id?: string
           nome: string
           status?: string
         }
         Update: {
+          ativo?: boolean
+          codigo_acesso?: string
           criado_em?: string
           id?: string
           nome?: string
