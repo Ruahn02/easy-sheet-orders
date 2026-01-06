@@ -13,15 +13,15 @@ import Pedidos from "./pages/admin/Pedidos";
 import Lojas from "./pages/admin/Lojas";
 import Produtos from "./pages/admin/Produtos";
 import Entidades from "./pages/admin/Entidades";
-import { useLojaAuth } from "./store/useLojaAuth";
+import { useAcesso } from "./store/useLojaAuth";
 
 const queryClient = new QueryClient();
 
-// Componente para proteger rotas públicas (exige loja autenticada)
-const RequireLojaAuth = ({ children }: { children: React.ReactNode }) => {
-  const { lojaAutenticada } = useLojaAuth();
+// Componente para proteger rotas públicas (exige acesso liberado)
+const RequireAcesso = ({ children }: { children: React.ReactNode }) => {
+  const { acessoLiberado } = useAcesso();
   
-  if (!lojaAutenticada) {
+  if (!acessoLiberado) {
     return <Navigate to="/acesso" replace />;
   }
   
@@ -38,12 +38,12 @@ const App = () => (
           {/* Rota de acesso por código */}
           <Route path="/acesso" element={<AcessoLoja />} />
           
-          {/* Rotas públicas que exigem loja autenticada */}
-          <Route path="/" element={<RequireLojaAuth><Index /></RequireLojaAuth>} />
-          <Route path="/pedido" element={<RequireLojaAuth><Index /></RequireLojaAuth>} />
-          <Route path="/pedido/:entidadeId" element={<RequireLojaAuth><FormularioPedido /></RequireLojaAuth>} />
+          {/* Rotas públicas que exigem acesso liberado */}
+          <Route path="/" element={<RequireAcesso><Index /></RequireAcesso>} />
+          <Route path="/pedido" element={<RequireAcesso><Index /></RequireAcesso>} />
+          <Route path="/pedido/:entidadeId" element={<RequireAcesso><FormularioPedido /></RequireAcesso>} />
           
-          {/* Rotas admin (não exigem código da loja) */}
+          {/* Rotas admin (não exigem código) */}
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/pedidos" element={<Pedidos />} />

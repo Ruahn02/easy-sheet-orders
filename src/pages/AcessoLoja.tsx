@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Store, Loader2, KeyRound, ArrowRight } from 'lucide-react';
+import { KeyRound, Loader2, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useLojas } from '@/hooks/useSupabaseData';
-import { useLojaAuth } from '@/store/useLojaAuth';
+import { useCodigoAcesso } from '@/hooks/useSupabaseData';
+import { useAcesso } from '@/store/useLojaAuth';
 import { useToast } from '@/hooks/use-toast';
 
 const AcessoLoja = () => {
   const [codigo, setCodigo] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { getLojaByCodigoAcesso } = useLojas();
-  const { setLojaAutenticada } = useLojaAuth();
+  const { validarCodigo } = useCodigoAcesso();
+  const { setAcessoLiberado } = useAcesso();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -21,7 +21,7 @@ const AcessoLoja = () => {
     if (!codigo.trim()) {
       toast({
         title: 'Digite o código',
-        description: 'O código da loja é obrigatório.',
+        description: 'O código de acesso é obrigatório.',
         variant: 'destructive',
       });
       return;
@@ -29,20 +29,20 @@ const AcessoLoja = () => {
 
     setIsLoading(true);
 
-    const loja = await getLojaByCodigoAcesso(codigo.trim());
+    const valido = await validarCodigo(codigo.trim());
 
     setIsLoading(false);
 
-    if (loja) {
-      setLojaAutenticada(loja);
+    if (valido) {
+      setAcessoLiberado(true);
       toast({
-        title: `Bem-vindo, ${loja.nome}!`,
-        description: 'Acesso liberado.',
+        title: 'Acesso liberado!',
+        description: 'Você pode fazer seus pedidos.',
       });
       navigate('/');
     } else {
       toast({
-        title: 'Código inválido ou loja desativada',
+        title: 'Código inválido',
         description: 'Verifique o código e tente novamente.',
         variant: 'destructive',
       });
@@ -55,11 +55,11 @@ const AcessoLoja = () => {
         {/* Logo / Ícone */}
         <div className="text-center space-y-4">
           <div className="mx-auto w-20 h-20 rounded-full gradient-primary flex items-center justify-center">
-            <Store className="h-10 w-10 text-primary-foreground" />
+            <ShieldCheck className="h-10 w-10 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-foreground">Acesso da Loja</h1>
-            <p className="text-muted-foreground mt-1">Digite o código fornecido pelo administrador</p>
+            <h1 className="text-2xl font-bold text-foreground">Acesso ao Sistema</h1>
+            <p className="text-muted-foreground mt-1">Digite o código de acesso fornecido</p>
           </div>
         </div>
 
@@ -68,13 +68,13 @@ const AcessoLoja = () => {
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground flex items-center gap-2">
               <KeyRound className="h-4 w-4" />
-              Código da Loja
+              Código de Acesso
             </label>
             <Input
               type="text"
               value={codigo}
               onChange={(e) => setCodigo(e.target.value.toUpperCase())}
-              placeholder="Ex: ABC123"
+              placeholder="Ex: ACESSO123"
               className="text-center text-lg font-mono tracking-widest uppercase"
               maxLength={20}
               autoFocus

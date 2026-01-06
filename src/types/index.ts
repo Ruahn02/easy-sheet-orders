@@ -9,8 +9,6 @@ export interface Loja {
   id: string;
   nome: string;
   status: 'ativo' | 'inativo';
-  codigoAcesso: string;
-  ativo: boolean;
   criadoEm: Date;
 }
 

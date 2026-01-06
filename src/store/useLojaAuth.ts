@@ -1,22 +1,21 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Loja } from '@/types';
 
-interface LojaAuthState {
-  lojaAutenticada: Loja | null;
-  setLojaAutenticada: (loja: Loja | null) => void;
+interface AcessoState {
+  acessoLiberado: boolean;
+  setAcessoLiberado: (liberado: boolean) => void;
   logout: () => void;
 }
 
-export const useLojaAuth = create<LojaAuthState>()(
+export const useAcesso = create<AcessoState>()(
   persist(
     (set) => ({
-      lojaAutenticada: null,
-      setLojaAutenticada: (loja) => set({ lojaAutenticada: loja }),
-      logout: () => set({ lojaAutenticada: null }),
+      acessoLiberado: false,
+      setAcessoLiberado: (liberado) => set({ acessoLiberado: liberado }),
+      logout: () => set({ acessoLiberado: false }),
     }),
     {
-      name: 'loja-auth-storage',
+      name: 'acesso-storage',
     }
   )
 );

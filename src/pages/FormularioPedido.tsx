@@ -1,28 +1,31 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Settings, AlertCircle, ArrowLeft, Loader2, Store, LogOut } from 'lucide-react';
-import { useEntidades, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
+import { Settings, AlertCircle, ArrowLeft, Loader2, LogOut } from 'lucide-react';
+import { useEntidades, useProdutos, usePedidos, useLojas } from '@/hooks/useSupabaseData';
 import { ProductSearch } from '@/components/order/ProductSearch';
 import { ProductCard } from '@/components/order/ProductCard';
 import { OrderFooter } from '@/components/order/OrderFooter';
+import { StoreSelect } from '@/components/order/StoreSelect';
 import { useToast } from '@/hooks/use-toast';
 import { PedidoItem } from '@/types';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { useLojaAuth } from '@/store/useLojaAuth';
+import { useAcesso } from '@/store/useLojaAuth';
 
 const FormularioPedido = () => {
   const { entidadeId } = useParams<{ entidadeId: string }>();
   const { entidades, loading: loadingEntidades } = useEntidades();
   const { produtos, loading: loadingProdutos } = useProdutos();
+  const { lojas, loading: loadingLojas } = useLojas();
   const { addPedido } = usePedidos();
   const { toast } = useToast();
-  const { lojaAutenticada, logout } = useLojaAuth();
+  const { logout } = useAcesso();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState('');
+  const [selectedLojaId, setSelectedLojaId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Encontra a entidade
@@ -55,10 +58,10 @@ const FormularioPedido = () => {
   const itemCount = selectedItems.reduce((acc, [_, qty]) => acc + qty, 0);
 
   const handleSubmit = async () => {
-    if (!lojaAutenticada) {
+    if (!selectedLojaId) {
       toast({
-        title: 'Erro de autenticação',
-        description: 'Loja não autenticada. Faça login novamente.',
+        title: 'Selecione uma loja',
+        description: 'É necessário escolher a loja/setor.',
         variant: 'destructive',
       });
       return;
@@ -81,7 +84,7 @@ const FormularioPedido = () => {
     }));
 
     const result = await addPedido({
-      lojaId: lojaAutenticada.id,
+      lojaId: selectedLojaId,
       entidadeId: entidadeId!,
       observacoes: observacoes.trim() || undefined,
       itens,
@@ -108,7 +111,7 @@ const FormularioPedido = () => {
     }
   };
 
-  const isLoading = loadingEntidades || loadingProdutos;
+  const isLoading = loadingEntidades || loadingProdutos || loadingLojas;
 
   if (isLoading) {
     return (
@@ -161,7 +164,7 @@ const FormularioPedido = () => {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header com info da loja logada */}
+      {/* Header */}
       <div className="gradient-primary text-primary-foreground">
         <div className="px-4 py-3 flex items-center justify-between">
           <Link to="/">
@@ -174,20 +177,15 @@ const FormularioPedido = () => {
               Voltar
             </Button>
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2 bg-primary-foreground/20 rounded-lg px-3 py-1.5">
-              <Store className="h-4 w-4" />
-              <span className="text-sm font-medium">{lojaAutenticada?.nome}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-primary-foreground hover:bg-primary-foreground/20"
-              onClick={logout}
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-primary-foreground hover:bg-primary-foreground/20"
+            onClick={logout}
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Sair
+          </Button>
         </div>
         <div className="px-4 pb-4 flex items-center justify-between">
           <div>
@@ -202,6 +200,13 @@ const FormularioPedido = () => {
           </Link>
         </div>
       </div>
+
+      {/* Seleção de Loja */}
+      <StoreSelect 
+        lojas={lojas} 
+        selectedId={selectedLojaId} 
+        onSelect={setSelectedLojaId} 
+      />
 
       {/* Alerta se não há produtos ativos */}
       {produtosDisponiveis.length === 0 && (
@@ -254,7 +259,7 @@ const FormularioPedido = () => {
       <OrderFooter
         itemCount={itemCount}
         onSubmit={handleSubmit}
-        disabled={selectedItems.length === 0 || isSubmitting}
+        disabled={selectedItems.length === 0 || !selectedLojaId || isSubmitting}
         pedidosFechados={false}
       />
     </div>

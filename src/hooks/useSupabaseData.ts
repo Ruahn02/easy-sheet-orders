@@ -91,8 +91,6 @@ export function useLojas() {
         id: l.id,
         nome: l.nome,
         status: l.status as 'ativo' | 'inativo',
-        codigoAcesso: l.codigo_acesso,
-        ativo: l.ativo,
         criadoEm: new Date(l.criado_em),
       })));
     }
@@ -103,10 +101,13 @@ export function useLojas() {
     fetchLojas();
   }, [fetchLojas]);
 
-  const addLoja = async (nome: string, status: 'ativo' | 'inativo', codigoAcesso: string, ativo: boolean = true) => {
+  const addLoja = async (nome: string, status: 'ativo' | 'inativo') => {
+    // Gerar código de acesso único para satisfazer constraint do banco
+    const codigoAcesso = `LOJA${Date.now().toString(36).toUpperCase()}`;
+    
     const { data, error } = await supabase
       .from('lojas')
-      .insert({ nome, status, codigo_acesso: codigoAcesso, ativo })
+      .insert({ nome, status, codigo_acesso: codigoAcesso, ativo: true })
       .select()
       .single();
     
@@ -117,12 +118,10 @@ export function useLojas() {
     return null;
   };
 
-  const updateLoja = async (id: string, updates: Partial<{ nome: string; status: 'ativo' | 'inativo'; codigoAcesso: string; ativo: boolean }>) => {
+  const updateLoja = async (id: string, updates: Partial<{ nome: string; status: 'ativo' | 'inativo' }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.codigoAcesso !== undefined) dbUpdates.codigo_acesso = updates.codigoAcesso;
-    if (updates.ativo !== undefined) dbUpdates.ativo = updates.ativo;
 
     const { error } = await supabase
       .from('lojas')
@@ -149,29 +148,58 @@ export function useLojas() {
     return false;
   };
 
-  // Buscar loja por código de acesso
-  const getLojaByCodigoAcesso = async (codigo: string): Promise<Loja | null> => {
+  return { lojas, loading, fetchLojas, addLoja, updateLoja, deleteLoja };
+}
+
+// ============= CÓDIGO DE ACESSO GLOBAL =============
+export function useCodigoAcesso() {
+  const [codigoAcesso, setCodigoAcesso] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+
+  const fetchCodigoAcesso = useCallback(async () => {
     const { data, error } = await supabase
-      .from('lojas')
-      .select('*')
-      .eq('codigo_acesso', codigo.toUpperCase())
-      .eq('ativo', true)
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'codigo_acesso')
       .maybeSingle();
-    
+
     if (!error && data) {
-      return {
-        id: data.id,
-        nome: data.nome,
-        status: data.status as 'ativo' | 'inativo',
-        codigoAcesso: data.codigo_acesso,
-        ativo: data.ativo,
-        criadoEm: new Date(data.criado_em),
-      };
+      setCodigoAcesso(data.valor);
     }
-    return null;
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchCodigoAcesso();
+  }, [fetchCodigoAcesso]);
+
+  const validarCodigo = async (codigo: string): Promise<boolean> => {
+    const { data, error } = await supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'codigo_acesso')
+      .maybeSingle();
+
+    if (!error && data) {
+      return data.valor.toUpperCase() === codigo.toUpperCase();
+    }
+    return false;
   };
 
-  return { lojas, loading, fetchLojas, addLoja, updateLoja, deleteLoja, getLojaByCodigoAcesso };
+  const updateCodigoAcesso = async (novoCodigo: string) => {
+    const { error } = await supabase
+      .from('configuracoes')
+      .update({ valor: novoCodigo })
+      .eq('chave', 'codigo_acesso');
+    
+    if (!error) {
+      setCodigoAcesso(novoCodigo);
+      return true;
+    }
+    return false;
+  };
+
+  return { codigoAcesso, loading, fetchCodigoAcesso, validarCodigo, updateCodigoAcesso };
 }
 
 // ============= PRODUTOS =============
