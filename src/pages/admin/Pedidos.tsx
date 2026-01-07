@@ -2,6 +2,16 @@ import { useState, useMemo } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
@@ -45,6 +55,7 @@ export default function Pedidos() {
   const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
+  const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
 
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
@@ -328,7 +339,7 @@ export default function Pedidos() {
                               {pedido.status === 'pendente' && (
                                 <Button
                                   size="sm"
-                                  onClick={() => handleMarcarFeito(pedido.id)}
+                                  onClick={() => setPedidoParaConcluir(pedido.id)}
                                   className="bg-accent text-accent-foreground hover:bg-accent/90"
                                 >
                                   <Check className="h-4 w-4 mr-1" />
@@ -377,6 +388,31 @@ export default function Pedidos() {
           </div>
         )}
       </div>
+
+      <AlertDialog 
+        open={!!pedidoParaConcluir} 
+        onOpenChange={(open) => !open && setPedidoParaConcluir(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar conclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja marcar este pedido como concluído?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pedidoParaConcluir) {
+                handleMarcarFeito(pedidoParaConcluir);
+                setPedidoParaConcluir(null);
+              }
+            }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
