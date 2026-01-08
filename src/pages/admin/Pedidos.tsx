@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2 } from 'lucide-react';
@@ -57,6 +57,10 @@ export default function Pedidos() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
+  
+  // Estado para navegação estilo planilha
+  const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
 
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
@@ -128,11 +132,151 @@ export default function Pedidos() {
     await updatePedidoCor(pedidoId, cor);
   };
 
+  // Número total de colunas navegáveis (excluindo Ações)
+  const totalCols = 5 + produtosDaEntidade.length; // Data, Hora, Loja, Obs, Status + produtos
+
+  // Função para obter conteúdo da célula
+  const getCellContent = useCallback((rowIndex: number, colIndex: number): string => {
+    const pedido = filteredPedidos[rowIndex];
+    if (!pedido) return '';
+    
+    const loja = lojas.find(l => l.id === pedido.lojaId);
+    
+    switch (colIndex) {
+      case 0: return format(new Date(pedido.data), 'dd/MM/yyyy');
+      case 1: return format(new Date(pedido.data), 'HH:mm');
+      case 2: return loja?.nome || '-';
+      case 3: return pedido.observacoes || '-';
+      case 4: return pedido.status === 'feito' ? 'Feito' : 'Pendente';
+      default: {
+        // Colunas de produtos (índice 5 em diante)
+        const produtoIndex = colIndex - 5;
+        const produto = produtosDaEntidade[produtoIndex];
+        if (produto) {
+          const item = pedido.itens.find(i => i.produtoId === produto.id);
+          return item?.quantidade?.toString() || '0';
+        }
+        return '';
+      }
+    }
+  }, [filteredPedidos, lojas, produtosDaEntidade]);
+
+  // Navegação por teclado e Ctrl+C
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Bloquear Ctrl+V
+      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+        e.preventDefault();
+        return;
+      }
+
+      // Ctrl+C para copiar
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c' && focusedCell) {
+        const content = getCellContent(focusedCell.row, focusedCell.col);
+        navigator.clipboard.writeText(content);
+        toast({ title: 'Copiado!', description: content.length > 50 ? content.slice(0, 50) + '...' : content });
+        return;
+      }
+
+      // Navegação por setas
+      if (!focusedCell && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        // Se não tem célula focada, começar na primeira
+        setFocusedCell({ row: 0, col: 0 });
+        e.preventDefault();
+        return;
+      }
+
+      if (focusedCell && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const { row, col } = focusedCell;
+        const maxRow = filteredPedidos.length - 1;
+        const maxCol = totalCols - 1;
+
+        switch (e.key) {
+          case 'ArrowUp':
+            setFocusedCell({ row: Math.max(0, row - 1), col });
+            break;
+          case 'ArrowDown':
+            setFocusedCell({ row: Math.min(maxRow, row + 1), col });
+            break;
+          case 'ArrowLeft':
+            setFocusedCell({ row, col: Math.max(0, col - 1) });
+            break;
+          case 'ArrowRight':
+            setFocusedCell({ row, col: Math.min(maxCol, col + 1) });
+            break;
+        }
+      }
+
+      // Escape para desfocar
+      if (e.key === 'Escape') {
+        setFocusedCell(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [focusedCell, filteredPedidos.length, totalCols, getCellContent, toast]);
+
+  // Limpar foco quando muda a entidade
+  useEffect(() => {
+    setFocusedCell(null);
+  }, [selectedEntidadeId]);
+
   const handleExportCSV = () => {
-    toast({
-      title: 'Exportação',
-      description: 'Funcionalidade de exportação disponível.',
+    if (!selectedEntidadeId || filteredPedidos.length === 0) {
+      toast({ title: 'Nenhum pedido para exportar', variant: 'destructive' });
+      return;
+    }
+
+    // Cabeçalhos: Data | Hora | Loja | Observações | Status | Produtos...
+    const headers = [
+      'Data',
+      'Hora',
+      'Loja',
+      'Observações',
+      'Status',
+      ...produtosDaEntidade.map(p => `${p.codigo} - ${p.nome}`)
+    ];
+
+    // Linhas de dados
+    const rows = filteredPedidos.map(pedido => {
+      const loja = lojas.find(l => l.id === pedido.lojaId);
+      return [
+        format(new Date(pedido.data), 'dd/MM/yyyy'),
+        format(new Date(pedido.data), 'HH:mm'),
+        loja?.nome || '-',
+        pedido.observacoes || '-',
+        pedido.status === 'feito' ? 'Feito' : 'Pendente',
+        ...produtosDaEntidade.map(p => {
+          const item = pedido.itens.find(i => i.produtoId === p.id);
+          return item?.quantidade?.toString() || '0';
+        })
+      ];
     });
+
+    // Gerar CSV com escape correto
+    const escapeCSV = (value: string) => {
+      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+        return `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    };
+
+    const csvContent = [
+      headers.map(escapeCSV).join(','),
+      ...rows.map(row => row.map(escapeCSV).join(','))
+    ].join('\n');
+
+    // Download com BOM para suporte UTF-8 no Excel
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `pedidos_${entidadeSelecionada?.nome || 'export'}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+
+    toast({ title: 'CSV exportado com sucesso!', description: `${filteredPedidos.length} pedidos exportados.` });
   };
 
   const getQuantidadeProduto = (pedidoId: string, produtoId: string) => {
@@ -280,7 +424,7 @@ export default function Pedidos() {
         {selectedEntidadeId && (
           <div className="rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-              <table className="w-full text-sm">
+              <table ref={tableRef} className="w-full text-sm" tabIndex={0}>
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-secondary">
                     <th className="px-4 py-3 text-left font-medium text-foreground sticky left-0 bg-secondary z-20">Data</th>
@@ -301,7 +445,7 @@ export default function Pedidos() {
                 </thead>
                 <tbody>
                   {filteredPedidos.length > 0 ? (
-                    filteredPedidos.map((pedido) => {
+                    filteredPedidos.map((pedido, rowIndex) => {
                       const loja = lojas.find((l) => l.id === pedido.lojaId);
                       return (
                         <tr
@@ -312,14 +456,44 @@ export default function Pedidos() {
                           )}
                           style={{ backgroundColor: pedido.corLinha }}
                         >
-                          <td className="px-4 py-3 text-foreground sticky left-0 bg-inherit">
+                          <td 
+                            className={cn(
+                              "px-4 py-3 text-foreground sticky left-0 bg-inherit cursor-pointer select-none",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 0 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 0 })}
+                          >
                             {format(new Date(pedido.data), 'dd/MM/yyyy')}
                           </td>
-                          <td className="px-4 py-3 text-foreground">
+                          <td 
+                            className={cn(
+                              "px-4 py-3 text-foreground cursor-pointer select-none",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 1 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 1 })}
+                          >
                             {format(new Date(pedido.data), 'HH:mm')}
                           </td>
-                          <td className="px-4 py-3 text-foreground">{loja?.nome || '-'}</td>
-                          <td className="px-4 py-3 text-foreground max-w-[200px]">
+                          <td 
+                            className={cn(
+                              "px-4 py-3 text-foreground cursor-pointer select-none",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 2 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 2 })}
+                          >
+                            {loja?.nome || '-'}
+                          </td>
+                          <td 
+                            className={cn(
+                              "px-4 py-3 text-foreground max-w-[200px] cursor-pointer select-none",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 3 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 3 })}
+                          >
                             {pedido.observacoes ? (
                               <span className="truncate block" title={pedido.observacoes}>
                                 {pedido.observacoes}
@@ -328,7 +502,14 @@ export default function Pedidos() {
                               <span className="text-muted-foreground">-</span>
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td 
+                            className={cn(
+                              "px-4 py-3 cursor-pointer select-none",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 4 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 4 })}
+                          >
                             <Badge
                               variant={pedido.status === 'feito' ? 'default' : 'secondary'}
                               className={cn(
@@ -340,10 +521,19 @@ export default function Pedidos() {
                               {pedido.status === 'feito' ? 'Feito' : 'Pendente'}
                             </Badge>
                           </td>
-                          {produtosDaEntidade.map((produto) => {
+                          {produtosDaEntidade.map((produto, produtoIndex) => {
                             const qty = getQuantidadeProduto(pedido.id, produto.id);
+                            const colIndex = 5 + produtoIndex;
                             return (
-                              <td key={produto.id} className="px-3 py-3 text-center">
+                              <td 
+                                key={produto.id} 
+                                className={cn(
+                                  "px-3 py-3 text-center cursor-pointer select-none",
+                                  focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
+                                    "ring-2 ring-primary ring-inset bg-primary/10"
+                                )}
+                                onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
+                              >
                                 {qty > 0 ? (
                                   <span className="font-medium text-primary">{qty}</span>
                                 ) : (
