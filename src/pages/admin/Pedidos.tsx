@@ -53,6 +53,7 @@ export default function Pedidos() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLojaId, setSelectedLojaId] = useState<string>('all');
   const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
@@ -73,6 +74,12 @@ export default function Pedidos() {
     return pedidos.filter((pedido) => {
       // OBRIGATÓRIO: filtrar por entidade
       if (pedido.entidadeId !== selectedEntidadeId) return false;
+
+      // Filtro por status
+      if (statusFilter !== 'all') {
+        if (statusFilter === 'pendente' && pedido.status !== 'pendente') return false;
+        if (statusFilter === 'feito' && pedido.status !== 'feito') return false;
+      }
 
       // Filter by store
       if (selectedLojaId !== 'all' && pedido.lojaId !== selectedLojaId) return false;
@@ -108,7 +115,7 @@ export default function Pedidos() {
 
       return true;
     });
-  }, [pedidos, selectedLojaId, selectedEntidadeId, startDate, endDate, searchQuery, produtos]);
+  }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos]);
 
   const handleMarcarFeito = async (pedidoId: string) => {
     const success = await updatePedidoStatus(pedidoId, 'feito');
@@ -195,7 +202,7 @@ export default function Pedidos() {
 
         {/* Filters - só aparecem se selecionou entidade */}
         {selectedEntidadeId && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -217,6 +224,17 @@ export default function Pedidos() {
                     {loja.nome}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="bg-card">
+                <SelectValue placeholder="Todos os status" />
+              </SelectTrigger>
+              <SelectContent className="bg-popover z-50">
+                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="pendente">Pendentes</SelectItem>
+                <SelectItem value="feito">Feitos</SelectItem>
               </SelectContent>
             </Select>
 
