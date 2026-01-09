@@ -31,21 +31,31 @@ const FormularioPedido = () => {
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
 
-  // Filtra produtos desta entidade que estão ATIVOS
-  const produtosDisponiveis = produtos.filter(
-    (p) => p.entidadeId === entidadeId && p.status === 'ativo'
+  // Filtra produtos desta entidade (ativos e inativos)
+  const produtosDaEntidade = produtos.filter(
+    (p) => p.entidadeId === entidadeId
   );
 
+  // Produtos ativos (para verificação de pedido vazio)
+  const produtosAtivos = produtosDaEntidade.filter(p => p.status === 'ativo');
+
   const filteredProdutos = useMemo(() => {
-    if (!searchQuery.trim()) return produtosDisponiveis;
+    // Ordenar: ativos primeiro, depois inativos
+    const sorted = [...produtosDaEntidade].sort((a, b) => {
+      if (a.status === 'ativo' && b.status !== 'ativo') return -1;
+      if (a.status !== 'ativo' && b.status === 'ativo') return 1;
+      return 0;
+    });
+
+    if (!searchQuery.trim()) return sorted;
 
     const query = searchQuery.toLowerCase();
-    return produtosDisponiveis.filter(
+    return sorted.filter(
       (p) =>
         p.nome.toLowerCase().includes(query) ||
         p.codigo.toLowerCase().includes(query)
     );
-  }, [produtosDisponiveis, searchQuery]);
+  }, [produtosDaEntidade, searchQuery]);
 
   const handleQuantityChange = (produtoId: string, quantidade: number) => {
     setQuantities((prev) => ({
@@ -209,7 +219,7 @@ const FormularioPedido = () => {
       />
 
       {/* Alerta se não há produtos ativos */}
-      {produtosDisponiveis.length === 0 && (
+      {produtosAtivos.length === 0 && (
         <div className="px-4 py-2">
           <Alert variant="destructive" className="bg-red-50 border-red-200">
             <AlertCircle className="h-5 w-5" />
@@ -233,7 +243,7 @@ const FormularioPedido = () => {
           />
         ))}
 
-        {filteredProdutos.length === 0 && produtosDisponiveis.length > 0 && (
+        {filteredProdutos.length === 0 && produtosDaEntidade.length > 0 && (
           <div className="py-8 text-center text-muted-foreground">
             Nenhum produto encontrado.
           </div>
@@ -241,7 +251,7 @@ const FormularioPedido = () => {
       </div>
 
       {/* Campo ÚNICO de Observações - no final */}
-      {produtosDisponiveis.length > 0 && (
+      {produtosDaEntidade.length > 0 && (
         <div className="px-4 py-4 border-t border-border mt-4">
           <label className="text-sm font-medium text-foreground mb-2 block">
             Observações (opcional)
