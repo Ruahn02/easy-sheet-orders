@@ -135,8 +135,21 @@ export default function Pedidos() {
   // Número total de colunas navegáveis (excluindo Ações)
   const totalCols = 5 + produtosDaEntidade.length; // Data, Hora, Loja, Obs, Status + produtos
 
-  // Função para obter conteúdo da célula
+  // Função para obter conteúdo da célula (suporta cabeçalho com row = -1)
   const getCellContent = useCallback((rowIndex: number, colIndex: number): string => {
+    // CABEÇALHO (row = -1): retorna apenas o código do produto
+    if (rowIndex === -1) {
+      if (colIndex >= 5) {
+        const produtoIndex = colIndex - 5;
+        const produto = produtosDaEntidade[produtoIndex];
+        return produto?.codigo || '';
+      }
+      // Colunas fixas do cabeçalho
+      const headerLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status'];
+      return headerLabels[colIndex] || '';
+    }
+
+    // CORPO DA TABELA (row >= 0)
     const pedido = filteredPedidos[rowIndex];
     if (!pedido) return '';
     
@@ -180,7 +193,7 @@ export default function Pedidos() {
 
       // Navegação por setas
       if (!focusedCell && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-        // Se não tem célula focada, começar na primeira
+        // Se não tem célula focada, começar na primeira célula do corpo
         setFocusedCell({ row: 0, col: 0 });
         e.preventDefault();
         return;
@@ -189,22 +202,48 @@ export default function Pedidos() {
       if (focusedCell && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         const { row, col } = focusedCell;
+        const minRow = -1; // Cabeçalho
         const maxRow = filteredPedidos.length - 1;
         const maxCol = totalCols - 1;
 
-        switch (e.key) {
-          case 'ArrowUp':
-            setFocusedCell({ row: Math.max(0, row - 1), col });
-            break;
-          case 'ArrowDown':
-            setFocusedCell({ row: Math.min(maxRow, row + 1), col });
-            break;
-          case 'ArrowLeft':
-            setFocusedCell({ row, col: Math.max(0, col - 1) });
-            break;
-          case 'ArrowRight':
-            setFocusedCell({ row, col: Math.min(maxCol, col + 1) });
-            break;
+        // Se estiver no cabeçalho (row = -1), só navega entre colunas de produtos (5 em diante)
+        if (row === -1) {
+          const minColHeader = 5;
+          switch (e.key) {
+            case 'ArrowUp':
+              // Já está no topo, não faz nada
+              break;
+            case 'ArrowDown':
+              setFocusedCell({ row: 0, col });
+              break;
+            case 'ArrowLeft':
+              setFocusedCell({ row, col: Math.max(minColHeader, col - 1) });
+              break;
+            case 'ArrowRight':
+              setFocusedCell({ row, col: Math.min(maxCol, col + 1) });
+              break;
+          }
+        } else {
+          // Corpo da tabela
+          switch (e.key) {
+            case 'ArrowUp':
+              // Se for coluna de produto (>=5) e estiver na primeira linha, vai para o cabeçalho
+              if (row === 0 && col >= 5) {
+                setFocusedCell({ row: -1, col });
+              } else {
+                setFocusedCell({ row: Math.max(0, row - 1), col });
+              }
+              break;
+            case 'ArrowDown':
+              setFocusedCell({ row: Math.min(maxRow, row + 1), col });
+              break;
+            case 'ArrowLeft':
+              setFocusedCell({ row, col: Math.max(0, col - 1) });
+              break;
+            case 'ArrowRight':
+              setFocusedCell({ row, col: Math.min(maxCol, col + 1) });
+              break;
+          }
         }
       }
 
@@ -217,6 +256,23 @@ export default function Pedidos() {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [focusedCell, filteredPedidos.length, totalCols, getCellContent, toast]);
+
+  // Scroll automático ao navegar por teclado
+  useEffect(() => {
+    if (focusedCell && tableRef.current) {
+      const cell = tableRef.current.querySelector(
+        `[data-row="${focusedCell.row}"][data-col="${focusedCell.col}"]`
+      ) as HTMLElement;
+      
+      if (cell) {
+        cell.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'nearest'
+        });
+      }
+    }
+  }, [focusedCell]);
 
   // Limpar foco quando muda a entidade
   useEffect(() => {
@@ -432,14 +488,27 @@ export default function Pedidos() {
                     <th className="px-4 py-3 text-left font-medium text-foreground">Loja</th>
                     <th className="px-4 py-3 text-left font-medium text-foreground">Observações</th>
                     <th className="px-4 py-3 text-left font-medium text-foreground">Status</th>
-                    {produtosDaEntidade.map((produto) => (
-                      <th key={produto.id} className="px-3 py-3 text-center font-medium text-foreground whitespace-nowrap min-w-[80px]">
-                        <div className="text-xs">{produto.codigo}</div>
-                        <div className="text-xs text-muted-foreground truncate max-w-[100px]" title={produto.nome}>
-                          {produto.nome}
-                        </div>
-                      </th>
-                    ))}
+                    {produtosDaEntidade.map((produto, produtoIndex) => {
+                      const colIndex = 5 + produtoIndex;
+                      return (
+                        <th 
+                          key={produto.id} 
+                          data-row={-1}
+                          data-col={colIndex}
+                          className={cn(
+                            "px-3 py-3 text-center font-medium text-foreground whitespace-nowrap min-w-[80px] cursor-pointer select-none",
+                            focusedCell?.row === -1 && focusedCell?.col === colIndex && 
+                              "ring-2 ring-primary ring-inset bg-primary/10"
+                          )}
+                          onClick={() => setFocusedCell({ row: -1, col: colIndex })}
+                        >
+                          <div className="text-xs">{produto.codigo}</div>
+                          <div className="text-xs text-muted-foreground truncate max-w-[100px]" title={produto.nome}>
+                            {produto.nome}
+                          </div>
+                        </th>
+                      );
+                    })}
                     <th className="px-4 py-3 text-center font-medium text-foreground sticky right-0 bg-secondary z-20">Ações</th>
                   </tr>
                 </thead>
@@ -457,6 +526,8 @@ export default function Pedidos() {
                           style={{ backgroundColor: pedido.corLinha }}
                         >
                           <td 
+                            data-row={rowIndex}
+                            data-col={0}
                             className={cn(
                               "px-4 py-3 text-foreground sticky left-0 bg-inherit cursor-pointer select-none",
                               focusedCell?.row === rowIndex && focusedCell?.col === 0 && 
@@ -467,6 +538,8 @@ export default function Pedidos() {
                             {format(new Date(pedido.data), 'dd/MM/yyyy')}
                           </td>
                           <td 
+                            data-row={rowIndex}
+                            data-col={1}
                             className={cn(
                               "px-4 py-3 text-foreground cursor-pointer select-none",
                               focusedCell?.row === rowIndex && focusedCell?.col === 1 && 
@@ -477,6 +550,8 @@ export default function Pedidos() {
                             {format(new Date(pedido.data), 'HH:mm')}
                           </td>
                           <td 
+                            data-row={rowIndex}
+                            data-col={2}
                             className={cn(
                               "px-4 py-3 text-foreground cursor-pointer select-none",
                               focusedCell?.row === rowIndex && focusedCell?.col === 2 && 
@@ -487,6 +562,8 @@ export default function Pedidos() {
                             {loja?.nome || '-'}
                           </td>
                           <td 
+                            data-row={rowIndex}
+                            data-col={3}
                             className={cn(
                               "px-4 py-3 text-foreground max-w-[200px] cursor-pointer select-none",
                               focusedCell?.row === rowIndex && focusedCell?.col === 3 && 
@@ -503,6 +580,8 @@ export default function Pedidos() {
                             )}
                           </td>
                           <td 
+                            data-row={rowIndex}
+                            data-col={4}
                             className={cn(
                               "px-4 py-3 cursor-pointer select-none",
                               focusedCell?.row === rowIndex && focusedCell?.col === 4 && 
@@ -526,7 +605,9 @@ export default function Pedidos() {
                             const colIndex = 5 + produtoIndex;
                             return (
                               <td 
-                                key={produto.id} 
+                                key={produto.id}
+                                data-row={rowIndex}
+                                data-col={colIndex}
                                 className={cn(
                                   "px-3 py-3 text-center cursor-pointer select-none",
                                   focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
