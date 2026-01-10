@@ -529,14 +529,14 @@ export default function Pedidos() {
                           data-row={-1}
                           data-col={colIndex}
                           className={cn(
-                            "px-3 py-3 text-center font-medium text-foreground whitespace-nowrap min-w-[80px] cursor-pointer select-none",
+                            "px-3 py-3 text-center font-medium text-foreground whitespace-nowrap min-w-[80px] cursor-pointer select-text",
                             focusedCell?.row === -1 && focusedCell?.col === colIndex && 
                               "ring-2 ring-primary ring-inset bg-primary/10"
                           )}
                           onClick={() => setFocusedCell({ row: -1, col: colIndex })}
                         >
-                          <div className="text-xs">{produto.codigo}</div>
-                          <div className="text-xs text-muted-foreground truncate max-w-[100px]" title={produto.nome}>
+                          <span className="text-xs select-text">{produto.codigo}</span>
+                          <div className="text-xs text-muted-foreground truncate max-w-[100px] select-text" title={produto.nome}>
                             {produto.nome}
                           </div>
                         </th>
@@ -649,9 +649,9 @@ export default function Pedidos() {
                                 onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
                               >
                                 {qty > 0 ? (
-                                  <span className="font-medium text-primary">{qty}</span>
+                                  <span className="font-medium text-primary select-text">{qty}</span>
                                 ) : (
-                                  <span className="text-muted-foreground">-</span>
+                                  <span className="text-muted-foreground select-text">-</span>
                                 )}
                               </td>
                             );
