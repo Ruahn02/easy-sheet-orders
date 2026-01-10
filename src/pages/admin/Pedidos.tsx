@@ -185,9 +185,42 @@ export default function Pedidos() {
 
       // Ctrl+C para copiar
       if ((e.ctrlKey || e.metaKey) && e.key === 'c' && focusedCell) {
+        e.preventDefault();
         const content = getCellContent(focusedCell.row, focusedCell.col);
-        navigator.clipboard.writeText(content);
-        toast({ title: 'Copiado!', description: content.length > 50 ? content.slice(0, 50) + '...' : content });
+        
+        // Função de fallback usando execCommand
+        const fallbackCopy = (text: string) => {
+          const textarea = document.createElement('textarea');
+          textarea.value = text;
+          textarea.style.position = 'fixed';
+          textarea.style.left = '-9999px';
+          textarea.style.top = '0';
+          document.body.appendChild(textarea);
+          textarea.focus();
+          textarea.select();
+          try {
+            document.execCommand('copy');
+            toast({ title: 'Copiado!', description: text.length > 50 ? text.slice(0, 50) + '...' : text });
+          } catch (err) {
+            toast({ title: 'Erro ao copiar', variant: 'destructive' });
+          }
+          document.body.removeChild(textarea);
+        };
+        
+        // Tentar API moderna primeiro
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(content)
+            .then(() => {
+              toast({ title: 'Copiado!', description: content.length > 50 ? content.slice(0, 50) + '...' : content });
+            })
+            .catch(() => {
+              // Fallback para execCommand
+              fallbackCopy(content);
+            });
+        } else {
+          // Fallback para navegadores antigos
+          fallbackCopy(content);
+        }
         return;
       }
 
@@ -529,7 +562,7 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={0}
                             className={cn(
-                              "px-4 py-3 text-foreground sticky left-0 bg-inherit cursor-pointer select-none",
+                              "px-4 py-3 text-foreground sticky left-0 bg-inherit cursor-pointer select-text align-top",
                               focusedCell?.row === rowIndex && focusedCell?.col === 0 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -541,7 +574,7 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={1}
                             className={cn(
-                              "px-4 py-3 text-foreground cursor-pointer select-none",
+                              "px-4 py-3 text-foreground cursor-pointer select-text align-top",
                               focusedCell?.row === rowIndex && focusedCell?.col === 1 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -553,7 +586,7 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={2}
                             className={cn(
-                              "px-4 py-3 text-foreground cursor-pointer select-none",
+                              "px-4 py-3 text-foreground cursor-pointer select-text align-top",
                               focusedCell?.row === rowIndex && focusedCell?.col === 2 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -565,14 +598,14 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={3}
                             className={cn(
-                              "px-4 py-3 text-foreground max-w-[200px] cursor-pointer select-none",
+                              "px-4 py-3 text-foreground min-w-[200px] max-w-[400px] cursor-pointer select-text align-top",
                               focusedCell?.row === rowIndex && focusedCell?.col === 3 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
                             onClick={() => setFocusedCell({ row: rowIndex, col: 3 })}
                           >
                             {pedido.observacoes ? (
-                              <span className="truncate block" title={pedido.observacoes}>
+                              <span className="whitespace-pre-wrap break-words">
                                 {pedido.observacoes}
                               </span>
                             ) : (
@@ -583,7 +616,7 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={4}
                             className={cn(
-                              "px-4 py-3 cursor-pointer select-none",
+                              "px-4 py-3 cursor-pointer select-text align-top",
                               focusedCell?.row === rowIndex && focusedCell?.col === 4 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -609,7 +642,7 @@ export default function Pedidos() {
                                 data-row={rowIndex}
                                 data-col={colIndex}
                                 className={cn(
-                                  "px-3 py-3 text-center cursor-pointer select-none",
+                                  "px-3 py-3 text-center cursor-pointer select-text align-top",
                                   focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
                                     "ring-2 ring-primary ring-inset bg-primary/10"
                                 )}
