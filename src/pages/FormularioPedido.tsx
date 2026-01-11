@@ -12,6 +12,16 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAcesso } from '@/store/useLojaAuth';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const FormularioPedido = () => {
   const { entidadeId } = useParams<{ entidadeId: string }>();
@@ -27,6 +37,7 @@ const FormularioPedido = () => {
   const [observacoes, setObservacoes] = useState('');
   const [selectedLojaId, setSelectedLojaId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
@@ -67,7 +78,18 @@ const FormularioPedido = () => {
   const selectedItems = Object.entries(quantities).filter(([_, qty]) => qty > 0);
   const itemCount = selectedItems.reduce((acc, [_, qty]) => acc + qty, 0);
 
-  const handleSubmit = async () => {
+  // Dados para o modal de confirmação
+  const selectedLoja = lojas.find(l => l.id === selectedLojaId);
+  const produtosSelecionados = selectedItems.map(([produtoId, qty]) => {
+    const produto = produtos.find(p => p.id === produtoId);
+    return {
+      nome: produto?.nome || 'Produto',
+      codigo: produto?.codigo || '',
+      quantidade: qty
+    };
+  });
+
+  const handleOpenConfirmation = () => {
     if (!selectedLojaId) {
       toast({
         title: 'Selecione uma loja',
@@ -86,6 +108,11 @@ const FormularioPedido = () => {
       return;
     }
 
+    setShowConfirmation(true);
+  };
+
+  const handleSubmit = async () => {
+    setShowConfirmation(false);
     setIsSubmitting(true);
 
     const itens: PedidoItem[] = selectedItems.map(([produtoId, quantidade]) => ({
@@ -94,7 +121,7 @@ const FormularioPedido = () => {
     }));
 
     const result = await addPedido({
-      lojaId: selectedLojaId,
+      lojaId: selectedLojaId!,
       entidadeId: entidadeId!,
       observacoes: observacoes.trim() || undefined,
       itens,
@@ -268,10 +295,57 @@ const FormularioPedido = () => {
 
       <OrderFooter
         itemCount={itemCount}
-        onSubmit={handleSubmit}
+        onSubmit={handleOpenConfirmation}
         disabled={selectedItems.length === 0 || !selectedLojaId || isSubmitting}
         pedidosFechados={false}
       />
+
+      {/* Modal de Confirmação */}
+      <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Pedido</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                {/* Nome da Loja */}
+                <div className="bg-muted rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground">Loja</p>
+                  <p className="font-semibold text-foreground">{selectedLoja?.nome}</p>
+                </div>
+
+                {/* Quantidade Total */}
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Total de itens:</span>
+                  <span className="font-bold text-lg text-primary">{itemCount}</span>
+                </div>
+
+                {/* Lista de Produtos */}
+                <div className="border rounded-lg max-h-[200px] overflow-y-auto">
+                  <div className="p-2 space-y-1">
+                    {produtosSelecionados.map((item, index) => (
+                      <div key={index} className="flex justify-between text-sm py-1 border-b last:border-0">
+                        <span className="text-foreground truncate max-w-[200px]">
+                          {item.nome}
+                        </span>
+                        <span className="font-medium text-primary ml-2">
+                          x{item.quantidade}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleSubmit}>
+              Confirmar Envio
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
