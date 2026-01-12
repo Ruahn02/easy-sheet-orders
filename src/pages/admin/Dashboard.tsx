@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink } from 'lucide-react';
+import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -24,6 +25,7 @@ export default function Dashboard() {
   const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
   const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
   const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
+  const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
 
@@ -519,15 +521,26 @@ export default function Dashboard() {
           {/* Top Products */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Produtos Mais Pedidos
-                {produtoFiltro !== 'todos' && (
-                  <span className="text-xs font-normal text-muted-foreground ml-2">
-                    (filtrado)
-                  </span>
-                )}
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Produtos Mais Pedidos
+                  {produtoFiltro !== 'todos' && (
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      (filtrado)
+                    </span>
+                  )}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowProdutosAnalytics(true)}
+                  className="text-primary hover:text-primary"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Ver todos
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {produtosMaisPedidos.length > 0 ? (
@@ -543,9 +556,16 @@ export default function Dashboard() {
                             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
                               {index + 1}
                             </span>
-                            <p className="text-sm font-medium text-foreground truncate">
-                              {item.produto?.nome}
-                            </p>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-foreground truncate">
+                                {item.produto?.nome}
+                              </p>
+                              {item.produto?.codigo && (
+                                <p className="text-xs text-muted-foreground font-mono">
+                                  {item.produto.codigo}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           <span className="text-sm font-bold text-primary ml-2">{item.quantidade}</span>
                         </div>
@@ -621,6 +641,14 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+        {/* Modal de Análise de Produtos */}
+        <ProdutosAnalytics
+          pedidos={pedidos}
+          produtos={produtos}
+          entidadeFiltro={entidadeFiltro}
+          open={showProdutosAnalytics}
+          onOpenChange={setShowProdutosAnalytics}
+        />
       </div>
     </AdminLayout>
   );
