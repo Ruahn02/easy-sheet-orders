@@ -128,7 +128,7 @@ export function ProdutosAnalytics({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[85vh] h-[85vh] sm:h-auto !flex !flex-col min-h-0 overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
@@ -257,58 +257,60 @@ export function ProdutosAnalytics({
         </div>
 
         {/* Lista de produtos */}
-        <ScrollArea className="flex-1 min-h-0 max-h-[50vh] overflow-hidden -mx-6 px-6">
-          {produtosConsolidados.length > 0 ? (
-            <div className="space-y-2">
-              {produtosConsolidados.map((item, index) => {
-                const maxQtd = produtosConsolidados[0]?.quantidade || 1;
-                const percentage = (item.quantidade / maxQtd) * 100;
+        <div className="flex-1 min-h-0 max-h-[60vh] -mx-6 px-6">
+          <ScrollArea className="h-full">
+            {produtosConsolidados.length > 0 ? (
+              <div className="space-y-2">
+                {produtosConsolidados.map((item, index) => {
+                  const maxQtd = produtosConsolidados[0]?.quantidade || 1;
+                  const percentage = (item.quantidade / maxQtd) * 100;
 
-                return (
-                  <div
-                    key={item.produto.id}
-                    className="p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
-                          {index + 1}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">
-                            {item.produto.nome}
-                          </p>
-                          {item.produto.codigo && (
-                            <p className="text-xs text-muted-foreground font-mono">
-                              Cód: {item.produto.codigo}
+                  return (
+                    <div
+                      key={item.produto.id}
+                      className="p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary shrink-0">
+                            {index + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-foreground truncate">
+                              {item.produto.nome}
                             </p>
-                          )}
+                            {item.produto.codigo && (
+                              <p className="text-xs text-muted-foreground font-mono">
+                                Cód: {item.produto.codigo}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-lg font-bold text-primary">{item.quantidade}</span>
+                          <p className="text-xs text-muted-foreground">unidades</p>
                         </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-lg font-bold text-primary">{item.quantidade}</span>
-                        <p className="text-xs text-muted-foreground">unidades</p>
+                      <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden ml-10">
+                        <div
+                          className="h-full gradient-primary rounded-full transition-all duration-500"
+                          style={{ width: `${percentage}%` }}
+                        />
                       </div>
                     </div>
-                    <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden ml-10">
-                      <div
-                        className="h-full gradient-primary rounded-full transition-all duration-500"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
-              <p className="text-sm text-muted-foreground">
-                Nenhum produto solicitado neste período.
-              </p>
-            </div>
-          )}
-        </ScrollArea>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Package className="h-12 w-12 text-muted-foreground/50 mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  Nenhum produto solicitado neste período.
+                </p>
+              </div>
+            )}
+          </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
