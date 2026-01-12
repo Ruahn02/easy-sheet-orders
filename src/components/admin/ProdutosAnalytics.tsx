@@ -257,7 +257,7 @@ export function ProdutosAnalytics({
         </div>
 
         {/* Lista de produtos */}
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 min-h-0 max-h-[50vh] overflow-hidden -mx-6 px-6">
           {produtosConsolidados.length > 0 ? (
             <div className="space-y-2">
               {produtosConsolidados.map((item, index) => {
