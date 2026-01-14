@@ -239,9 +239,8 @@ export default function Pedidos() {
         const maxRow = filteredPedidos.length - 1;
         const maxCol = totalCols - 1;
 
-        // Se estiver no cabeçalho (row = -1), só navega entre colunas de produtos (5 em diante)
+        // Se estiver no cabeçalho (row = -1), navega entre TODAS as colunas
         if (row === -1) {
-          const minColHeader = 5;
           switch (e.key) {
             case 'ArrowUp':
               // Já está no topo, não faz nada
@@ -250,7 +249,7 @@ export default function Pedidos() {
               setFocusedCell({ row: 0, col });
               break;
             case 'ArrowLeft':
-              setFocusedCell({ row, col: Math.max(minColHeader, col - 1) });
+              setFocusedCell({ row, col: Math.max(0, col - 1) });
               break;
             case 'ArrowRight':
               setFocusedCell({ row, col: Math.min(maxCol, col + 1) });
@@ -260,8 +259,8 @@ export default function Pedidos() {
           // Corpo da tabela
           switch (e.key) {
             case 'ArrowUp':
-              // Se for coluna de produto (>=5) e estiver na primeira linha, vai para o cabeçalho
-              if (row === 0 && col >= 5) {
+              // Se estiver na primeira linha, vai para o cabeçalho (todas as colunas)
+              if (row === 0) {
                 setFocusedCell({ row: -1, col });
               } else {
                 setFocusedCell({ row: Math.max(0, row - 1), col });
@@ -516,11 +515,66 @@ export default function Pedidos() {
               <table ref={tableRef} className="w-full text-sm" tabIndex={0}>
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-secondary">
-                    <th className="px-4 py-3 text-left font-medium text-foreground sticky left-0 bg-secondary z-20">Data</th>
-                    <th className="px-4 py-3 text-left font-medium text-foreground">Hora</th>
-                    <th className="px-4 py-3 text-left font-medium text-foreground">Loja</th>
-                    <th className="px-4 py-3 text-left font-medium text-foreground">Observações</th>
-                    <th className="px-4 py-3 text-left font-medium text-foreground">Status</th>
+                    <th 
+                      data-row={-1}
+                      data-col={0}
+                      className={cn(
+                        "px-4 py-3 text-left font-medium text-foreground sticky left-0 bg-secondary z-20 cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 0 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 0 })}
+                    >
+                      Data
+                    </th>
+                    <th 
+                      data-row={-1}
+                      data-col={1}
+                      className={cn(
+                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 1 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 1 })}
+                    >
+                      Hora
+                    </th>
+                    <th 
+                      data-row={-1}
+                      data-col={2}
+                      className={cn(
+                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 2 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 2 })}
+                    >
+                      Loja
+                    </th>
+                    <th 
+                      data-row={-1}
+                      data-col={3}
+                      className={cn(
+                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 3 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 3 })}
+                    >
+                      Observações
+                    </th>
+                    <th 
+                      data-row={-1}
+                      data-col={4}
+                      className={cn(
+                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 4 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 4 })}
+                    >
+                      Status
+                    </th>
                     {produtosDaEntidade.map((produto, produtoIndex) => {
                       const colIndex = 5 + produtoIndex;
                       return (
