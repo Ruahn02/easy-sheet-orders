@@ -371,8 +371,19 @@ export function usePedidos() {
       .from('pedido_itens')
       .insert(itensInsert);
 
+    // Se falhar o insert dos itens, fazer rollback do pedido pai
     if (itensError) {
-      console.error('Erro ao criar itens do pedido:', itensError);
+      console.error('Erro ao criar itens do pedido:', {
+        pedidoId: pedidoData.id,
+        quantidadeItens: itensInsert.length,
+        erro: itensError,
+        itens: itensInsert
+      });
+      
+      // Rollback: deletar o pedido pai que ficou órfão
+      await supabase.from('pedidos').delete().eq('id', pedidoData.id);
+      
+      return null; // Retorna null para indicar falha completa
     }
 
     await fetchPedidos();
