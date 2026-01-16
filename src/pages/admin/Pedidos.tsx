@@ -385,21 +385,23 @@ export default function Pedidos() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6 animate-fade-in">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Pedidos</h1>
-            <p className="text-muted-foreground">
-              {entidadeSelecionada 
-                ? `Planilha: ${entidadeSelecionada.nome}` 
-                : 'Selecione um tipo de pedido para ver a planilha'}
-            </p>
+      <div className="flex flex-col h-full animate-fade-in">
+        {/* ÁREA FIXA - Filtros e ações (não afetada pelo scroll da tabela) */}
+        <div className="flex-shrink-0 space-y-4 pb-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Pedidos</h1>
+              <p className="text-muted-foreground">
+                {entidadeSelecionada 
+                  ? `Planilha: ${entidadeSelecionada.nome}` 
+                  : 'Selecione um tipo de pedido para ver a planilha'}
+              </p>
+            </div>
+            <Button onClick={handleExportCSV} variant="outline" className="flex items-center gap-2" disabled={!selectedEntidadeId}>
+              <Download className="h-4 w-4" />
+              Exportar CSV
+            </Button>
           </div>
-          <Button onClick={handleExportCSV} variant="outline" className="flex items-center gap-2" disabled={!selectedEntidadeId}>
-            <Download className="h-4 w-4" />
-            Exportar CSV
-          </Button>
-        </div>
 
         {/* Seletor de Tipo de Pedido - OBRIGATÓRIO */}
         <div className="p-4 rounded-lg border-2 border-primary/50 bg-primary/5">
@@ -507,11 +509,13 @@ export default function Pedidos() {
             </Popover>
           </div>
         )}
+        </div>
 
-        {/* Table - só aparece se selecionou entidade */}
+        {/* ÁREA DA TABELA - Scroll independente */}
         {selectedEntidadeId && (
-          <div className="rounded-lg border border-border bg-card overflow-hidden">
-            <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+          <div className="flex-1 min-h-0">
+            <div className="h-full rounded-lg border border-border bg-card overflow-hidden">
+              <div className="overflow-x-auto overflow-y-auto h-full max-h-[calc(100vh-350px)]">
               <table ref={tableRef} className="w-full text-sm" tabIndex={0}>
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-secondary">
@@ -762,6 +766,7 @@ export default function Pedidos() {
               </table>
             </div>
           </div>
+        </div>
         )}
       </div>
 
