@@ -436,22 +436,22 @@ export default function Pedidos() {
 
         {/* Filters - só aparecem se selecionou entidade */}
         {selectedEntidadeId && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Buscar produto..."
+                placeholder="Buscar..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-8 h-8 w-32 text-sm"
               />
             </div>
 
             <Select value={selectedLojaId} onValueChange={setSelectedLojaId}>
-              <SelectTrigger className="bg-card">
-                <SelectValue placeholder="Todas as lojas" />
+              <SelectTrigger className="bg-card h-8 w-36 text-sm">
+                <SelectValue placeholder="Todas lojas" />
               </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
+              <SelectContent className="bg-popover z-50 max-h-60">
                 <SelectItem value="all">Todas as lojas</SelectItem>
                 {lojas.map((loja) => (
                   <SelectItem key={loja.id} value={loja.id}>
@@ -462,11 +462,11 @@ export default function Pedidos() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-card">
-                <SelectValue placeholder="Todos os status" />
+              <SelectTrigger className="bg-card h-8 w-28 text-sm">
+                <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos os status</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="pendente">Pendentes</SelectItem>
                 <SelectItem value="feito">Feitos</SelectItem>
               </SelectContent>
@@ -474,9 +474,9 @@ export default function Pedidos() {
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, 'dd/MM/yyyy') : 'Data inicial'}
+                <Button variant="outline" size="sm" className="h-8 px-2 text-sm">
+                  <Calendar className="mr-1 h-3.5 w-3.5" />
+                  {startDate ? format(startDate, 'dd/MM') : 'Início'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-popover z-50">
@@ -492,9 +492,9 @@ export default function Pedidos() {
 
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="justify-start">
-                  <Calendar className="mr-2 h-4 w-4" />
-                  {endDate ? format(endDate, 'dd/MM/yyyy') : 'Data final'}
+                <Button variant="outline" size="sm" className="h-8 px-2 text-sm">
+                  <Calendar className="mr-1 h-3.5 w-3.5" />
+                  {endDate ? format(endDate, 'dd/MM') : 'Fim'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0 bg-popover z-50">
@@ -523,7 +523,7 @@ export default function Pedidos() {
                       data-row={-1}
                       data-col={0}
                       className={cn(
-                        "px-4 py-3 text-left font-medium text-foreground sticky left-0 bg-secondary z-20 cursor-pointer",
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground sticky left-0 bg-secondary z-20 cursor-pointer",
                         focusedCell?.row === -1 && focusedCell?.col === 0 && 
                           "ring-2 ring-primary ring-inset bg-primary/10"
                       )}
@@ -535,7 +535,7 @@ export default function Pedidos() {
                       data-row={-1}
                       data-col={1}
                       className={cn(
-                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground cursor-pointer",
                         focusedCell?.row === -1 && focusedCell?.col === 1 && 
                           "ring-2 ring-primary ring-inset bg-primary/10"
                       )}
@@ -547,7 +547,7 @@ export default function Pedidos() {
                       data-row={-1}
                       data-col={2}
                       className={cn(
-                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground cursor-pointer",
                         focusedCell?.row === -1 && focusedCell?.col === 2 && 
                           "ring-2 ring-primary ring-inset bg-primary/10"
                       )}
@@ -559,19 +559,19 @@ export default function Pedidos() {
                       data-row={-1}
                       data-col={3}
                       className={cn(
-                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground cursor-pointer",
                         focusedCell?.row === -1 && focusedCell?.col === 3 && 
                           "ring-2 ring-primary ring-inset bg-primary/10"
                       )}
                       onClick={() => setFocusedCell({ row: -1, col: 3 })}
                     >
-                      Observações
+                      Obs
                     </th>
                     <th 
                       data-row={-1}
                       data-col={4}
                       className={cn(
-                        "px-4 py-3 text-left font-medium text-foreground cursor-pointer",
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground cursor-pointer",
                         focusedCell?.row === -1 && focusedCell?.col === 4 && 
                           "ring-2 ring-primary ring-inset bg-primary/10"
                       )}
@@ -587,20 +587,20 @@ export default function Pedidos() {
                           data-row={-1}
                           data-col={colIndex}
                           className={cn(
-                            "px-3 py-3 text-center font-medium text-foreground whitespace-nowrap min-w-[80px] cursor-pointer select-text",
+                            "px-2 py-1.5 text-center text-xs font-medium text-foreground whitespace-nowrap min-w-[60px] cursor-pointer select-text",
                             focusedCell?.row === -1 && focusedCell?.col === colIndex && 
                               "ring-2 ring-primary ring-inset bg-primary/10"
                           )}
                           onClick={() => setFocusedCell({ row: -1, col: colIndex })}
                         >
-                          <span className="text-xs select-text">{produto.codigo}</span>
-                          <div className="text-xs text-muted-foreground truncate max-w-[100px] select-text" title={produto.nome}>
+                          <span className="select-text">{produto.codigo}</span>
+                          <div className="text-[10px] text-muted-foreground truncate max-w-[80px] select-text" title={produto.nome}>
                             {produto.nome}
                           </div>
                         </th>
                       );
                     })}
-                    <th className="px-4 py-3 text-center font-medium text-foreground sticky right-0 bg-secondary z-20">Ações</th>
+                    <th className="px-2 py-1.5 text-center text-xs font-medium text-foreground sticky right-0 bg-secondary z-20">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -621,19 +621,19 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={0}
                             className={cn(
-                              "px-4 py-3 text-foreground sticky left-0 bg-inherit cursor-pointer select-text align-top",
+                              "px-2 py-1 text-xs text-foreground sticky left-0 bg-inherit cursor-pointer select-text",
                               focusedCell?.row === rowIndex && focusedCell?.col === 0 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
                             onClick={() => setFocusedCell({ row: rowIndex, col: 0 })}
                           >
-                            {format(new Date(pedido.data), 'dd/MM/yyyy')}
+                            {format(new Date(pedido.data), 'dd/MM')}
                           </td>
                           <td 
                             data-row={rowIndex}
                             data-col={1}
                             className={cn(
-                              "px-4 py-3 text-foreground cursor-pointer select-text align-top",
+                              "px-2 py-1 text-xs text-foreground cursor-pointer select-text",
                               focusedCell?.row === rowIndex && focusedCell?.col === 1 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -645,7 +645,7 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={2}
                             className={cn(
-                              "px-4 py-3 text-foreground cursor-pointer select-text align-top",
+                              "px-2 py-1 text-xs text-foreground cursor-pointer select-text",
                               focusedCell?.row === rowIndex && focusedCell?.col === 2 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -657,14 +657,14 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={3}
                             className={cn(
-                              "px-4 py-3 text-foreground min-w-[200px] max-w-[400px] cursor-pointer select-text align-top",
+                              "px-2 py-1 text-xs text-foreground min-w-[120px] max-w-[200px] cursor-pointer select-text",
                               focusedCell?.row === rowIndex && focusedCell?.col === 3 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
                             onClick={() => setFocusedCell({ row: rowIndex, col: 3 })}
                           >
                             {pedido.observacoes ? (
-                              <span className="whitespace-pre-wrap break-words">
+                              <span className="whitespace-pre-wrap break-words line-clamp-2">
                                 {pedido.observacoes}
                               </span>
                             ) : (
@@ -675,7 +675,7 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={4}
                             className={cn(
-                              "px-4 py-3 cursor-pointer select-text align-top",
+                              "px-2 py-1 cursor-pointer select-text",
                               focusedCell?.row === rowIndex && focusedCell?.col === 4 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
@@ -684,6 +684,7 @@ export default function Pedidos() {
                             <Badge
                               variant={pedido.status === 'feito' ? 'default' : 'secondary'}
                               className={cn(
+                                "text-[10px] px-1.5 py-0",
                                 pedido.status === 'feito'
                                   ? 'bg-accent text-accent-foreground'
                                   : 'bg-warning/20 text-warning-foreground'
@@ -701,7 +702,7 @@ export default function Pedidos() {
                                 data-row={rowIndex}
                                 data-col={colIndex}
                                 className={cn(
-                                  "px-3 py-3 text-center cursor-pointer select-text align-top",
+                                  "px-2 py-1 text-xs text-center cursor-pointer select-text",
                                   focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
                                     "ring-2 ring-primary ring-inset bg-primary/10"
                                 )}
@@ -715,22 +716,22 @@ export default function Pedidos() {
                               </td>
                             );
                           })}
-                          <td className="px-4 py-3 sticky right-0 bg-inherit">
-                            <div className="flex items-center justify-center gap-2">
+                          <td className="px-2 py-1 sticky right-0 bg-inherit">
+                            <div className="flex items-center justify-center gap-1">
                               {pedido.status === 'pendente' && (
                                 <Button
                                   size="sm"
                                   onClick={() => setPedidoParaConcluir(pedido.id)}
-                                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                  className="bg-accent text-accent-foreground hover:bg-accent/90 h-6 px-2 text-xs"
                                 >
-                                  <Check className="h-4 w-4 mr-1" />
+                                  <Check className="h-3 w-3 mr-0.5" />
                                   Feito
                                 </Button>
                               )}
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button size="sm" variant="outline">
-                                    <Palette className="h-4 w-4" />
+                                  <Button size="sm" variant="outline" className="h-6 w-6 p-0">
+                                    <Palette className="h-3 w-3" />
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-40 p-2 bg-popover z-50">
