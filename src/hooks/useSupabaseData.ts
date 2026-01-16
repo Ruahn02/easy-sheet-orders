@@ -310,7 +310,19 @@ export function usePedidos() {
       .select('*')
       .range(0, 9999);
 
+    // DEBUG temporário: validar se os itens estão chegando do Supabase
+    const itensSafe = itensData ?? [];
+    console.log('[DEBUG fetchPedidos] pedido_itens retornados', {
+      total: itensSafe.length,
+      ultimos5: itensSafe.slice(-5).map((i) => ({
+        pedido_id: i.pedido_id,
+        produto_id: i.produto_id,
+        quantidade: i.quantidade,
+      })),
+    });
+
     if (itensError) {
+      console.error('[DEBUG fetchPedidos] erro ao buscar pedido_itens:', itensError);
       setLoading(false);
       return;
     }
