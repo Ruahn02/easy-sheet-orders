@@ -307,17 +307,31 @@ export function usePedidos() {
     // Extrair IDs dos pedidos que foram buscados
     const pedidoIds = pedidosData.map(p => p.id);
 
-    // Buscar apenas os itens DESSES pedidos específicos
-    // Isso evita o limite de 1000 registros do PostgREST
-    const { data: itensData, error: itensError } = await supabase
-      .from('pedido_itens')
-      .select('*')
-      .in('pedido_id', pedidoIds);
+    // Buscar itens em lotes de 1000 para contornar limite do PostgREST
+    let allItens: any[] = [];
+    let offset = 0;
+    const pageSize = 1000;
+    let hasMore = true;
 
-    if (itensError) {
-      setLoading(false);
-      return;
+    while (hasMore) {
+      const { data: batch, error } = await supabase
+        .from('pedido_itens')
+        .select('*')
+        .in('pedido_id', pedidoIds)
+        .order('id', { ascending: true })
+        .range(offset, offset + pageSize - 1);
+
+      if (error) {
+        console.error('Erro ao buscar itens de pedidos:', error);
+        break;
+      }
+
+      allItens = [...allItens, ...(batch || [])];
+      hasMore = (batch?.length || 0) === pageSize;
+      offset += pageSize;
     }
+
+    const itensData = allItens;
 
     const pedidosFormatados: Pedido[] = pedidosData.map(p => {
       const itens = (itensData || [])
