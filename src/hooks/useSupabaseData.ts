@@ -304,10 +304,11 @@ export function usePedidos() {
       return;
     }
 
-    // Fetch all itens
+    // Fetch all itens - remove limite de 1000 registros do Supabase
     const { data: itensData, error: itensError } = await supabase
       .from('pedido_itens')
-      .select('*');
+      .select('*')
+      .range(0, 9999);
 
     if (itensError) {
       setLoading(false);
