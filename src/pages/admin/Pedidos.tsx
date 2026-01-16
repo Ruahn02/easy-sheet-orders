@@ -62,6 +62,9 @@ export default function Pedidos() {
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
   const tableRef = useRef<HTMLTableElement>(null);
 
+  // DEBUG temporário: garantir que logamos cada pedido 1x por montagem
+  const debugRenderOnceRef = useRef<Set<string>>(new Set());
+
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
 
@@ -607,6 +610,43 @@ export default function Pedidos() {
                   {filteredPedidos.length > 0 ? (
                     filteredPedidos.map((pedido, rowIndex) => {
                       const loja = lojas.find((l) => l.id === pedido.lojaId);
+
+                      // DEBUG temporário: confirmar itens no ponto exato onde a tabela renderiza a linha
+                      if (!debugRenderOnceRef.current.has(pedido.id)) {
+                        const pedidoBase = pedidos.find((p) => p.id === pedido.id);
+
+                        const ultimos5ItensNoPedido = pedido.itens.slice(-5).map((i) => ({
+                          produtoId: i.produtoId,
+                          quantidade: i.quantidade,
+                        }));
+
+                        const amostraProdutos = produtosDaEntidade.slice(0, 5);
+                        const amostraCalculoQty = amostraProdutos.map((prod) => {
+                          const itemDoPedidoBase = (pedidoBase?.itens ?? []).find((i) => i.produtoId === prod.id);
+                          const itemDoPedidoFiltrado = pedido.itens.find((i) => i.produtoId === prod.id);
+                          const item = itemDoPedidoBase ?? itemDoPedidoFiltrado;
+
+                          return {
+                            produtoId: prod.id,
+                            produtoCodigo: prod.codigo,
+                            itemEncontrado: item
+                              ? { produtoId: item.produtoId, quantidade: item.quantidade }
+                              : null,
+                          };
+                        });
+
+                        console.log('[DEBUG ADMIN /admin/pedidos] render linha', {
+                          pedidoId: pedido.id,
+                          pedidoEntidadeId: pedido.entidadeId,
+                          pedidoItensLen: pedido.itens.length,
+                          pedidoBaseItensLen: pedidoBase?.itens.length ?? null,
+                          ultimos5ItensNoPedido,
+                          amostraCalculoQty,
+                        });
+
+                        debugRenderOnceRef.current.add(pedido.id);
+                      }
+
                       return (
                         <tr
                           key={pedido.id}
