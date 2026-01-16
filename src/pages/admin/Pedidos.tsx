@@ -385,9 +385,9 @@ export default function Pedidos() {
 
   return (
     <AdminLayout>
-      <div className="flex flex-col h-full animate-fade-in">
-        {/* ÁREA FIXA - Filtros e ações (não afetada pelo scroll da tabela) */}
-        <div className="flex-shrink-0 space-y-4 pb-4">
+      <div className="flex flex-col h-full animate-fade-in overflow-hidden">
+        {/* ÁREA FIXA - Filtros e ações (largura independente da tabela) */}
+        <div className="flex-shrink-0 w-full max-w-full overflow-hidden space-y-4 pb-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <h1 className="text-2xl font-bold text-foreground">Pedidos</h1>
@@ -511,11 +511,11 @@ export default function Pedidos() {
         )}
         </div>
 
-        {/* ÁREA DA TABELA - Scroll independente */}
+        {/* ÁREA DA TABELA - Scroll horizontal independente */}
         {selectedEntidadeId && (
-          <div className="flex-1 min-h-0">
-            <div className="h-full rounded-lg border border-border bg-card overflow-hidden">
-              <div className="overflow-x-auto overflow-y-auto h-full max-h-[calc(100vh-350px)]">
+          <div className="flex-1 min-h-0 min-w-0 overflow-x-auto">
+            <div className="inline-block min-w-full h-full rounded-lg border border-border bg-card overflow-hidden">
+              <div className="overflow-y-auto h-full max-h-[calc(100vh-350px)]">
               <table ref={tableRef} className="w-full text-sm" tabIndex={0}>
                 <thead className="sticky top-0 z-10">
                   <tr className="border-b border-border bg-secondary">
