@@ -128,7 +128,7 @@ export function ProdutosAnalytics({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] h-[85vh] sm:h-auto !flex !flex-col min-h-0 overflow-hidden">
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col p-6 [&>button]:top-4 [&>button]:right-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Package className="h-5 w-5 text-primary" />
@@ -257,7 +257,7 @@ export function ProdutosAnalytics({
         </div>
 
         {/* Lista de produtos */}
-        <ScrollArea className="flex-1 min-h-0 h-[50vh] -mx-6 px-6">
+        <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
           {produtosConsolidados.length > 0 ? (
             <div className="space-y-2 pr-4">
               {produtosConsolidados.map((item, index) => {
@@ -308,7 +308,7 @@ export function ProdutosAnalytics({
               </p>
             </div>
           )}
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
