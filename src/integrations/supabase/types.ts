@@ -53,6 +53,48 @@ export type Database = {
         }
         Relationships: []
       }
+      inventario: {
+        Row: {
+          data_conferencia: string
+          entidade_id: string
+          id: string
+          produto_id: string
+          quantidade: number
+          status: string
+        }
+        Insert: {
+          data_conferencia?: string
+          entidade_id: string
+          id?: string
+          produto_id: string
+          quantidade?: number
+          status?: string
+        }
+        Update: {
+          data_conferencia?: string
+          entidade_id?: string
+          id?: string
+          produto_id?: string
+          quantidade?: number
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventario_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventario_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lojas: {
         Row: {
           ativo: boolean

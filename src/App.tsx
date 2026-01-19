@@ -13,6 +13,7 @@ import Pedidos from "./pages/admin/Pedidos";
 import Lojas from "./pages/admin/Lojas";
 import Produtos from "./pages/admin/Produtos";
 import Entidades from "./pages/admin/Entidades";
+import Inventario from "./pages/admin/Inventario";
 import { useAcesso } from "./store/useLojaAuth";
 
 const queryClient = new QueryClient();
@@ -47,6 +48,7 @@ const App = () => (
           <Route path="/admin" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/pedidos" element={<Pedidos />} />
+          <Route path="/admin/inventario" element={<Inventario />} />
           <Route path="/admin/lojas" element={<Lojas />} />
           <Route path="/admin/produtos" element={<Produtos />} />
           <Route path="/admin/entidades" element={<Entidades />} />
