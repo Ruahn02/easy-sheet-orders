@@ -43,3 +43,12 @@ export interface PedidoComDetalhes extends Pedido {
   loja: Loja;
   entidade: Entidade;
 }
+
+export interface Inventario {
+  id: string;
+  produtoId: string;
+  entidadeId: string;
+  quantidade: number;
+  dataConferencia: Date;
+  status: 'pendente' | 'conferido';
+}

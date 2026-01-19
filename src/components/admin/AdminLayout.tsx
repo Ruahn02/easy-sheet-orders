@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   ClipboardList,
+  ClipboardCheck,
   Store,
   Package,
   FolderOpen,
@@ -21,6 +22,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/admin/dashboard' },
   { icon: FolderOpen, label: 'Tipos de Pedido', path: '/admin/entidades' },
   { icon: ClipboardList, label: 'Pedidos', path: '/admin/pedidos' },
+  { icon: ClipboardCheck, label: 'Inventário', path: '/admin/inventario' },
   { icon: Store, label: 'Lojas', path: '/admin/lojas' },
   { icon: Package, label: 'Produtos', path: '/admin/produtos' },
 ];

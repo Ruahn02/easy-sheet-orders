@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Entidade, Loja, Produto, Pedido, PedidoItem } from '@/types';
+import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario } from '@/types';
 
 // ============= ENTIDADES =============
 export function useEntidades() {
@@ -474,4 +474,57 @@ export function useCodigoAdmin() {
   };
 
   return { codigoAdmin, loading, fetchCodigoAdmin, updateCodigoAdmin };
+}
+
+// ============= INVENTÁRIO =============
+export function useInventario() {
+  const [inventario, setInventario] = useState<Inventario[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchInventario = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('inventario')
+      .select('*')
+      .order('data_conferencia', { ascending: false });
+
+    if (!error && data) {
+      setInventario(data.map((i: any) => ({
+        id: i.id,
+        produtoId: i.produto_id,
+        entidadeId: i.entidade_id,
+        quantidade: i.quantidade,
+        dataConferencia: new Date(i.data_conferencia),
+        status: i.status as 'pendente' | 'conferido',
+      })));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchInventario();
+  }, [fetchInventario]);
+
+  // UPSERT - Cria ou atualiza conferência
+  const conferirProduto = async (produtoId: string, entidadeId: string, quantidade: number) => {
+    const { error } = await supabase
+      .from('inventario')
+      .upsert({
+        produto_id: produtoId,
+        entidade_id: entidadeId,
+        quantidade,
+        data_conferencia: new Date().toISOString(),
+        status: 'conferido',
+      }, {
+        onConflict: 'produto_id'
+      });
+
+    if (!error) {
+      await fetchInventario();
+      return true;
+    }
+    console.error('Erro ao conferir produto:', error);
+    return false;
+  };
+
+  return { inventario, loading, fetchInventario, conferirProduto };
 }
