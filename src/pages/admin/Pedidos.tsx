@@ -657,14 +657,14 @@ export default function Pedidos() {
                             data-row={rowIndex}
                             data-col={3}
                             className={cn(
-                              "px-2 py-1 text-xs text-foreground min-w-[120px] max-w-[200px] cursor-pointer select-text",
+                              "px-2 py-1 text-xs text-foreground min-w-[120px] max-w-[300px] cursor-pointer select-text",
                               focusedCell?.row === rowIndex && focusedCell?.col === 3 && 
                                 "ring-2 ring-primary ring-inset bg-primary/10"
                             )}
                             onClick={() => setFocusedCell({ row: rowIndex, col: 3 })}
                           >
                             {pedido.observacoes ? (
-                              <span className="whitespace-pre-wrap break-words line-clamp-2">
+                              <span className="whitespace-pre-wrap break-words">
                                 {pedido.observacoes}
                               </span>
                             ) : (
