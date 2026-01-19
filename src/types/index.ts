@@ -49,6 +49,7 @@ export interface Inventario {
   produtoId: string;
   entidadeId: string;
   quantidade: number;
+  unidadeMedida: string;
   dataConferencia: Date;
   status: 'pendente' | 'conferido';
 }
