@@ -493,6 +493,7 @@ export function useInventario() {
         produtoId: i.produto_id,
         entidadeId: i.entidade_id,
         quantidade: i.quantidade,
+        unidadeMedida: i.unidade_medida || 'un',
         dataConferencia: new Date(i.data_conferencia),
         status: i.status as 'pendente' | 'conferido',
       })));
@@ -505,13 +506,14 @@ export function useInventario() {
   }, [fetchInventario]);
 
   // UPSERT - Cria ou atualiza conferência
-  const conferirProduto = async (produtoId: string, entidadeId: string, quantidade: number) => {
+  const conferirProduto = async (produtoId: string, entidadeId: string, quantidade: number, unidadeMedida: string = 'un') => {
     const { error } = await supabase
       .from('inventario')
       .upsert({
         produto_id: produtoId,
         entidade_id: entidadeId,
         quantidade,
+        unidade_medida: unidadeMedida,
         data_conferencia: new Date().toISOString(),
         status: 'conferido',
       }, {

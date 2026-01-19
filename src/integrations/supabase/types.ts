@@ -61,6 +61,7 @@ export type Database = {
           produto_id: string
           quantidade: number
           status: string
+          unidade_medida: string
         }
         Insert: {
           data_conferencia?: string
@@ -69,6 +70,7 @@ export type Database = {
           produto_id: string
           quantidade?: number
           status?: string
+          unidade_medida?: string
         }
         Update: {
           data_conferencia?: string
@@ -77,6 +79,7 @@ export type Database = {
           produto_id?: string
           quantidade?: number
           status?: string
+          unidade_medida?: string
         }
         Relationships: [
           {

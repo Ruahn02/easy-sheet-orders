@@ -67,7 +67,17 @@ export default function Inventario() {
   // Modal de conferência
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
   const [quantidadeConferida, setQuantidadeConferida] = useState<string>('');
+  const [unidadeSelecionada, setUnidadeSelecionada] = useState<string>('un');
   const [salvando, setSalvando] = useState(false);
+
+  // Opções de unidade de medida
+  const UNIDADES = [
+    { value: 'un', label: 'un (unidade)' },
+    { value: 'fd', label: 'fd (fardo)' },
+    { value: 'cx', label: 'cx (caixa)' },
+    { value: 'pct', label: 'pct (pacote)' },
+    { value: 'kg', label: 'kg (quilo)' },
+  ];
 
   const loading = loadingEntidades || loadingProdutos || loadingInventario;
 
@@ -91,6 +101,7 @@ export default function Inventario() {
       return {
         produto,
         quantidade: registro?.quantidade ?? null,
+        unidadeMedida: registro?.unidadeMedida ?? 'un',
         dataConferencia: registro?.dataConferencia ?? null,
         status: registro?.status ?? 'pendente' as const,
       };
@@ -121,6 +132,7 @@ export default function Inventario() {
     const registro = inventario.find(i => i.produtoId === produto.id);
     setProdutoSelecionado(produto);
     setQuantidadeConferida(registro?.quantidade?.toString() ?? '');
+    setUnidadeSelecionada(registro?.unidadeMedida ?? 'un');
   };
 
   // Confirmar conferência
@@ -134,13 +146,14 @@ export default function Inventario() {
     }
 
     setSalvando(true);
-    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltro, quantidade);
+    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltro, quantidade, unidadeSelecionada);
     setSalvando(false);
 
     if (sucesso) {
       toast.success('Inventário atualizado');
       setProdutoSelecionado(null);
       setQuantidadeConferida('');
+      setUnidadeSelecionada('un');
     } else {
       toast.error('Erro ao salvar');
     }
@@ -420,7 +433,7 @@ export default function Inventario() {
                     <TableCell className="font-mono text-sm">{item.produto.codigo}</TableCell>
                     <TableCell className="font-medium">{item.produto.nome}</TableCell>
                     <TableCell className="text-center">
-                      {item.quantidade !== null ? item.quantidade : '-'}
+                      {item.quantidade !== null ? `${item.quantidade} ${item.unidadeMedida}` : '-'}
                     </TableCell>
                     <TableCell className="text-center">
                       {item.status === 'conferido' ? (
@@ -480,6 +493,22 @@ export default function Inventario() {
                 placeholder="Digite a quantidade"
                 autoFocus
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Unidade de Medida</label>
+              <Select value={unidadeSelecionada} onValueChange={setUnidadeSelecionada}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a unidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {UNIDADES.map((unidade) => (
+                    <SelectItem key={unidade.value} value={unidade.value}>
+                      {unidade.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
