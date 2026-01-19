@@ -40,7 +40,13 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { ClipboardCheck, Check, ChevronsUpDown, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { ClipboardCheck, Check, ChevronsUpDown, Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -145,20 +151,134 @@ export default function Inventario() {
   const conferidos = listaInventario.filter(i => i.status === 'conferido').length;
   const pendentes = totalProdutos - conferidos;
 
+  // Exportar CSV
+  const exportarCSV = () => {
+    const entidadeNome = entidades.find(e => e.id === entidadeFiltro)?.nome || 'Inventario';
+    const dataExport = format(new Date(), 'dd-MM-yyyy_HH-mm');
+    
+    const header = ['Código', 'Nome', 'Qtd Estoque', 'Status', 'Última Conferência'];
+    
+    const rows = listaFiltrada.map(item => [
+      item.produto.codigo,
+      item.produto.nome,
+      item.quantidade !== null ? item.quantidade.toString() : '-',
+      item.status === 'conferido' ? 'CONFERIDO' : 'PENDENTE',
+      item.dataConferencia ? format(item.dataConferencia, "dd/MM/yyyy HH:mm") : '-',
+    ]);
+    
+    const BOM = '\uFEFF';
+    const csv = BOM + [header, ...rows].map(row => row.map(cell => `"${cell}"`).join(';')).join('\n');
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `inventario_${entidadeNome.replace(/\s+/g, '_')}_${dataExport}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    
+    toast.success('CSV exportado com sucesso');
+  };
+
+  // Exportar PDF
+  const exportarPDF = () => {
+    const entidadeNome = entidades.find(e => e.id === entidadeFiltro)?.nome || 'Inventário';
+    const dataExport = format(new Date(), "dd/MM/yyyy 'às' HH:mm");
+    
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Inventário - ${entidadeNome}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; }
+          h1 { font-size: 18px; margin-bottom: 5px; }
+          .info { color: #666; font-size: 12px; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background: #f5f5f5; font-weight: bold; }
+          .status-conferido { color: green; font-weight: bold; }
+          .status-pendente { color: #b45309; font-weight: bold; }
+          .center { text-align: center; }
+          @media print { body { padding: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Inventário - ${entidadeNome}</h1>
+        <p class="info">Exportado em ${dataExport} | ${listaFiltrada.length} produtos</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nome</th>
+              <th class="center">Qtd Estoque</th>
+              <th class="center">Status</th>
+              <th class="center">Última Conferência</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listaFiltrada.map(item => `
+              <tr>
+                <td>${item.produto.codigo}</td>
+                <td>${item.produto.nome}</td>
+                <td class="center">${item.quantidade !== null ? item.quantidade : '-'}</td>
+                <td class="center ${item.status === 'conferido' ? 'status-conferido' : 'status-pendente'}">
+                  ${item.status === 'conferido' ? 'CONFERIDO' : 'PENDENTE'}
+                </td>
+                <td class="center">${item.dataConferencia ? format(item.dataConferencia, "dd/MM/yyyy HH:mm") : '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+    
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    
+    toast.success('PDF gerado - use "Salvar como PDF" na impressora');
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-            <ClipboardCheck className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <ClipboardCheck className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Inventário</h1>
+              <p className="text-sm text-muted-foreground">
+                Controle manual de estoque por conferência
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Inventário</h1>
-            <p className="text-sm text-muted-foreground">
-              Controle manual de estoque por conferência
-            </p>
-          </div>
+
+          {/* Botão Exportar */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={loading || listaFiltrada.length === 0}>
+                <Download className="mr-2 h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportarPDF}>
+                <FileText className="mr-2 h-4 w-4" />
+                Exportar PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportarCSV}>
+                <FileSpreadsheet className="mr-2 h-4 w-4" />
+                Exportar Planilha (CSV)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Indicadores */}
