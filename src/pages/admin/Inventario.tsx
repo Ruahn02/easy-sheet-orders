@@ -99,10 +99,10 @@ export default function Inventario() {
     }
   }, [entidades, entidadeFiltro]);
 
-  // Produtos filtrados por entidade
+  // Produtos filtrados por entidade - usando N:N
   const produtosDaEntidade = useMemo(() => {
     if (!entidadeFiltro) return [];
-    return produtos.filter(p => p.entidadeId === entidadeFiltro);
+    return produtos.filter(p => p.entidadeIds.includes(entidadeFiltro));
   }, [produtos, entidadeFiltro]);
 
   // Lista final com status de inventário
