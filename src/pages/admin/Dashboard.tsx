@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
   const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
+  const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
 
@@ -315,19 +316,61 @@ export default function Dashboard() {
               {/* Filtro Loja */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Loja / Setor</label>
-                <Select value={lojaFiltro} onValueChange={setLojaFiltro}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas as lojas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as lojas</SelectItem>
-                    {lojas.map((loja) => (
-                      <SelectItem key={loja.id} value={loja.id}>
-                        {loja.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={lojaPopoverOpen} onOpenChange={setLojaPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={lojaPopoverOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      {lojaFiltro === 'todas'
+                        ? 'Todas as lojas'
+                        : lojas.find(l => l.id === lojaFiltro)?.nome || 'Selecionar...'}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0" align="start">
+                    <Command filter={(value, search) => {
+                      if (value === 'todas') {
+                        return 'todas as lojas'.includes(search.toLowerCase()) ? 1 : 0;
+                      }
+                      const loja = lojas.find(l => l.id === value);
+                      if (!loja) return 0;
+                      return loja.nome.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                    }}>
+                      <CommandInput placeholder="Buscar loja..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhuma loja encontrada.</CommandEmpty>
+                        <CommandGroup>
+                          <CommandItem
+                            value="todas"
+                            onSelect={() => {
+                              setLojaFiltro('todas');
+                              setLojaPopoverOpen(false);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", lojaFiltro === 'todas' ? "opacity-100" : "opacity-0")} />
+                            Todas as lojas
+                          </CommandItem>
+                          {lojas.map((loja) => (
+                            <CommandItem
+                              key={loja.id}
+                              value={loja.id}
+                              onSelect={() => {
+                                setLojaFiltro(loja.id);
+                                setLojaPopoverOpen(false);
+                              }}
+                            >
+                              <Check className={cn("mr-2 h-4 w-4", lojaFiltro === loja.id ? "opacity-100" : "opacity-0")} />
+                              {loja.nome}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Filtro Produto com busca */}

@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2 } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +58,7 @@ export default function Pedidos() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
+  const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
   
   // Estado para navegação estilo planilha
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
@@ -447,19 +449,61 @@ export default function Pedidos() {
               />
             </div>
 
-            <Select value={selectedLojaId} onValueChange={setSelectedLojaId}>
-              <SelectTrigger className="bg-card h-8 w-36 text-sm">
-                <SelectValue placeholder="Todas lojas" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50 max-h-60">
-                <SelectItem value="all">Todas as lojas</SelectItem>
-                {lojas.map((loja) => (
-                  <SelectItem key={loja.id} value={loja.id}>
-                    {loja.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Popover open={lojaPopoverOpen} onOpenChange={setLojaPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={lojaPopoverOpen}
+                  className="bg-card h-8 w-40 justify-between text-sm font-normal"
+                >
+                  {selectedLojaId === 'all'
+                    ? 'Todas as lojas'
+                    : lojas.find(l => l.id === selectedLojaId)?.nome || 'Selecionar...'}
+                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[250px] p-0" align="start">
+                <Command filter={(value, search) => {
+                  if (value === 'all') {
+                    return 'todas as lojas'.includes(search.toLowerCase()) ? 1 : 0;
+                  }
+                  const loja = lojas.find(l => l.id === value);
+                  if (!loja) return 0;
+                  return loja.nome.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                }}>
+                  <CommandInput placeholder="Buscar loja..." className="h-8" />
+                  <CommandList>
+                    <CommandEmpty>Nenhuma loja encontrada.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="all"
+                        onSelect={() => {
+                          setSelectedLojaId('all');
+                          setLojaPopoverOpen(false);
+                        }}
+                      >
+                        <Check className={cn("mr-2 h-4 w-4", selectedLojaId === 'all' ? "opacity-100" : "opacity-0")} />
+                        Todas as lojas
+                      </CommandItem>
+                      {lojas.map((loja) => (
+                        <CommandItem
+                          key={loja.id}
+                          value={loja.id}
+                          onSelect={() => {
+                            setSelectedLojaId(loja.id);
+                            setLojaPopoverOpen(false);
+                          }}
+                        >
+                          <Check className={cn("mr-2 h-4 w-4", selectedLojaId === loja.id ? "opacity-100" : "opacity-0")} />
+                          {loja.nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="bg-card h-8 w-28 text-sm">
