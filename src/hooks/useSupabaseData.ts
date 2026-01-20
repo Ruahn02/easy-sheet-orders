@@ -84,6 +84,7 @@ export function useLojas() {
     const { data, error } = await supabase
       .from('lojas')
       .select('*')
+      .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
     if (!error && data) {
@@ -91,6 +92,7 @@ export function useLojas() {
         id: l.id,
         nome: l.nome,
         status: l.status as 'ativo' | 'inativo',
+        ordem: l.ordem ?? undefined,
         criadoEm: new Date(l.criado_em),
       })));
     }
@@ -101,13 +103,13 @@ export function useLojas() {
     fetchLojas();
   }, [fetchLojas]);
 
-  const addLoja = async (nome: string, status: 'ativo' | 'inativo') => {
+  const addLoja = async (nome: string, status: 'ativo' | 'inativo', ordem?: number) => {
     // Gerar código de acesso único para satisfazer constraint do banco
     const codigoAcesso = `LOJA${Date.now().toString(36).toUpperCase()}`;
     
     const { data, error } = await supabase
       .from('lojas')
-      .insert({ nome, status, codigo_acesso: codigoAcesso, ativo: true })
+      .insert({ nome, status, codigo_acesso: codigoAcesso, ativo: true, ordem: ordem ?? null })
       .select()
       .single();
     
@@ -118,10 +120,11 @@ export function useLojas() {
     return null;
   };
 
-  const updateLoja = async (id: string, updates: Partial<{ nome: string; status: 'ativo' | 'inativo' }>) => {
+  const updateLoja = async (id: string, updates: Partial<{ nome: string; status: 'ativo' | 'inativo'; ordem: number | undefined }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if ('ordem' in updates) dbUpdates.ordem = updates.ordem ?? null;
 
     const { error } = await supabase
       .from('lojas')
@@ -211,6 +214,7 @@ export function useProdutos() {
     const { data, error } = await supabase
       .from('produtos')
       .select('*')
+      .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
     if (!error && data) {
@@ -221,6 +225,7 @@ export function useProdutos() {
         qtdMaxima: p.qtd_maxima,
         status: p.status as 'ativo' | 'inativo',
         entidadeId: p.entidade_id,
+        ordem: p.ordem ?? undefined,
         criadoEm: new Date(p.criado_em),
       })));
     }
@@ -231,7 +236,7 @@ export function useProdutos() {
     fetchProdutos();
   }, [fetchProdutos]);
 
-  const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeId: string }) => {
+  const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeId: string; ordem?: number }) => {
     const { data, error } = await supabase
       .from('produtos')
       .insert({
@@ -240,6 +245,7 @@ export function useProdutos() {
         qtd_maxima: produto.qtdMaxima,
         status: produto.status,
         entidade_id: produto.entidadeId,
+        ordem: produto.ordem ?? null,
       })
       .select()
       .single();
@@ -251,13 +257,14 @@ export function useProdutos() {
     return null;
   };
 
-  const updateProduto = async (id: string, updates: Partial<{ codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeId: string }>) => {
+  const updateProduto = async (id: string, updates: Partial<{ codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeId: string; ordem: number | undefined }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.codigo !== undefined) dbUpdates.codigo = updates.codigo;
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.qtdMaxima !== undefined) dbUpdates.qtd_maxima = updates.qtdMaxima;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.entidadeId !== undefined) dbUpdates.entidade_id = updates.entidadeId;
+    if ('ordem' in updates) dbUpdates.ordem = updates.ordem ?? null;
 
     const { error } = await supabase
       .from('produtos')
