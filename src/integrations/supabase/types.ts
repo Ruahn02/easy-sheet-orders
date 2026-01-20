@@ -105,6 +105,7 @@ export type Database = {
           criado_em: string
           id: string
           nome: string
+          ordem: number | null
           status: string
         }
         Insert: {
@@ -113,6 +114,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nome: string
+          ordem?: number | null
           status?: string
         }
         Update: {
@@ -121,6 +123,7 @@ export type Database = {
           criado_em?: string
           id?: string
           nome?: string
+          ordem?: number | null
           status?: string
         }
         Relationships: []
@@ -213,6 +216,7 @@ export type Database = {
           entidade_id: string
           id: string
           nome: string
+          ordem: number | null
           qtd_maxima: number
           status: string
         }
@@ -222,6 +226,7 @@ export type Database = {
           entidade_id: string
           id?: string
           nome: string
+          ordem?: number | null
           qtd_maxima?: number
           status?: string
         }
@@ -231,6 +236,7 @@ export type Database = {
           entidade_id?: string
           id?: string
           nome?: string
+          ordem?: number | null
           qtd_maxima?: number
           status?: string
         }

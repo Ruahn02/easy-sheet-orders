@@ -9,6 +9,7 @@ export interface Loja {
   id: string;
   nome: string;
   status: 'ativo' | 'inativo';
+  ordem?: number;
   criadoEm: Date;
 }
 
@@ -20,6 +21,7 @@ export interface Produto {
   fotoUrl?: string;
   status: 'ativo' | 'inativo'; // Apenas visibilidade
   entidadeId: string;
+  ordem?: number;
   criadoEm: Date;
 }
 

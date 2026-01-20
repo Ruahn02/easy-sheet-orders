@@ -40,7 +40,8 @@ export default function Lojas() {
   const [editingLoja, setEditingLoja] = useState<Loja | null>(null);
   const [formData, setFormData] = useState({ 
     nome: '', 
-    status: 'ativo' as 'ativo' | 'inativo'
+    status: 'ativo' as 'ativo' | 'inativo',
+    ordem: '' as string
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -52,13 +53,15 @@ export default function Lojas() {
       setEditingLoja(loja);
       setFormData({ 
         nome: loja.nome, 
-        status: loja.status
+        status: loja.status,
+        ordem: loja.ordem?.toString() || ''
       });
     } else {
       setEditingLoja(null);
       setFormData({ 
         nome: '', 
-        status: 'ativo'
+        status: 'ativo',
+        ordem: ''
       });
     }
     setIsModalOpen(true);
@@ -71,14 +74,19 @@ export default function Lojas() {
     }
 
     setIsSaving(true);
+    const ordemValue = formData.ordem.trim() ? parseInt(formData.ordem) : undefined;
 
     if (editingLoja) {
-      const success = await updateLoja(editingLoja.id, formData);
+      const success = await updateLoja(editingLoja.id, { 
+        nome: formData.nome, 
+        status: formData.status, 
+        ordem: ordemValue 
+      });
       if (success) {
         toast({ title: 'Loja atualizada!' });
       }
     } else {
-      const result = await addLoja(formData.nome, formData.status);
+      const result = await addLoja(formData.nome, formData.status, ordemValue);
       if (result) {
         toast({ title: 'Loja criada!' });
       }
@@ -217,6 +225,18 @@ export default function Lojas() {
                     <SelectItem value="inativo">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Ordem (opcional)</label>
+                <Input
+                  type="number"
+                  value={formData.ordem}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, ordem: e.target.value }))}
+                  placeholder="Ex: 1, 2, 3..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Menor número = aparece primeiro. Vazio = final da lista.
+                </p>
               </div>
             </div>
             <DialogFooter>

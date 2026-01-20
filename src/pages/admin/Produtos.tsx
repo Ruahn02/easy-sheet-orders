@@ -46,6 +46,7 @@ export default function Produtos() {
     fotoUrl: '',
     status: 'ativo' as 'ativo' | 'inativo',
     entidadeId: '',
+    ordem: '' as string,
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -86,6 +87,7 @@ export default function Produtos() {
         fotoUrl: produto.fotoUrl || '',
         status: produto.status,
         entidadeId: produto.entidadeId,
+        ordem: produto.ordem?.toString() || '',
       });
     } else {
       setEditingProduto(null);
@@ -96,6 +98,7 @@ export default function Produtos() {
         fotoUrl: '',
         status: 'ativo',
         entidadeId: entidadeFiltro && entidadeFiltro !== 'all' ? entidadeFiltro : (entidades.length > 0 ? entidades[0].id : ''),
+        ordem: '',
       });
     }
     setIsModalOpen(true);
@@ -112,6 +115,7 @@ export default function Produtos() {
     }
 
     setIsSaving(true);
+    const ordemValue = formData.ordem.trim() ? parseInt(formData.ordem) : undefined;
 
     if (editingProduto) {
       const success = await updateProduto(editingProduto.id, {
@@ -120,6 +124,7 @@ export default function Produtos() {
         qtdMaxima: formData.qtdMaxima,
         status: formData.status,
         entidadeId: formData.entidadeId,
+        ordem: ordemValue,
       });
       if (success) {
         toast({ title: 'Produto atualizado!' });
@@ -131,6 +136,7 @@ export default function Produtos() {
         qtdMaxima: formData.qtdMaxima,
         status: formData.status,
         entidadeId: formData.entidadeId,
+        ordem: ordemValue,
       });
       if (result) {
         toast({ title: 'Produto criado!' });
@@ -418,6 +424,20 @@ export default function Produtos() {
                     <SelectItem value="inativo">🔴 Inativo</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Ordem */}
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Ordem (opcional)</label>
+                <Input
+                  type="number"
+                  value={formData.ordem}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, ordem: e.target.value }))}
+                  placeholder="Ex: 1, 2, 3..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Menor número = aparece primeiro. Vazio = final da lista.
+                </p>
               </div>
             </div>
             <DialogFooter>
