@@ -28,6 +28,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -69,6 +79,7 @@ export default function Inventario() {
   const [quantidadeConferida, setQuantidadeConferida] = useState<string>('');
   const [unidadeSelecionada, setUnidadeSelecionada] = useState<string>('un');
   const [salvando, setSalvando] = useState(false);
+  const [mostrarConfirmacao, setMostrarConfirmacao] = useState(false);
 
   // Opções de unidade de medida
   const UNIDADES = [
@@ -135,15 +146,21 @@ export default function Inventario() {
     setUnidadeSelecionada(registro?.unidadeMedida ?? 'un');
   };
 
-  // Confirmar conferência
-  const confirmarConferencia = async () => {
-    if (!produtoSelecionado || !entidadeFiltro) return;
-
+  // Pré-confirmar conferência (valida e abre confirmação)
+  const preConfirmarConferencia = () => {
     const quantidade = parseInt(quantidadeConferida);
     if (isNaN(quantidade) || quantidade < 0) {
       toast.error('Quantidade inválida');
       return;
     }
+    setMostrarConfirmacao(true);
+  };
+
+  // Confirmar conferência (salva no banco)
+  const confirmarConferencia = async () => {
+    if (!produtoSelecionado || !entidadeFiltro) return;
+
+    const quantidade = parseInt(quantidadeConferida);
 
     setSalvando(true);
     const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltro, quantidade, unidadeSelecionada);
@@ -151,11 +168,13 @@ export default function Inventario() {
 
     if (sucesso) {
       toast.success('Inventário atualizado');
+      setMostrarConfirmacao(false);
       setProdutoSelecionado(null);
       setQuantidadeConferida('');
       setUnidadeSelecionada('un');
     } else {
       toast.error('Erro ao salvar');
+      setMostrarConfirmacao(false);
     }
   };
 
@@ -516,13 +535,34 @@ export default function Inventario() {
             <Button variant="outline" onClick={() => setProdutoSelecionado(null)}>
               Cancelar
             </Button>
-            <Button onClick={confirmarConferencia} disabled={salvando}>
-              {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button onClick={preConfirmarConferencia} disabled={salvando}>
               Confirmar Inventário
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AlertDialog de Confirmação */}
+      <AlertDialog open={mostrarConfirmacao} onOpenChange={setMostrarConfirmacao}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Conferência?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p><strong>Produto:</strong> {produtoSelecionado?.nome}</p>
+                <p><strong>Quantidade:</strong> {quantidadeConferida} {unidadeSelecionada}</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={salvando}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmarConferencia} disabled={salvando}>
+              {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
