@@ -68,9 +68,9 @@ export default function Dashboard() {
   const stats = useMemo(() => {
     const lojasQuePediram = new Set(pedidosFiltrados.map((p) => p.lojaId));
     
-    // Produtos filtrados por entidade
+    // Produtos filtrados por entidade - usando N:N
     const produtosDaEntidade = entidadeFiltro !== 'todas' 
-      ? produtos.filter((p) => p.entidadeId === entidadeFiltro)
+      ? produtos.filter((p) => p.entidadeIds.includes(entidadeFiltro))
       : produtos;
     
     const produtosAtivos = produtosDaEntidade.filter((p) => p.status === 'ativo');
@@ -197,9 +197,9 @@ export default function Dashboard() {
 
   const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadeFiltro !== 'todas';
 
-  // Produtos filtrados por entidade para o select
+  // Produtos filtrados por entidade para o select - usando N:N
   const produtosFiltradosParaSelect = entidadeFiltro !== 'todas' 
-    ? produtos.filter(p => p.entidadeId === entidadeFiltro)
+    ? produtos.filter(p => p.entidadeIds.includes(entidadeFiltro))
     : produtos;
 
   if (isLoading) {

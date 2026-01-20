@@ -20,7 +20,8 @@ export interface Produto {
   qtdMaxima: number;
   fotoUrl?: string;
   status: 'ativo' | 'inativo'; // Apenas visibilidade
-  entidadeId: string;
+  entidadeIds: string[];       // N:N - array de entidades
+  entidadeId?: string;         // Fallback para compatibilidade
   ordem?: number;
   criadoEm: Date;
 }

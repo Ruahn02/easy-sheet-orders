@@ -92,9 +92,9 @@ export function ProdutosAnalytics({
       });
     });
 
-    // Filtrar produtos pela entidade se necessário
+    // Filtrar produtos pela entidade se necessário - usando N:N
     const produtosDaEntidade = entidadeFiltro !== 'todas'
-      ? produtos.filter((p) => p.entidadeId === entidadeFiltro)
+      ? produtos.filter((p) => p.entidadeIds.includes(entidadeFiltro))
       : produtos;
 
     return Object.entries(contagem)

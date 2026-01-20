@@ -20,20 +20,20 @@ export const mockLojas: Loja[] = [
 
 export const mockProdutos: Produto[] = [
   // Material de Escritório (ent1)
-  { id: '1', codigo: 'ESC001', nome: 'Caneta Azul', qtdMaxima: 100, status: 'ativo', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
-  { id: '2', codigo: 'ESC002', nome: 'Lápis Preto', qtdMaxima: 200, status: 'ativo', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
-  { id: '3', codigo: 'ESC003', nome: 'Borracha Branca', qtdMaxima: 150, status: 'ativo', entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
-  { id: '4', codigo: 'ESC004', nome: 'Grampeador', qtdMaxima: 20, status: 'inativo', entidadeId: 'ent1', criadoEm: new Date('2024-01-02') },
+  { id: '1', codigo: 'ESC001', nome: 'Caneta Azul', qtdMaxima: 100, status: 'ativo', entidadeIds: ['ent1'], entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '2', codigo: 'ESC002', nome: 'Lápis Preto', qtdMaxima: 200, status: 'ativo', entidadeIds: ['ent1'], entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '3', codigo: 'ESC003', nome: 'Borracha Branca', qtdMaxima: 150, status: 'ativo', entidadeIds: ['ent1'], entidadeId: 'ent1', criadoEm: new Date('2024-01-01') },
+  { id: '4', codigo: 'ESC004', nome: 'Grampeador', qtdMaxima: 20, status: 'inativo', entidadeIds: ['ent1'], entidadeId: 'ent1', criadoEm: new Date('2024-01-02') },
   
   // Uso e Consumo (ent2)
-  { id: '5', codigo: 'UC001', nome: 'Papel Toalha', qtdMaxima: 50, status: 'ativo', entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
-  { id: '6', codigo: 'UC002', nome: 'Detergente 500ml', qtdMaxima: 30, status: 'ativo', entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
-  { id: '7', codigo: 'UC003', nome: 'Álcool 70%', qtdMaxima: 40, status: 'ativo', entidadeId: 'ent2', criadoEm: new Date('2024-01-02') },
+  { id: '5', codigo: 'UC001', nome: 'Papel Toalha', qtdMaxima: 50, status: 'ativo', entidadeIds: ['ent2'], entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
+  { id: '6', codigo: 'UC002', nome: 'Detergente 500ml', qtdMaxima: 30, status: 'ativo', entidadeIds: ['ent2'], entidadeId: 'ent2', criadoEm: new Date('2024-01-01') },
+  { id: '7', codigo: 'UC003', nome: 'Álcool 70%', qtdMaxima: 40, status: 'ativo', entidadeIds: ['ent2'], entidadeId: 'ent2', criadoEm: new Date('2024-01-02') },
   
   // Copa e Cozinha (ent3)
-  { id: '8', codigo: 'COPA001', nome: 'Café 500g', qtdMaxima: 20, status: 'ativo', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
-  { id: '9', codigo: 'COPA002', nome: 'Açúcar 1kg', qtdMaxima: 30, status: 'ativo', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
-  { id: '10', codigo: 'COPA003', nome: 'Copo Descartável 200ml', qtdMaxima: 100, status: 'ativo', entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '8', codigo: 'COPA001', nome: 'Café 500g', qtdMaxima: 20, status: 'ativo', entidadeIds: ['ent3'], entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '9', codigo: 'COPA002', nome: 'Açúcar 1kg', qtdMaxima: 30, status: 'ativo', entidadeIds: ['ent3'], entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
+  { id: '10', codigo: 'COPA003', nome: 'Copo Descartável 200ml', qtdMaxima: 100, status: 'ativo', entidadeIds: ['ent3'], entidadeId: 'ent3', criadoEm: new Date('2024-01-05') },
 ];
 
 export const mockPedidos: Pedido[] = [

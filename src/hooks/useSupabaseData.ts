@@ -211,24 +211,45 @@ export function useProdutos() {
   const [loading, setLoading] = useState(true);
 
   const fetchProdutos = useCallback(async () => {
-    const { data, error } = await supabase
+    // Buscar produtos
+    const { data: produtosData, error: produtosError } = await supabase
       .from('produtos')
       .select('*')
       .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
-    if (!error && data) {
-      setProdutos(data.map(p => ({
-        id: p.id,
-        codigo: p.codigo,
-        nome: p.nome,
-        qtdMaxima: p.qtd_maxima,
-        status: p.status as 'ativo' | 'inativo',
-        entidadeId: p.entidade_id,
-        ordem: p.ordem ?? undefined,
-        criadoEm: new Date(p.criado_em),
-      })));
+    if (produtosError || !produtosData) {
+      setLoading(false);
+      return;
     }
+
+    // Buscar relacionamentos N:N
+    const { data: relData } = await supabase
+      .from('produto_entidades')
+      .select('produto_id, entidade_id');
+
+    // Agrupar entidades por produto
+    const entidadesPorProduto: Record<string, string[]> = {};
+    (relData || []).forEach((rel: { produto_id: string; entidade_id: string }) => {
+      if (!entidadesPorProduto[rel.produto_id]) {
+        entidadesPorProduto[rel.produto_id] = [];
+      }
+      entidadesPorProduto[rel.produto_id].push(rel.entidade_id);
+    });
+
+    setProdutos(produtosData.map(p => ({
+      id: p.id,
+      codigo: p.codigo,
+      nome: p.nome,
+      qtdMaxima: p.qtd_maxima,
+      status: p.status as 'ativo' | 'inativo',
+      // N:N: usar relacionamentos ou fallback para entidade_id original
+      entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
+      entidadeId: p.entidade_id, // manter para compatibilidade
+      ordem: p.ordem ?? undefined,
+      criadoEm: new Date(p.criado_em),
+    })));
+
     setLoading(false);
   }, []);
 
@@ -236,7 +257,8 @@ export function useProdutos() {
     fetchProdutos();
   }, [fetchProdutos]);
 
-  const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeId: string; ordem?: number }) => {
+  const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem?: number }) => {
+    // Inserir produto com primeira entidade como fallback
     const { data, error } = await supabase
       .from('produtos')
       .insert({
@@ -244,26 +266,37 @@ export function useProdutos() {
         nome: produto.nome,
         qtd_maxima: produto.qtdMaxima,
         status: produto.status,
-        entidade_id: produto.entidadeId,
+        entidade_id: produto.entidadeIds[0] || null, // fallback
         ordem: produto.ordem ?? null,
       })
       .select()
       .single();
     
     if (!error && data) {
+      // Inserir relacionamentos N:N
+      if (produto.entidadeIds.length > 0) {
+        const relInserts = produto.entidadeIds.map(entidadeId => ({
+          produto_id: data.id,
+          entidade_id: entidadeId,
+        }));
+        await supabase.from('produto_entidades').insert(relInserts);
+      }
+      
       await fetchProdutos();
       return data;
     }
     return null;
   };
 
-  const updateProduto = async (id: string, updates: Partial<{ codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeId: string; ordem: number | undefined }>) => {
+  const updateProduto = async (id: string, updates: Partial<{ codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem: number | undefined }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.codigo !== undefined) dbUpdates.codigo = updates.codigo;
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.qtdMaxima !== undefined) dbUpdates.qtd_maxima = updates.qtdMaxima;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
-    if (updates.entidadeId !== undefined) dbUpdates.entidade_id = updates.entidadeId;
+    if (updates.entidadeIds !== undefined && updates.entidadeIds.length > 0) {
+      dbUpdates.entidade_id = updates.entidadeIds[0]; // fallback
+    }
     if ('ordem' in updates) dbUpdates.ordem = updates.ordem ?? null;
 
     const { error } = await supabase
@@ -271,14 +304,29 @@ export function useProdutos() {
       .update(dbUpdates)
       .eq('id', id);
     
-    if (!error) {
-      await fetchProdutos();
-      return true;
+    if (error) return false;
+
+    // Atualizar relacionamentos N:N
+    if (updates.entidadeIds !== undefined) {
+      // Deletar relacionamentos antigos
+      await supabase.from('produto_entidades').delete().eq('produto_id', id);
+      
+      // Inserir novos relacionamentos
+      if (updates.entidadeIds.length > 0) {
+        const relInserts = updates.entidadeIds.map(entidadeId => ({
+          produto_id: id,
+          entidade_id: entidadeId,
+        }));
+        await supabase.from('produto_entidades').insert(relInserts);
+      }
     }
-    return false;
+    
+    await fetchProdutos();
+    return true;
   };
 
   const deleteProduto = async (id: string) => {
+    // Relacionamentos são deletados automaticamente (ON DELETE CASCADE)
     const { error } = await supabase
       .from('produtos')
       .delete()

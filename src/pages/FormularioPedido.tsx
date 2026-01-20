@@ -42,9 +42,9 @@ const FormularioPedido = () => {
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
 
-  // Filtra produtos desta entidade (ativos e inativos)
+  // Filtra produtos desta entidade (ativos e inativos) - usando N:N
   const produtosDaEntidade = produtos.filter(
-    (p) => p.entidadeId === entidadeId
+    (p) => p.entidadeIds.includes(entidadeId!)
   );
 
   // Produtos ativos (para verificação de pedido vazio)

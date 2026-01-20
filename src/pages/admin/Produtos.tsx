@@ -45,7 +45,7 @@ export default function Produtos() {
     qtdMaxima: 100,
     fotoUrl: '',
     status: 'ativo' as 'ativo' | 'inativo',
-    entidadeId: '',
+    entidadeIds: [] as string[],
     ordem: '' as string,
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -58,12 +58,12 @@ export default function Produtos() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [inativarConfirm, setInativarConfirm] = useState<Produto | null>(null);
 
-  // Produtos filtrados
+  // Produtos filtrados - usando N:N
   const produtosFiltrados = useMemo(() => {
     let lista = produtos;
     
     if (entidadeFiltro && entidadeFiltro !== 'all') {
-      lista = lista.filter(p => p.entidadeId === entidadeFiltro);
+      lista = lista.filter(p => p.entidadeIds.includes(entidadeFiltro));
     }
     
     if (busca.trim()) {
@@ -86,7 +86,7 @@ export default function Produtos() {
         qtdMaxima: produto.qtdMaxima,
         fotoUrl: produto.fotoUrl || '',
         status: produto.status,
-        entidadeId: produto.entidadeId,
+        entidadeIds: produto.entidadeIds,
         ordem: produto.ordem?.toString() || '',
       });
     } else {
@@ -97,7 +97,7 @@ export default function Produtos() {
         qtdMaxima: 100,
         fotoUrl: '',
         status: 'ativo',
-        entidadeId: entidadeFiltro && entidadeFiltro !== 'all' ? entidadeFiltro : (entidades.length > 0 ? entidades[0].id : ''),
+        entidadeIds: entidadeFiltro && entidadeFiltro !== 'all' ? [entidadeFiltro] : (entidades.length > 0 ? [entidades[0].id] : []),
         ordem: '',
       });
     }
@@ -109,8 +109,8 @@ export default function Produtos() {
       toast({ title: 'Código e nome são obrigatórios', variant: 'destructive' });
       return;
     }
-    if (!formData.entidadeId) {
-      toast({ title: 'Selecione uma entidade de pedido', variant: 'destructive' });
+    if (formData.entidadeIds.length === 0) {
+      toast({ title: 'Selecione pelo menos uma entidade de pedido', variant: 'destructive' });
       return;
     }
 
@@ -123,7 +123,7 @@ export default function Produtos() {
         nome: formData.nome,
         qtdMaxima: formData.qtdMaxima,
         status: formData.status,
-        entidadeId: formData.entidadeId,
+        entidadeIds: formData.entidadeIds,
         ordem: ordemValue,
       });
       if (success) {
@@ -135,7 +135,7 @@ export default function Produtos() {
         nome: formData.nome,
         qtdMaxima: formData.qtdMaxima,
         status: formData.status,
-        entidadeId: formData.entidadeId,
+        entidadeIds: formData.entidadeIds,
         ordem: ordemValue,
       });
       if (result) {
@@ -188,8 +188,10 @@ export default function Produtos() {
     }
   };
 
-  const getEntidadeNome = (entidadeId: string) => {
-    return entidades.find(e => e.id === entidadeId)?.nome || '-';
+  const getEntidadeNomes = (entidadeIds: string[]) => {
+    if (entidadeIds.length === 0) return '-';
+    const nomes = entidadeIds.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean);
+    return nomes.length > 0 ? nomes.join(', ') : '-';
   };
 
   if (loading) {
@@ -283,9 +285,13 @@ export default function Produtos() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <Badge variant="outline" className="text-xs">
-                        {getEntidadeNome(produto.entidadeId)}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {produto.entidadeIds.map(entId => (
+                          <Badge key={entId} variant="outline" className="text-xs">
+                            {entidades.find(e => e.id === entId)?.nome || '-'}
+                          </Badge>
+                        ))}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-foreground">{produto.qtdMaxima}</td>
                     <td className="px-4 py-3">
@@ -346,24 +352,33 @@ export default function Produtos() {
               <DialogTitle>{editingProduto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              {/* Entidade de Pedido */}
+              {/* Entidades de Pedido - Multi-select */}
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">Entidade de Pedido *</label>
-                <Select
-                  value={formData.entidadeId}
-                  onValueChange={(value) => setFormData((prev) => ({ ...prev, entidadeId: value }))}
-                >
-                  <SelectTrigger className="bg-background">
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    {entidades.map((ent) => (
-                      <SelectItem key={ent.id} value={ent.id}>
-                        {ent.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-sm font-medium text-foreground mb-2 block">Entidades de Pedido *</label>
+                <div className="space-y-2 max-h-48 overflow-y-auto border rounded-lg p-3 bg-background">
+                  {entidades.map((ent) => (
+                    <label key={ent.id} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-1 rounded">
+                      <input
+                        type="checkbox"
+                        checked={formData.entidadeIds.includes(ent.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData(prev => ({ ...prev, entidadeIds: [...prev.entidadeIds, ent.id] }));
+                          } else {
+                            setFormData(prev => ({ ...prev, entidadeIds: prev.entidadeIds.filter(id => id !== ent.id) }));
+                          }
+                        }}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      <span className="text-sm">{ent.nome}</span>
+                    </label>
+                  ))}
+                </div>
+                {formData.entidadeIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {formData.entidadeIds.length} entidade(s) selecionada(s)
+                  </p>
+                )}
               </div>
               
               <div className="grid grid-cols-2 gap-4">

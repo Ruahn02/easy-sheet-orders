@@ -209,6 +209,42 @@ export type Database = {
           },
         ]
       }
+      produto_entidades: {
+        Row: {
+          criado_em: string
+          entidade_id: string
+          id: string
+          produto_id: string
+        }
+        Insert: {
+          criado_em?: string
+          entidade_id: string
+          id?: string
+          produto_id: string
+        }
+        Update: {
+          criado_em?: string
+          entidade_id?: string
+          id?: string
+          produto_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "produto_entidades_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_entidades_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
           codigo: string
