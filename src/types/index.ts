@@ -56,3 +56,11 @@ export interface Inventario {
   dataConferencia: Date;
   status: 'pendente' | 'conferido';
 }
+
+export interface SeparacaoItem {
+  id: string;
+  pedidoId: string;
+  produtoId: string;
+  separado: boolean;
+  dataRegistro: Date;
+}
