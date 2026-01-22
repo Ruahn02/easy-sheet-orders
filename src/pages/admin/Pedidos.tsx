@@ -745,10 +745,11 @@ export default function Pedidos() {
                                 key={produto.id}
                                 data-row={rowIndex}
                                 data-col={colIndex}
-                                className={cn(
+                              className={cn(
                                   "px-2 py-1 text-xs text-center cursor-pointer select-text",
                                   focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
-                                    "ring-2 ring-primary ring-inset bg-primary/10"
+                                    "ring-2 ring-primary ring-inset bg-primary/10",
+                                  qty === 0 && "bg-red-100 dark:bg-red-900/30"
                                 )}
                                 onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
                               >
