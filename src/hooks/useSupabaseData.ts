@@ -585,3 +585,122 @@ export function useInventario() {
 
   return { inventario, loading, fetchInventario, conferirProduto };
 }
+
+// Hook para controle visual de separação de produtos
+export function useSeparacao() {
+  const [separacoes, setSeparacoes] = useState<Map<string, boolean>>(new Map());
+  const [loading, setLoading] = useState(false);
+
+  // Buscar separações de um pedido específico
+  const fetchSeparacoes = async (pedidoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('pedido_separacao_itens')
+        .select('*')
+        .eq('pedido_id', pedidoId);
+
+      if (error) throw error;
+
+      const map = new Map<string, boolean>();
+      data?.forEach(item => {
+        map.set(`${item.pedido_id}_${item.produto_id}`, item.separado);
+      });
+      setSeparacoes(prev => {
+        const newMap = new Map(prev);
+        data?.forEach(item => {
+          newMap.set(`${item.pedido_id}_${item.produto_id}`, item.separado);
+        });
+        return newMap;
+      });
+      return data;
+    } catch (error) {
+      console.error('Erro ao buscar separações:', error);
+      return [];
+    }
+  };
+
+  // Buscar separações de múltiplos pedidos
+  const fetchSeparacoesMultiplos = async (pedidoIds: string[]) => {
+    if (pedidoIds.length === 0) return;
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('pedido_separacao_itens')
+        .select('*')
+        .in('pedido_id', pedidoIds);
+
+      if (error) throw error;
+
+      const map = new Map<string, boolean>();
+      data?.forEach(item => {
+        map.set(`${item.pedido_id}_${item.produto_id}`, item.separado);
+      });
+      setSeparacoes(map);
+    } catch (error) {
+      console.error('Erro ao buscar separações:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Alternar estado de separação (upsert)
+  const toggleSeparacao = async (pedidoId: string, produtoId: string) => {
+    const key = `${pedidoId}_${produtoId}`;
+    const currentValue = separacoes.get(key);
+    // Se não existe registro, assumimos separado=true, então ao clicar vai para false
+    const novoValor = currentValue === undefined ? false : !currentValue;
+
+    // Atualização otimista
+    setSeparacoes(prev => {
+      const newMap = new Map(prev);
+      newMap.set(key, novoValor);
+      return newMap;
+    });
+
+    try {
+      const { error } = await supabase
+        .from('pedido_separacao_itens')
+        .upsert({
+          pedido_id: pedidoId,
+          produto_id: produtoId,
+          separado: novoValor,
+          data_registro: new Date().toISOString()
+        }, {
+          onConflict: 'pedido_id,produto_id'
+        });
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      // Reverter em caso de erro
+      setSeparacoes(prev => {
+        const newMap = new Map(prev);
+        if (currentValue === undefined) {
+          newMap.delete(key);
+        } else {
+          newMap.set(key, currentValue);
+        }
+        return newMap;
+      });
+      console.error('Erro ao atualizar separação:', error);
+      return false;
+    }
+  };
+
+  // Verificar se um produto está separado
+  const isSeparado = (pedidoId: string, produtoId: string): boolean => {
+    const key = `${pedidoId}_${produtoId}`;
+    const value = separacoes.get(key);
+    // Se não existe registro, assume separado=true (comportamento padrão)
+    return value === undefined ? true : value;
+  };
+
+  return { 
+    separacoes, 
+    loading, 
+    fetchSeparacoes, 
+    fetchSeparacoesMultiplos,
+    toggleSeparacao, 
+    isSeparado 
+  };
+}

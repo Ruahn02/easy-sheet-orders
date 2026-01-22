@@ -164,6 +164,45 @@ export type Database = {
           },
         ]
       }
+      pedido_separacao_itens: {
+        Row: {
+          data_registro: string
+          id: string
+          pedido_id: string
+          produto_id: string
+          separado: boolean
+        }
+        Insert: {
+          data_registro?: string
+          id?: string
+          pedido_id: string
+          produto_id: string
+          separado?: boolean
+        }
+        Update: {
+          data_registro?: string
+          id?: string
+          pedido_id?: string
+          produto_id?: string
+          separado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_separacao_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_separacao_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos: {
         Row: {
           cor_linha: string | null

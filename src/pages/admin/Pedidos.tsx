@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown } from 'lucide-react';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown, X } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
+import { useEntidades, useLojas, useProdutos, usePedidos, useSeparacao } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -50,6 +50,7 @@ export default function Pedidos() {
   const { produtos } = useProdutos();
   const { entidades } = useEntidades();
   const { toast } = useToast();
+  const { fetchSeparacoesMultiplos, toggleSeparacao, isSeparado } = useSeparacao();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLojaId, setSelectedLojaId] = useState<string>('all');
@@ -123,6 +124,14 @@ export default function Pedidos() {
     });
   }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos]);
 
+  // Carregar separações quando os pedidos filtrados mudam
+  useEffect(() => {
+    if (filteredPedidos.length > 0) {
+      const pedidoIds = filteredPedidos.map(p => p.id);
+      fetchSeparacoesMultiplos(pedidoIds);
+    }
+  }, [filteredPedidos]);
+
   const handleMarcarFeito = async (pedidoId: string) => {
     const success = await updatePedidoStatus(pedidoId, 'feito');
     if (success) {
@@ -132,6 +141,13 @@ export default function Pedidos() {
 
   const handleUpdateCor = async (pedidoId: string, cor: string | undefined) => {
     await updatePedidoCor(pedidoId, cor);
+  };
+
+  // Toggle separação ao clicar na célula
+  const handleToggleSeparacao = async (pedidoId: string, produtoId: string, qty: number) => {
+    // Só permite toggle em produtos com quantidade > 0
+    if (qty <= 0) return;
+    await toggleSeparacao(pedidoId, produtoId);
   };
 
   // Número total de colunas navegáveis (excluindo Ações)
@@ -744,6 +760,7 @@ export default function Pedidos() {
                           {produtosDaEntidade.map((produto, produtoIndex) => {
                             const qty = getQuantidadeProduto(pedido.id, produto.id);
                             const colIndex = 5 + produtoIndex;
+                            const separado = isSeparado(pedido.id, produto.id);
                             return (
                               <td 
                                 key={produto.id}
@@ -753,12 +770,26 @@ export default function Pedidos() {
                                   "px-2 py-1 text-xs text-center cursor-pointer select-text",
                                   focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
                                     "ring-2 ring-primary ring-inset bg-primary/10",
-                                  produto.status === 'inativo' && "bg-red-100 dark:bg-red-900/30"
+                                  produto.status === 'inativo' && "bg-red-100 dark:bg-red-900/30",
+                                  // Destaque laranja para produtos não separados
+                                  qty > 0 && !separado && "bg-orange-200 dark:bg-orange-900/30"
                                 )}
-                                onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
+                                onClick={() => {
+                                  setFocusedCell({ row: rowIndex, col: colIndex });
+                                  handleToggleSeparacao(pedido.id, produto.id, qty);
+                                }}
+                                title={qty > 0 ? (separado ? 'Clique para marcar como não separado' : 'Não separado - clique para marcar como separado') : undefined}
                               >
                                 {qty > 0 ? (
-                                  <span className="font-medium text-primary select-text">{qty}</span>
+                                  <div className="flex items-center justify-center gap-0.5">
+                                    <span className={cn(
+                                      "font-medium select-text",
+                                      separado ? "text-primary" : "text-orange-700 dark:text-orange-400"
+                                    )}>{qty}</span>
+                                    {!separado && (
+                                      <X className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                                    )}
+                                  </div>
                                 ) : (
                                   <span className="text-muted-foreground select-text">-</span>
                                 )}
