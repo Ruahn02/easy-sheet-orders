@@ -633,12 +633,16 @@ export default function Pedidos() {
                           className={cn(
                             "px-2 py-1.5 text-center text-xs font-medium text-foreground whitespace-nowrap min-w-[60px] cursor-pointer select-text",
                             focusedCell?.row === -1 && focusedCell?.col === colIndex && 
-                              "ring-2 ring-primary ring-inset bg-primary/10"
+                              "ring-2 ring-primary ring-inset bg-primary/10",
+                            produto.status === 'inativo' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                           )}
                           onClick={() => setFocusedCell({ row: -1, col: colIndex })}
                         >
                           <span className="select-text">{produto.codigo}</span>
-                          <div className="text-[10px] text-muted-foreground truncate max-w-[80px] select-text" title={produto.nome}>
+                          <div className={cn(
+                            "text-[10px] truncate max-w-[80px] select-text",
+                            produto.status === 'inativo' ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+                          )} title={produto.nome}>
                             {produto.nome}
                           </div>
                         </th>
@@ -745,11 +749,11 @@ export default function Pedidos() {
                                 key={produto.id}
                                 data-row={rowIndex}
                                 data-col={colIndex}
-                              className={cn(
+                                className={cn(
                                   "px-2 py-1 text-xs text-center cursor-pointer select-text",
                                   focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
                                     "ring-2 ring-primary ring-inset bg-primary/10",
-                                  qty === 0 && "bg-red-100 dark:bg-red-900/30"
+                                  produto.status === 'inativo' && "bg-red-100 dark:bg-red-900/30"
                                 )}
                                 onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
                               >
