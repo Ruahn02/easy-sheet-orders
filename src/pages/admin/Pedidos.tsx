@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown, X } from 'lucide-react';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown, X, FileText } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -329,60 +329,138 @@ export default function Pedidos() {
     setFocusedCell(null);
   }, [selectedEntidadeId]);
 
-  const handleExportCSV = () => {
+  const handleExportXLSX = async () => {
     if (!selectedEntidadeId || filteredPedidos.length === 0) {
       toast({ title: 'Nenhum pedido para exportar', variant: 'destructive' });
       return;
     }
 
-    // Cabeçalhos: Data | Hora | Loja | Observações | Status | Produtos...
-    const headers = [
-      'Data',
-      'Hora',
-      'Loja',
-      'Observações',
-      'Status',
-      ...produtosDaEntidade.map(p => `${p.codigo} - ${p.nome}`)
-    ];
+    try {
+      const XLSX = await import('xlsx');
+      
+      // Gerar dados NORMALIZADOS - cada linha = 1 item de pedido
+      const rows = filteredPedidos.flatMap(pedido => 
+        pedido.itens
+          .filter(item => item.quantidade > 0)
+          .map(item => {
+            const produto = produtos.find(p => p.id === item.produtoId);
+            const loja = lojas.find(l => l.id === pedido.lojaId);
+            return {
+              'Data': format(new Date(pedido.data), 'dd/MM/yyyy'),
+              'Hora': format(new Date(pedido.data), 'HH:mm'),
+              'Pedido': pedido.id.slice(0, 8),
+              'Loja': loja?.nome || '-',
+              'Produto': produto?.nome || '-',
+              'Código': produto?.codigo || '-',
+              'Quantidade': item.quantidade,
+              'Status': pedido.status === 'feito' ? 'Feito' : 'Pendente'
+            };
+          })
+      );
 
-    // Linhas de dados
-    const rows = filteredPedidos.map(pedido => {
-      const loja = lojas.find(l => l.id === pedido.lojaId);
-      return [
-        format(new Date(pedido.data), 'dd/MM/yyyy'),
-        format(new Date(pedido.data), 'HH:mm'),
-        loja?.nome || '-',
-        pedido.observacoes || '-',
-        pedido.status === 'feito' ? 'Feito' : 'Pendente',
-        ...produtosDaEntidade.map(p => {
-          const item = pedido.itens.find(i => i.produtoId === p.id);
-          return item?.quantidade?.toString() || '0';
-        })
-      ];
-    });
-
-    // Gerar CSV com escape correto
-    const escapeCSV = (value: string) => {
-      if (value.includes(',') || value.includes('"') || value.includes('\n')) {
-        return `"${value.replace(/"/g, '""')}"`;
+      if (rows.length === 0) {
+        toast({ title: 'Nenhum item para exportar', description: 'Os pedidos filtrados não possuem itens com quantidade > 0.', variant: 'destructive' });
+        return;
       }
-      return value;
-    };
 
-    const csvContent = [
-      headers.map(escapeCSV).join(','),
-      ...rows.map(row => row.map(escapeCSV).join(','))
-    ].join('\n');
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Pedidos');
+      XLSX.writeFile(wb, `pedidos_${entidadeSelecionada?.nome || 'export'}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
 
-    // Download com BOM para suporte UTF-8 no Excel
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `pedidos_${entidadeSelecionada?.nome || 'export'}_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+      toast({ title: 'Planilha exportada!', description: `${rows.length} itens de ${filteredPedidos.length} pedidos.` });
+    } catch (error) {
+      console.error('Erro ao exportar XLSX:', error);
+      toast({ title: 'Erro ao exportar planilha', variant: 'destructive' });
+    }
+  };
 
-    toast({ title: 'CSV exportado com sucesso!', description: `${filteredPedidos.length} pedidos exportados.` });
+  const handleExportPDF = async () => {
+    if (!selectedEntidadeId || filteredPedidos.length === 0) {
+      toast({ title: 'Nenhum pedido para exportar', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const { jsPDF } = await import('jspdf');
+      const autoTableModule = await import('jspdf-autotable');
+      const autoTable = autoTableModule.default;
+
+      const doc = new jsPDF();
+      let yPosition = 20;
+
+      // Título do documento
+      doc.setFontSize(16);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Pedidos - ${entidadeSelecionada?.nome || ''}`, 14, yPosition);
+      yPosition += 10;
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Exportado em: ${format(new Date(), 'dd/MM/yyyy HH:mm')}`, 14, yPosition);
+      yPosition += 15;
+
+      filteredPedidos.forEach((pedido) => {
+        const loja = lojas.find(l => l.id === pedido.lojaId);
+        const itensComQty = pedido.itens.filter(i => i.quantidade > 0);
+        
+        if (itensComQty.length === 0) return;
+
+        // Verificar se precisa nova página
+        if (yPosition > 250) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        // Cabeçalho do pedido
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Pedido: ${pedido.id.slice(0, 8)}`, 14, yPosition);
+        yPosition += 6;
+        
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Data: ${format(new Date(pedido.data), 'dd/MM/yyyy HH:mm')}`, 14, yPosition);
+        yPosition += 5;
+        doc.text(`Loja: ${loja?.nome || '-'}`, 14, yPosition);
+        yPosition += 5;
+        doc.text(`Status: ${pedido.status === 'feito' ? 'Feito' : 'Pendente'}`, 14, yPosition);
+        if (pedido.observacoes) {
+          yPosition += 5;
+          doc.text(`Obs: ${pedido.observacoes}`, 14, yPosition);
+        }
+        yPosition += 8;
+
+        // Tabela de produtos
+        const tableData = itensComQty.map(item => {
+          const produto = produtos.find(p => p.id === item.produtoId);
+          return [produto?.nome || '-', produto?.codigo || '-', item.quantidade.toString()];
+        });
+
+        autoTable(doc, {
+          startY: yPosition,
+          head: [['Produto', 'Código', 'Qtd']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [66, 66, 66], fontSize: 9 },
+          bodyStyles: { fontSize: 9 },
+          margin: { left: 14, right: 14 },
+          columnStyles: {
+            0: { cellWidth: 100 },
+            1: { cellWidth: 40 },
+            2: { cellWidth: 25, halign: 'center' }
+          }
+        });
+
+        yPosition = (doc as any).lastAutoTable.finalY + 15;
+      });
+
+      doc.save(`pedidos_${entidadeSelecionada?.nome || 'export'}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+
+      toast({ title: 'PDF exportado!', description: `${filteredPedidos.length} pedidos.` });
+    } catch (error) {
+      console.error('Erro ao exportar PDF:', error);
+      toast({ title: 'Erro ao exportar PDF', variant: 'destructive' });
+    }
   };
 
   const getQuantidadeProduto = (pedidoId: string, produtoId: string) => {
@@ -415,10 +493,16 @@ export default function Pedidos() {
                   : 'Selecione um tipo de pedido para ver a planilha'}
               </p>
             </div>
-            <Button onClick={handleExportCSV} variant="outline" className="flex items-center gap-2" disabled={!selectedEntidadeId}>
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={handleExportXLSX} variant="outline" className="flex items-center gap-2" disabled={!selectedEntidadeId}>
+                <Download className="h-4 w-4" />
+                Exportar Planilha
+              </Button>
+              <Button onClick={handleExportPDF} variant="outline" className="flex items-center gap-2" disabled={!selectedEntidadeId}>
+                <FileText className="h-4 w-4" />
+                Exportar PDF
+              </Button>
+            </div>
           </div>
 
         {/* Seletor de Tipo de Pedido - OBRIGATÓRIO */}
