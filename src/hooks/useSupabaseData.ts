@@ -242,6 +242,7 @@ export function useProdutos() {
       codigo: p.codigo,
       nome: p.nome,
       qtdMaxima: p.qtd_maxima,
+      fotoUrl: (p as any).imagem_url || undefined,
       status: p.status as 'ativo' | 'inativo',
       // N:N: usar relacionamentos ou fallback para entidade_id original
       entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
@@ -257,7 +258,7 @@ export function useProdutos() {
     fetchProdutos();
   }, [fetchProdutos]);
 
-  const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem?: number }) => {
+  const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem?: number; fotoUrl?: string }) => {
     // Inserir produto com primeira entidade como fallback
     const { data, error } = await supabase
       .from('produtos')
@@ -268,7 +269,8 @@ export function useProdutos() {
         status: produto.status,
         entidade_id: produto.entidadeIds[0] || null, // fallback
         ordem: produto.ordem ?? null,
-      })
+        imagem_url: produto.fotoUrl || null,
+      } as any)
       .select()
       .single();
     
@@ -288,7 +290,7 @@ export function useProdutos() {
     return null;
   };
 
-  const updateProduto = async (id: string, updates: Partial<{ codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem: number | undefined }>) => {
+  const updateProduto = async (id: string, updates: Partial<{ codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem: number | undefined; fotoUrl: string | undefined }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.codigo !== undefined) dbUpdates.codigo = updates.codigo;
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
@@ -298,6 +300,7 @@ export function useProdutos() {
       dbUpdates.entidade_id = updates.entidadeIds[0]; // fallback
     }
     if ('ordem' in updates) dbUpdates.ordem = updates.ordem ?? null;
+    if ('fotoUrl' in updates) dbUpdates.imagem_url = updates.fotoUrl || null;
 
     const { error } = await supabase
       .from('produtos')

@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2, X, Upload } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useProdutos } from '@/hooks/useSupabaseData';
+import { useImageUpload } from '@/hooks/useImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import { Produto } from '@/types';
 export default function Produtos() {
   const { produtos, loading, addProduto, updateProduto, deleteProduto } = useProdutos();
   const { entidades } = useEntidades();
+  const { uploadImage } = useImageUpload();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +51,11 @@ export default function Produtos() {
     ordem: '' as string,
   });
   const [isSaving, setIsSaving] = useState(false);
+  
+  // Estados para upload de imagem
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Filtros
   const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
@@ -77,6 +84,34 @@ export default function Produtos() {
     return lista;
   }, [produtos, entidadeFiltro, busca]);
 
+  // Handlers de imagem
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    // Validação de tamanho
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'Imagem muito grande. Máximo 2MB.', variant: 'destructive' });
+      return;
+    }
+    
+    // Validação de tipo
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({ title: 'Formato inválido. Use JPG, PNG ou WEBP.', variant: 'destructive' });
+      return;
+    }
+    
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleRemoveImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setFormData(prev => ({ ...prev, fotoUrl: '' }));
+  };
+
   const handleOpenModal = (produto?: Produto) => {
     if (produto) {
       setEditingProduto(produto);
@@ -89,6 +124,8 @@ export default function Produtos() {
         entidadeIds: produto.entidadeIds,
         ordem: produto.ordem?.toString() || '',
       });
+      setImagePreview(produto.fotoUrl || null);
+      setImageFile(null);
     } else {
       setEditingProduto(null);
       setFormData({
@@ -100,6 +137,8 @@ export default function Produtos() {
         entidadeIds: entidadeFiltro && entidadeFiltro !== 'all' ? [entidadeFiltro] : (entidades.length > 0 ? [entidades[0].id] : []),
         ordem: '',
       });
+      setImagePreview(null);
+      setImageFile(null);
     }
     setIsModalOpen(true);
   };
@@ -117,6 +156,25 @@ export default function Produtos() {
     setIsSaving(true);
     const ordemValue = formData.ordem.trim() ? parseInt(formData.ordem) : undefined;
 
+    // Fazer upload da imagem se houver arquivo novo
+    let finalImageUrl = formData.fotoUrl;
+    
+    if (imageFile) {
+      setIsUploading(true);
+      try {
+        finalImageUrl = await uploadImage(imageFile) || '';
+      } catch (err: any) {
+        toast({ title: err.message || 'Erro ao enviar imagem', variant: 'destructive' });
+        setIsUploading(false);
+        setIsSaving(false);
+        return;
+      }
+      setIsUploading(false);
+    } else if (!imagePreview) {
+      // Se removeu a imagem (preview está null mas não tem arquivo novo)
+      finalImageUrl = '';
+    }
+
     if (editingProduto) {
       const success = await updateProduto(editingProduto.id, {
         codigo: formData.codigo,
@@ -125,6 +183,7 @@ export default function Produtos() {
         status: formData.status,
         entidadeIds: formData.entidadeIds,
         ordem: ordemValue,
+        fotoUrl: finalImageUrl || undefined,
       });
       if (success) {
         toast({ title: 'Produto atualizado!' });
@@ -137,6 +196,7 @@ export default function Produtos() {
         status: formData.status,
         entidadeIds: formData.entidadeIds,
         ordem: ordemValue,
+        fotoUrl: finalImageUrl || undefined,
       });
       if (result) {
         toast({ title: 'Produto criado!' });
@@ -144,6 +204,8 @@ export default function Produtos() {
     }
 
     setIsSaving(false);
+    setImageFile(null);
+    setImagePreview(null);
     setIsModalOpen(false);
   };
 
@@ -409,13 +471,57 @@ export default function Produtos() {
                   placeholder="Nome do produto"
                 />
               </div>
+              {/* Upload de Imagem */}
               <div>
-                <label className="text-sm font-medium text-foreground mb-2 block">URL da Foto (opcional)</label>
-                <Input
-                  value={formData.fotoUrl}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, fotoUrl: e.target.value }))}
-                  placeholder="https://..."
-                />
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Imagem do Produto (opcional)
+                </label>
+                
+                {/* Preview */}
+                {imagePreview ? (
+                  <div className="relative w-32 h-32 mb-2">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover rounded-lg border border-border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
+                      onClick={handleRemoveImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="w-32 h-32 mb-2 border-2 border-dashed border-border rounded-lg flex items-center justify-center bg-muted/50">
+                    <Package className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+                
+                {/* Input de arquivo */}
+                <div className="flex items-center gap-2">
+                  <label className="cursor-pointer">
+                    <Input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      onChange={handleImageSelect}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-2 px-3 py-2 bg-secondary hover:bg-secondary/80 rounded-md text-sm font-medium transition-colors">
+                      <Upload className="h-4 w-4" />
+                      {imagePreview ? 'Trocar imagem' : 'Escolher imagem'}
+                    </div>
+                  </label>
+                  {isUploading && (
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  JPG, PNG ou WEBP. Máximo 2MB.
+                </p>
               </div>
 
 

@@ -290,6 +290,7 @@ export type Database = {
           criado_em: string
           entidade_id: string
           id: string
+          imagem_url: string | null
           nome: string
           ordem: number | null
           qtd_maxima: number
@@ -300,6 +301,7 @@ export type Database = {
           criado_em?: string
           entidade_id: string
           id?: string
+          imagem_url?: string | null
           nome: string
           ordem?: number | null
           qtd_maxima?: number
@@ -310,6 +312,7 @@ export type Database = {
           criado_em?: string
           entidade_id?: string
           id?: string
+          imagem_url?: string | null
           nome?: string
           ordem?: number | null
           qtd_maxima?: number
