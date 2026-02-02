@@ -1,167 +1,362 @@
 
 
-## Plano: Corrigir Exibicao e Exportacao de Pedidos para Produtos N:N
+## Plano: Modo Manutencao Global
 
-### Diagnostico do Problema
+### Visao Geral
 
-**Causa raiz identificada (linha 72-75 de Pedidos.tsx):**
-
-```tsx
-const produtosDaEntidade = useMemo(() => {
-  if (!selectedEntidadeId) return [];
-  return produtos.filter((p) => p.entidadeId === selectedEntidadeId);  // <-- PROBLEMA
-}, [produtos, selectedEntidadeId]);
-```
-
-O filtro usa `p.entidadeId` (campo legado que guarda apenas UMA entidade) em vez de verificar se o produto pertence a entidade via relacionamento N:N (`p.entidadeIds`).
-
-**Impacto:**
-- Produtos que pertencem a multiplas entidades via tabela `produto_entidades` mas tem `entidade_id` diferente nao aparecem como colunas na grade
-- Ao visualizar pedidos da Entidade B, produtos associados a ela (via N:N) mas com `entidade_id = Entidade A` ficam invisiveis
-- Itens desses pedidos existem mas nao tem coluna correspondente na grade
-
-**Exemplo concreto:**
-- Produto "Caneta" tem `entidade_id = "Escritorio"` (legado)
-- Produto "Caneta" tambem esta vinculado a "Uso e Consumo" via `produto_entidades`
-- Pedido da entidade "Uso e Consumo" inclui "Caneta"
-- Ao visualizar pedidos de "Uso e Consumo", coluna "Caneta" nao aparece
-- Item fica "invisivel" na grade
+Implementar um sistema de manutencao que permite bloquear temporariamente o acesso das lojas ao sistema, enquanto administradores continuam com acesso normal e veem um banner de aviso.
 
 ---
 
-### Analise dos Exports
+### Arquitetura da Solucao
 
-**XLSX Export (linhas 342-359) - CORRETO:**
-```tsx
-const rows = filteredPedidos.flatMap(pedido => 
-  pedido.itens
-    .filter(item => item.quantidade > 0)
-    .map(item => {
-      const produto = produtos.find(p => p.id === item.produtoId);
-      // ... usa array 'produtos' completo, busca por ID
-    })
-);
+```text
++------------------+
+|   configuracoes  |
+|  (banco de dados)|
++--------+---------+
+         |
+         v
++--------+---------+
+| useMaintenanceMode|  <-- Hook React
++--------+---------+
+         |
+    +----+----+
+    |         |
+    v         v
++-------+  +----------+
+| Lojas |  |  Admin   |
++-------+  +----------+
+    |           |
+    v           v
++---------+ +----------+
+|Tela de  | |Banner de |
+|Manutencao| |Aviso     |
++---------+ +----------+
 ```
-Este codigo itera diretamente sobre `pedido.itens` e busca produtos do array completo.
-
-**PDF Export (linhas 402-437) - CORRETO:**
-```tsx
-const itensComQty = pedido.itens.filter(i => i.quantidade > 0);
-const tableData = itensComQty.map(item => {
-  const produto = produtos.find(p => p.id === item.produtoId);
-  // ... usa array 'produtos' completo
-});
-```
-Tambem itera diretamente sobre os itens do pedido.
-
-**Conclusao dos Exports:** O codigo dos exports esta correto. Se ha problemas, devem estar na busca de dados.
 
 ---
 
-### Problema Secundario: Limite de 1000 Pedidos
+### 1. Inserir Configuracao no Banco
 
-**Arquivo: useSupabaseData.ts (linhas 355-363)**
-```tsx
-const { data: pedidosData, error: pedidosError } = await supabase
-  .from('pedidos')
-  .select('*')
-  .order('data', { ascending: false });
-// Sem .limit(), mas PostgREST tem limite padrao de 1000
+Usar o insert tool para adicionar a linha de configuracao:
+
+```sql
+INSERT INTO configuracoes (chave, valor)
+VALUES ('maintenance_mode', 'false');
 ```
 
-Se existirem mais de 1000 pedidos, os mais antigos nao serao buscados e seus itens consequentemente nao serao carregados.
+Nao e necessaria migration - a tabela ja existe com RLS permissiva.
 
 ---
 
-### Solucao
+### 2. Hook useMaintenanceMode
 
-**1. Corrigir filtro de produtos na grade (Pedidos.tsx linha 72-75):**
+**Novo arquivo:** `src/hooks/useMaintenanceMode.ts`
 
-```tsx
-// ANTES (incorreto)
-const produtosDaEntidade = useMemo(() => {
-  if (!selectedEntidadeId) return [];
-  return produtos.filter((p) => p.entidadeId === selectedEntidadeId);
-}, [produtos, selectedEntidadeId]);
+```typescript
+import { useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
-// DEPOIS (correto - usa N:N)
-const produtosDaEntidade = useMemo(() => {
-  if (!selectedEntidadeId) return [];
-  return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
-}, [produtos, selectedEntidadeId]);
-```
+export function useMaintenanceMode() {
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-**2. Adicionar paginacao na busca de pedidos (useSupabaseData.ts):**
+  const fetchMaintenanceMode = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('configuracoes')
+      .select('valor')
+      .eq('chave', 'maintenance_mode')
+      .single();
 
-```tsx
-// Buscar pedidos em lotes para contornar limite de 1000
-let allPedidos: any[] = [];
-let pedidoOffset = 0;
-const pedidoPageSize = 1000;
-let pedidoHasMore = true;
+    if (!error && data) {
+      setIsMaintenanceMode(data.valor === 'true');
+    }
+    setLoading(false);
+  }, []);
 
-while (pedidoHasMore) {
-  const { data: batch, error } = await supabase
-    .from('pedidos')
-    .select('*')
-    .order('data', { ascending: false })
-    .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
+  useEffect(() => {
+    fetchMaintenanceMode();
+  }, [fetchMaintenanceMode]);
 
-  if (error) break;
-  
-  allPedidos = [...allPedidos, ...(batch || [])];
-  pedidoHasMore = (batch?.length || 0) === pedidoPageSize;
-  pedidoOffset += pedidoPageSize;
+  const toggleMaintenanceMode = async () => {
+    const newValue = !isMaintenanceMode;
+    const { error } = await supabase
+      .from('configuracoes')
+      .update({ valor: newValue ? 'true' : 'false' })
+      .eq('chave', 'maintenance_mode');
+
+    if (!error) {
+      setIsMaintenanceMode(newValue);
+      return true;
+    }
+    return false;
+  };
+
+  return { 
+    isMaintenanceMode, 
+    loading, 
+    toggleMaintenanceMode, 
+    refetch: fetchMaintenanceMode 
+  };
 }
-
-const pedidosData = allPedidos;
 ```
 
 ---
 
-### Arquivos a Modificar
+### 3. Componente MaintenanceScreen
 
-| Arquivo | Alteracao |
-|---------|-----------|
-| `src/pages/admin/Pedidos.tsx` | Corrigir filtro `produtosDaEntidade` para usar `entidadeIds.includes()` |
-| `src/hooks/useSupabaseData.ts` | Adicionar paginacao na busca de pedidos em `usePedidos()` |
+**Novo arquivo:** `src/components/MaintenanceScreen.tsx`
 
----
+Tela fullscreen para lojas quando em manutencao:
 
-### Fluxo Corrigido
+```typescript
+import { Wrench } from 'lucide-react';
 
+export function MaintenanceScreen() {
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="text-center space-y-6 max-w-md">
+        <div className="mx-auto w-24 h-24 rounded-full bg-amber-100 
+                        flex items-center justify-center">
+          <Wrench className="h-12 w-12 text-amber-600" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-foreground">
+            Sistema em Manutencao
+          </h1>
+          <p className="text-muted-foreground">
+            Estamos realizando ajustes no sistema.
+            Em breve ele estara disponivel novamente.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 ```
-1. usePedidos() busca TODOS os pedidos (com paginacao)
-2. Para cada pedido, busca seus itens de pedido_itens (ja paginado)
-3. pedido.itens contem todos os produtos solicitados
-4. produtosDaEntidade filtra produtos que INCLUEM a entidade selecionada (N:N)
-5. Grade exibe colunas para todos os produtos relevantes
-6. Export itera diretamente sobre pedido.itens (ja funciona)
+
+---
+
+### 4. Componente MaintenanceBanner
+
+**Novo arquivo:** `src/components/admin/MaintenanceBanner.tsx`
+
+Banner fixo para admins:
+
+```typescript
+import { AlertTriangle } from 'lucide-react';
+
+export function MaintenanceBanner() {
+  return (
+    <div className="bg-amber-500 text-amber-950 px-4 py-2 
+                    flex items-center justify-center gap-2 text-sm font-medium">
+      <AlertTriangle className="h-4 w-4" />
+      <span>
+        SISTEMA EM MANUTENCAO - Usuarios externos estao bloqueados no momento
+      </span>
+    </div>
+  );
+}
 ```
 
 ---
 
-### Validacoes a Fazer Apos Implementacao
+### 5. Atualizar App.tsx
 
-| Cenario | Esperado |
-|---------|----------|
-| Pedido com multiplos produtos | Todos aparecem na grade e export |
-| Produto vinculado a mais de um tipo | Aparece em ambas as entidades |
-| Pedido recem-criado | Todos os itens visiveis |
-| Pedido antigo (> 1000 pedidos atras) | Carregado e exibido corretamente |
+Modificar o componente `RequireAcesso` para verificar manutencao:
+
+```typescript
+const RequireAcesso = ({ children }: { children: React.ReactNode }) => {
+  const { acessoLiberado } = useAcesso();
+  const { isMaintenanceMode, loading } = useMaintenanceMode();
+  
+  // Loading
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+  
+  // Manutencao bloqueia lojas
+  if (isMaintenanceMode) {
+    return <MaintenanceScreen />;
+  }
+  
+  // Acesso normal
+  if (!acessoLiberado) {
+    return <Navigate to="/acesso" replace />;
+  }
+  
+  return <>{children}</>;
+};
+```
 
 ---
 
-### Secao Tecnica
+### 6. Atualizar AdminLayout
 
-**Por que `entidadeIds.includes()` resolve:**
-- A propriedade `entidadeIds` e um array preenchido a partir da tabela `produto_entidades` (N:N)
-- Contem TODAS as entidades as quais o produto pertence
-- O filtro correto verifica se o produto esta associado a entidade selecionada
+Adicionar banner condicional:
 
-**Por que a paginacao de pedidos e necessaria:**
-- PostgREST/Supabase tem limite padrao de 1000 linhas
-- Pedidos sao ordenados por data decrescente
-- Sem paginacao, apenas os 1000 mais recentes sao carregados
-- Itens de pedidos antigos nunca seriam buscados
+```typescript
+export function AdminLayout({ children }: AdminLayoutProps) {
+  const { isMaintenanceMode, loading } = useMaintenanceMode();
+  
+  return (
+    <div className="min-h-screen bg-background flex flex-col w-full">
+      {/* Banner de Manutencao */}
+      {!loading && isMaintenanceMode && <MaintenanceBanner />}
+      
+      <div className="flex flex-1">
+        {/* Sidebar Desktop */}
+        <aside className="hidden lg:flex w-64 ...">
+          <SidebarContent />
+        </aside>
+        
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Mobile Header */}
+          <header className="lg:hidden ...">
+            ...
+          </header>
+          
+          <main className="flex-1 p-4 lg:p-6 overflow-auto">
+            {children}
+          </main>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+### 7. Controle no Dashboard
+
+Adicionar botao na area de admin do Dashboard:
+
+```typescript
+// No Dashboard.tsx
+const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
+const [isToggling, setIsToggling] = useState(false);
+
+const handleToggleMaintenance = async () => {
+  setIsToggling(true);
+  const success = await toggleMaintenanceMode();
+  setIsToggling(false);
+  
+  if (success) {
+    toast({
+      title: isMaintenanceMode ? 'Manutencao desativada' : 'Manutencao ativada',
+      description: isMaintenanceMode 
+        ? 'Sistema liberado para usuarios.' 
+        : 'Usuarios externos estao bloqueados.',
+    });
+  }
+};
+
+// No JSX do header:
+<Button
+  variant={isMaintenanceMode ? 'destructive' : 'outline'}
+  onClick={handleToggleMaintenance}
+  disabled={isToggling}
+>
+  {isToggling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}
+  {isMaintenanceMode ? 'Desativar Manutencao' : 'Ativar Manutencao'}
+</Button>
+```
+
+---
+
+### 8. Arquivos a Criar/Modificar
+
+| Arquivo | Acao |
+|---------|------|
+| (banco) configuracoes | INSERT nova linha |
+| `src/hooks/useMaintenanceMode.ts` | CRIAR |
+| `src/components/MaintenanceScreen.tsx` | CRIAR |
+| `src/components/admin/MaintenanceBanner.tsx` | CRIAR |
+| `src/App.tsx` | MODIFICAR RequireAcesso |
+| `src/components/admin/AdminLayout.tsx` | MODIFICAR para banner |
+| `src/pages/admin/Dashboard.tsx` | MODIFICAR para botao |
+
+---
+
+### 9. Fluxo de Uso
+
+```text
+Admin acessa Dashboard
+        |
+        v
+Clica em [Ativar Manutencao]
+        |
+        v
+configuracoes.maintenance_mode = 'true'
+        |
+        +--------------------+
+        |                    |
+        v                    v
+   Lojas veem         Admin ve banner
+   tela fixa          amarelo no topo
+        |                    |
+        v                    |
+  Nao conseguem              |
+  fazer pedidos              |
+        |                    |
+        +--------------------+
+                |
+                v
+       Admin clica em
+    [Desativar Manutencao]
+                |
+                v
+   configuracoes.maintenance_mode = 'false'
+                |
+                v
+       Sistema volta ao normal
+```
+
+---
+
+### 10. Comportamento Esperado
+
+| Cenario | Antes | Depois |
+|---------|-------|--------|
+| Loja tenta acessar /pedido | Formulario normal | Tela de manutencao |
+| Loja tenta enviar pedido | Funciona | Bloqueado (tela fixa) |
+| Admin acessa dashboard | Normal | Normal + banner amarelo |
+| Admin alterna manutencao | Nao existe | 1 clique |
+| Pedidos existentes | - | Nao afetados |
+| Dados no banco | - | Nao afetados |
+
+---
+
+### 11. Secao Tecnica
+
+**Por que usar configuracoes em vez de nova tabela:**
+- Tabela ja existe com RLS configurada
+- Padrao key-value ja usado (codigo_admin, codigo_acesso)
+- Nao requer migration
+- Simples de consultar e atualizar
+
+**Por que verificar no RequireAcesso:**
+- Ponto central de protecao de rotas publicas
+- Nao precisa modificar cada pagina individualmente
+- Manutencao afeta todas as rotas de loja automaticamente
+
+**Otimizacao futura (opcional):**
+- Realtime subscription para atualizar automaticamente
+- Campo para mensagem customizada de manutencao
+- Log de quem ativou/desativou com timestamp
+
+---
+
+### 12. Reversibilidade
+
+Para remover completamente:
+1. Deletar linha `maintenance_mode` da tabela configuracoes
+2. Remover hook useMaintenanceMode
+3. Remover componentes MaintenanceScreen e MaintenanceBanner
+4. Reverter alteracoes em App.tsx e AdminLayout
+
+Nenhum dado sera perdido, pedidos continuam funcionando.
 
