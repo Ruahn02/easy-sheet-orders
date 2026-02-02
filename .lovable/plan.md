@@ -1,336 +1,150 @@
 
-## Plano: Suporte a Imagem (Foto) nos Produtos
 
-### Visao Geral
+## Plano: Corrigir Modal de Produtos para Respeitar Viewport
 
-Adicionar suporte a upload de imagens para produtos usando Supabase Storage, sem quebrar produtos existentes e mantendo a feature puramente visual.
+### Diagnostico
 
----
+**Problema atual (linha 411-572 de Produtos.tsx):**
+- `DialogContent` sem `max-height` - cresce indefinidamente
+- Conteudo do formulario sem scroll interno
+- Header e Footer nao sao sticky
+- Em telas pequenas, campos ficam fora da area visivel
 
-### 1. Diagnostico do Estado Atual
-
-| Item | Status |
-|------|--------|
-| Campo `fotoUrl` no tipo TypeScript | Existe, mas nao e persistido |
-| Campo no formulario de produto | Existe como URL (linha 413-418), mas nao salva |
-| Coluna no banco de dados | NAO existe |
-| Bucket de storage | NAO existe |
-| Exibicao na listagem | Ja existe com placeholder (Package icon) |
-| Exibicao no ProductCard | Ja existe com placeholder |
-
-**Problema:** O campo `fotoUrl` do formulario nao e salvo porque nao existe coluna no banco, e hoje usa URL externa que voce nao quer.
-
----
-
-### 2. Alteracoes no Banco de Dados
-
-**Migration SQL:**
-
-```sql
--- Adicionar coluna imagem_url (nullable) na tabela produtos
-ALTER TABLE produtos 
-ADD COLUMN imagem_url TEXT;
-
--- Criar bucket publico para imagens de produtos
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('produtos-imagens', 'produtos-imagens', true);
-
--- Politicas RLS para o bucket
-CREATE POLICY "Imagens de produtos sao publicas para leitura"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'produtos-imagens');
-
-CREATE POLICY "Qualquer um pode fazer upload de imagens de produtos"
-ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'produtos-imagens');
-
-CREATE POLICY "Qualquer um pode atualizar imagens de produtos"
-ON storage.objects FOR UPDATE
-USING (bucket_id = 'produtos-imagens');
-
-CREATE POLICY "Qualquer um pode deletar imagens de produtos"
-ON storage.objects FOR DELETE
-USING (bucket_id = 'produtos-imagens');
+**Estrutura atual:**
 ```
-
-**Caracteristicas:**
-- Coluna `imagem_url` e TEXT nullable - produtos antigos ficam com NULL
-- Bucket publico para leitura (imagens aparecem sem autenticacao)
-- Politicas permissivas (mesmo padrao das outras tabelas)
-
----
-
-### 3. Hook de Upload de Imagem
-
-**Novo arquivo:** `src/hooks/useImageUpload.ts`
-
-```typescript
-import { supabase } from '@/integrations/supabase/client';
-
-export function useImageUpload() {
-  const uploadImage = async (file: File): Promise<string | null> => {
-    // Validacoes
-    const maxSize = 2 * 1024 * 1024; // 2MB
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    
-    if (file.size > maxSize) {
-      throw new Error('Imagem muito grande. Maximo 2MB.');
-    }
-    
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('Formato invalido. Use JPG, PNG ou WEBP.');
-    }
-    
-    // Gerar nome unico (UUID)
-    const ext = file.name.split('.').pop();
-    const fileName = `${crypto.randomUUID()}.${ext}`;
-    
-    // Upload
-    const { error } = await supabase.storage
-      .from('produtos-imagens')
-      .upload(fileName, file);
-    
-    if (error) throw error;
-    
-    // Retornar URL publica
-    const { data } = supabase.storage
-      .from('produtos-imagens')
-      .getPublicUrl(fileName);
-    
-    return data.publicUrl;
-  };
-  
-  const deleteImage = async (url: string): Promise<void> => {
-    // Extrair nome do arquivo da URL
-    const fileName = url.split('/').pop();
-    if (!fileName) return;
-    
-    await supabase.storage
-      .from('produtos-imagens')
-      .remove([fileName]);
-  };
-  
-  return { uploadImage, deleteImage };
-}
+DialogContent (sem max-height)
+  └── DialogHeader (nao sticky)
+  └── div.space-y-4.py-4 (sem scroll)
+       └── Todos os campos do formulario
+  └── DialogFooter (nao sticky)
 ```
 
 ---
 
-### 4. Alteracoes no Hook useProdutos
+### Solucao
 
-**Arquivo:** `src/hooks/useSupabaseData.ts`
+Reestruturar o modal com layout flexbox e scroll interno:
 
-Adicionar mapeamento do campo `imagem_url`:
-
-```typescript
-// No fetchProdutos (linha ~240)
-setProdutos(produtosData.map(p => ({
-  id: p.id,
-  codigo: p.codigo,
-  nome: p.nome,
-  qtdMaxima: p.qtd_maxima,
-  fotoUrl: p.imagem_url || undefined,  // <- NOVO
-  status: p.status as 'ativo' | 'inativo',
-  entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
-  entidadeId: p.entidade_id,
-  ordem: p.ordem ?? undefined,
-  criadoEm: new Date(p.criado_em),
-})));
-
-// No addProduto (linha ~260)
-const { data, error } = await supabase
-  .from('produtos')
-  .insert({
-    ...
-    imagem_url: produto.fotoUrl || null,  // <- NOVO
-  })
-
-// No updateProduto (linha ~291)
-if (updates.fotoUrl !== undefined) dbUpdates.imagem_url = updates.fotoUrl || null;
+**Nova estrutura:**
+```
+DialogContent (max-h-[90vh], flex, flex-col)
+  └── DialogHeader (sticky top, flex-shrink-0)
+  └── div (flex-1, overflow-y-auto, px com padding)
+       └── Campos do formulario
+  └── DialogFooter (sticky bottom, flex-shrink-0, border-top)
 ```
 
 ---
 
-### 5. UI do Formulario de Produto
+### Alteracoes Necessarias
 
-**Arquivo:** `src/pages/admin/Produtos.tsx`
+**Arquivo: `src/pages/admin/Produtos.tsx`**
 
-Substituir campo de URL por componente de upload:
+1. **DialogContent** - Adicionar classes de controle de altura e flex:
+   - `max-h-[90vh]` - limita altura a 90% do viewport
+   - `flex flex-col` - layout em coluna
+   - `overflow-hidden` - previne scroll no container pai
 
+2. **DialogHeader** - Tornar sticky:
+   - `sticky top-0 z-10 bg-card pb-4` - fixo no topo com fundo
+
+3. **Div do formulario** - Tornar scrollavel:
+   - `flex-1 overflow-y-auto px-1` - cresce e rola internamente
+   - Manter `space-y-4` para espacamento dos campos
+
+4. **DialogFooter** - Tornar sticky:
+   - `sticky bottom-0 bg-card pt-4 border-t` - fixo no rodape com borda
+
+---
+
+### Codigo Antes vs Depois
+
+**ANTES (linhas 411-416):**
 ```tsx
-// Estado adicional
-const [imageFile, setImageFile] = useState<File | null>(null);
-const [imagePreview, setImagePreview] = useState<string | null>(null);
-const [isUploading, setIsUploading] = useState(false);
-
-// Ao abrir modal para editar
-if (produto) {
-  setImagePreview(produto.fotoUrl || null);
-}
-
-// Handler de selecao de arquivo
-const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
-  
-  // Validacao de tamanho
-  if (file.size > 2 * 1024 * 1024) {
-    toast({ title: 'Imagem muito grande. Maximo 2MB.', variant: 'destructive' });
-    return;
-  }
-  
-  setImageFile(file);
-  setImagePreview(URL.createObjectURL(file));
-};
-
-// Handler de remover imagem
-const handleRemoveImage = () => {
-  setImageFile(null);
-  setImagePreview(null);
-  setFormData(prev => ({ ...prev, fotoUrl: '' }));
-};
-
-// No submit - fazer upload antes de salvar
-const handleSubmit = async () => {
-  // ... validacoes existentes ...
-  
-  let finalImageUrl = formData.fotoUrl;
-  
-  if (imageFile) {
-    setIsUploading(true);
-    try {
-      finalImageUrl = await uploadImage(imageFile) || '';
-    } catch (err) {
-      toast({ title: 'Erro ao enviar imagem', variant: 'destructive' });
-      setIsUploading(false);
-      return;
-    }
-    setIsUploading(false);
-  }
-  
-  // ... resto do submit com finalImageUrl ...
-};
+<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+  <DialogContent className="bg-card">
+    <DialogHeader>
+      <DialogTitle>{editingProduto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
+    </DialogHeader>
+    <div className="space-y-4 py-4">
 ```
 
-**UI do campo de upload:**
-
+**DEPOIS:**
 ```tsx
-<div>
-  <label className="text-sm font-medium text-foreground mb-2 block">
-    Imagem do Produto (opcional)
-  </label>
-  
-  {/* Preview */}
-  {imagePreview ? (
-    <div className="relative w-32 h-32 mb-2">
-      <img 
-        src={imagePreview} 
-        alt="Preview" 
-        className="w-full h-full object-cover rounded-lg border"
-      />
-      <Button
-        type="button"
-        variant="destructive"
-        size="sm"
-        className="absolute -top-2 -right-2 h-6 w-6 p-0 rounded-full"
-        onClick={handleRemoveImage}
-      >
-        <X className="h-3 w-3" />
+<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+  <DialogContent className="bg-card max-h-[90vh] flex flex-col overflow-hidden">
+    <DialogHeader className="flex-shrink-0">
+      <DialogTitle>{editingProduto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
+    </DialogHeader>
+    <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1">
+```
+
+**ANTES (linhas 563-571):**
+```tsx
+    </div>
+    <DialogFooter>
+      <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+        Cancelar
       </Button>
+      <Button onClick={handleSubmit} ...>
+```
+
+**DEPOIS:**
+```tsx
     </div>
-  ) : (
-    <div className="w-32 h-32 mb-2 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted/50">
-      <Package className="h-8 w-8 text-muted-foreground" />
-    </div>
-  )}
-  
-  {/* Input de arquivo */}
-  <Input
-    type="file"
-    accept="image/jpeg,image/png,image/webp"
-    onChange={handleImageSelect}
-    className="max-w-xs"
-  />
-  <p className="text-xs text-muted-foreground mt-1">
-    JPG, PNG ou WEBP. Maximo 2MB.
-  </p>
-</div>
+    <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
+      <Button variant="outline" onClick={() => setIsModalOpen(false)}>
+        Cancelar
+      </Button>
+      <Button onClick={handleSubmit} ...>
 ```
 
 ---
 
-### 6. Exibicao nas Listagens
+### Comportamento Esperado
 
-**Listagem de Produtos (Produtos.tsx):**
-Ja existe codigo para exibir imagem com placeholder (linhas 275-282). Vai funcionar automaticamente apos o mapeamento correto.
-
-**ProductCard (ordem de pedido):**
-Ja existe codigo para exibir imagem com placeholder (linhas 53-69). Vai funcionar automaticamente.
-
-**Tela de Pedidos (admin):**
-Opcionalmente pode adicionar miniatura, mas nao e obrigatorio.
+| Situacao | Antes | Depois |
+|----------|-------|--------|
+| Tela grande (1080p+) | Modal pode estourar | Modal centralizado, sem scroll |
+| Tela media (768p) | Campos cortados | Scroll interno suave |
+| Tela pequena (notebook) | Precisa zoom manual | Scroll interno, tudo acessivel |
+| Header | Rola junto | Sempre visivel |
+| Footer (botoes) | Rola junto / escondido | Sempre visivel |
 
 ---
 
-### 7. Arquivos a Modificar
+### Arquivos a Modificar
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| **Migration SQL** | Adicionar coluna `imagem_url`, criar bucket, RLS |
-| `src/types/index.ts` | Manter `fotoUrl` como esta (ja existe) |
-| `src/hooks/useImageUpload.ts` | NOVO - hook de upload |
-| `src/hooks/useSupabaseData.ts` | Mapear `imagem_url` <-> `fotoUrl` |
-| `src/pages/admin/Produtos.tsx` | Substituir campo URL por upload com preview |
+| `src/pages/admin/Produtos.tsx` | Ajustar classes do DialogContent, DialogHeader, body div e DialogFooter |
 
 ---
 
-### 8. Regras Respeitadas
+### Regras Respeitadas
 
 | Regra | Status |
 |-------|--------|
-| NAO usar links externos | OK - apenas upload |
-| NAO quebrar produtos antigos | OK - coluna nullable |
-| NAO alterar pedidos/inventario | OK - nenhuma alteracao |
-| Imagem puramente visual | OK - nao afeta regras |
-| Bucket publico | OK - imagens acessiveis |
-| Limite 2MB | OK - validacao no hook |
-| Formatos JPG/PNG/WEBP | OK - validacao no hook |
-| Placeholder padrao | OK - ja existe |
+| Nao usar altura fixa em px | OK - usa vh |
+| Scroll interno ao modal | OK - overflow-y-auto |
+| Background nao rola | OK - apenas body interno |
+| Header/Footer fixos | OK - flex-shrink-0 |
+| Layout coluna unica | OK - mantido |
+| Nao quebrar funcionalidade | OK - apenas CSS |
 
 ---
 
-### 9. Fluxo de Uso
+### Secao Tecnica
 
-```
-Administrador abre formulario de produto
-        |
-        v
-Clica em "Escolher arquivo" ou arrasta imagem
-        |
-        v
-Preview aparece imediatamente (local)
-        |
-        v
-Pode clicar no X para remover
-        |
-        v
-Ao salvar, imagem e enviada para Supabase Storage
-        |
-        v
-URL publica e salva no campo imagem_url
-        |
-        v
-Imagem aparece na listagem e no formulario de pedido
-```
+**Classes CSS utilizadas:**
+- `max-h-[90vh]`: altura maxima de 90% do viewport
+- `flex flex-col`: container flex em coluna
+- `overflow-hidden`: previne scroll no container
+- `flex-shrink-0`: impede que header/footer encolham
+- `flex-1`: body ocupa espaco restante
+- `overflow-y-auto`: scroll vertical quando necessario
+- `border-t`: separador visual no footer
 
----
+**Por que funciona:**
+O layout flexbox com `flex-col` distribui o espaco entre header (fixo), body (flexivel com scroll) e footer (fixo). O `max-h-[90vh]` garante que o modal nunca ultrapasse 90% da tela, forcando o scroll interno no body quando necessario.
 
-### 10. Reversibilidade
-
-Para remover completamente:
-1. Remover coluna `imagem_url` da tabela produtos
-2. Deletar bucket `produtos-imagens`
-3. Remover hook `useImageUpload`
-4. Reverter alteracoes no formulario
-
-Produtos e pedidos continuam funcionando normalmente.
