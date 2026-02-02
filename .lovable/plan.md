@@ -1,115 +1,121 @@
 
 
-## Plano: Corrigir Modal de Produtos para Respeitar Viewport
+## Plano: Corrigir Exibicao e Exportacao de Pedidos para Produtos N:N
 
-### Diagnostico
+### Diagnostico do Problema
 
-**Problema atual (linha 411-572 de Produtos.tsx):**
-- `DialogContent` sem `max-height` - cresce indefinidamente
-- Conteudo do formulario sem scroll interno
-- Header e Footer nao sao sticky
-- Em telas pequenas, campos ficam fora da area visivel
+**Causa raiz identificada (linha 72-75 de Pedidos.tsx):**
 
-**Estrutura atual:**
+```tsx
+const produtosDaEntidade = useMemo(() => {
+  if (!selectedEntidadeId) return [];
+  return produtos.filter((p) => p.entidadeId === selectedEntidadeId);  // <-- PROBLEMA
+}, [produtos, selectedEntidadeId]);
 ```
-DialogContent (sem max-height)
-  └── DialogHeader (nao sticky)
-  └── div.space-y-4.py-4 (sem scroll)
-       └── Todos os campos do formulario
-  └── DialogFooter (nao sticky)
+
+O filtro usa `p.entidadeId` (campo legado que guarda apenas UMA entidade) em vez de verificar se o produto pertence a entidade via relacionamento N:N (`p.entidadeIds`).
+
+**Impacto:**
+- Produtos que pertencem a multiplas entidades via tabela `produto_entidades` mas tem `entidade_id` diferente nao aparecem como colunas na grade
+- Ao visualizar pedidos da Entidade B, produtos associados a ela (via N:N) mas com `entidade_id = Entidade A` ficam invisiveis
+- Itens desses pedidos existem mas nao tem coluna correspondente na grade
+
+**Exemplo concreto:**
+- Produto "Caneta" tem `entidade_id = "Escritorio"` (legado)
+- Produto "Caneta" tambem esta vinculado a "Uso e Consumo" via `produto_entidades`
+- Pedido da entidade "Uso e Consumo" inclui "Caneta"
+- Ao visualizar pedidos de "Uso e Consumo", coluna "Caneta" nao aparece
+- Item fica "invisivel" na grade
+
+---
+
+### Analise dos Exports
+
+**XLSX Export (linhas 342-359) - CORRETO:**
+```tsx
+const rows = filteredPedidos.flatMap(pedido => 
+  pedido.itens
+    .filter(item => item.quantidade > 0)
+    .map(item => {
+      const produto = produtos.find(p => p.id === item.produtoId);
+      // ... usa array 'produtos' completo, busca por ID
+    })
+);
 ```
+Este codigo itera diretamente sobre `pedido.itens` e busca produtos do array completo.
+
+**PDF Export (linhas 402-437) - CORRETO:**
+```tsx
+const itensComQty = pedido.itens.filter(i => i.quantidade > 0);
+const tableData = itensComQty.map(item => {
+  const produto = produtos.find(p => p.id === item.produtoId);
+  // ... usa array 'produtos' completo
+});
+```
+Tambem itera diretamente sobre os itens do pedido.
+
+**Conclusao dos Exports:** O codigo dos exports esta correto. Se ha problemas, devem estar na busca de dados.
+
+---
+
+### Problema Secundario: Limite de 1000 Pedidos
+
+**Arquivo: useSupabaseData.ts (linhas 355-363)**
+```tsx
+const { data: pedidosData, error: pedidosError } = await supabase
+  .from('pedidos')
+  .select('*')
+  .order('data', { ascending: false });
+// Sem .limit(), mas PostgREST tem limite padrao de 1000
+```
+
+Se existirem mais de 1000 pedidos, os mais antigos nao serao buscados e seus itens consequentemente nao serao carregados.
 
 ---
 
 ### Solucao
 
-Reestruturar o modal com layout flexbox e scroll interno:
+**1. Corrigir filtro de produtos na grade (Pedidos.tsx linha 72-75):**
 
-**Nova estrutura:**
-```
-DialogContent (max-h-[90vh], flex, flex-col)
-  └── DialogHeader (sticky top, flex-shrink-0)
-  └── div (flex-1, overflow-y-auto, px com padding)
-       └── Campos do formulario
-  └── DialogFooter (sticky bottom, flex-shrink-0, border-top)
-```
-
----
-
-### Alteracoes Necessarias
-
-**Arquivo: `src/pages/admin/Produtos.tsx`**
-
-1. **DialogContent** - Adicionar classes de controle de altura e flex:
-   - `max-h-[90vh]` - limita altura a 90% do viewport
-   - `flex flex-col` - layout em coluna
-   - `overflow-hidden` - previne scroll no container pai
-
-2. **DialogHeader** - Tornar sticky:
-   - `sticky top-0 z-10 bg-card pb-4` - fixo no topo com fundo
-
-3. **Div do formulario** - Tornar scrollavel:
-   - `flex-1 overflow-y-auto px-1` - cresce e rola internamente
-   - Manter `space-y-4` para espacamento dos campos
-
-4. **DialogFooter** - Tornar sticky:
-   - `sticky bottom-0 bg-card pt-4 border-t` - fixo no rodape com borda
-
----
-
-### Codigo Antes vs Depois
-
-**ANTES (linhas 411-416):**
 ```tsx
-<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-  <DialogContent className="bg-card">
-    <DialogHeader>
-      <DialogTitle>{editingProduto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
-    </DialogHeader>
-    <div className="space-y-4 py-4">
+// ANTES (incorreto)
+const produtosDaEntidade = useMemo(() => {
+  if (!selectedEntidadeId) return [];
+  return produtos.filter((p) => p.entidadeId === selectedEntidadeId);
+}, [produtos, selectedEntidadeId]);
+
+// DEPOIS (correto - usa N:N)
+const produtosDaEntidade = useMemo(() => {
+  if (!selectedEntidadeId) return [];
+  return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
+}, [produtos, selectedEntidadeId]);
 ```
 
-**DEPOIS:**
+**2. Adicionar paginacao na busca de pedidos (useSupabaseData.ts):**
+
 ```tsx
-<Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-  <DialogContent className="bg-card max-h-[90vh] flex flex-col overflow-hidden">
-    <DialogHeader className="flex-shrink-0">
-      <DialogTitle>{editingProduto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
-    </DialogHeader>
-    <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1">
+// Buscar pedidos em lotes para contornar limite de 1000
+let allPedidos: any[] = [];
+let pedidoOffset = 0;
+const pedidoPageSize = 1000;
+let pedidoHasMore = true;
+
+while (pedidoHasMore) {
+  const { data: batch, error } = await supabase
+    .from('pedidos')
+    .select('*')
+    .order('data', { ascending: false })
+    .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
+
+  if (error) break;
+  
+  allPedidos = [...allPedidos, ...(batch || [])];
+  pedidoHasMore = (batch?.length || 0) === pedidoPageSize;
+  pedidoOffset += pedidoPageSize;
+}
+
+const pedidosData = allPedidos;
 ```
-
-**ANTES (linhas 563-571):**
-```tsx
-    </div>
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-        Cancelar
-      </Button>
-      <Button onClick={handleSubmit} ...>
-```
-
-**DEPOIS:**
-```tsx
-    </div>
-    <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
-      <Button variant="outline" onClick={() => setIsModalOpen(false)}>
-        Cancelar
-      </Button>
-      <Button onClick={handleSubmit} ...>
-```
-
----
-
-### Comportamento Esperado
-
-| Situacao | Antes | Depois |
-|----------|-------|--------|
-| Tela grande (1080p+) | Modal pode estourar | Modal centralizado, sem scroll |
-| Tela media (768p) | Campos cortados | Scroll interno suave |
-| Tela pequena (notebook) | Precisa zoom manual | Scroll interno, tudo acessivel |
-| Header | Rola junto | Sempre visivel |
-| Footer (botoes) | Rola junto / escondido | Sempre visivel |
 
 ---
 
@@ -117,34 +123,45 @@ DialogContent (max-h-[90vh], flex, flex-col)
 
 | Arquivo | Alteracao |
 |---------|-----------|
-| `src/pages/admin/Produtos.tsx` | Ajustar classes do DialogContent, DialogHeader, body div e DialogFooter |
+| `src/pages/admin/Pedidos.tsx` | Corrigir filtro `produtosDaEntidade` para usar `entidadeIds.includes()` |
+| `src/hooks/useSupabaseData.ts` | Adicionar paginacao na busca de pedidos em `usePedidos()` |
 
 ---
 
-### Regras Respeitadas
+### Fluxo Corrigido
 
-| Regra | Status |
-|-------|--------|
-| Nao usar altura fixa em px | OK - usa vh |
-| Scroll interno ao modal | OK - overflow-y-auto |
-| Background nao rola | OK - apenas body interno |
-| Header/Footer fixos | OK - flex-shrink-0 |
-| Layout coluna unica | OK - mantido |
-| Nao quebrar funcionalidade | OK - apenas CSS |
+```
+1. usePedidos() busca TODOS os pedidos (com paginacao)
+2. Para cada pedido, busca seus itens de pedido_itens (ja paginado)
+3. pedido.itens contem todos os produtos solicitados
+4. produtosDaEntidade filtra produtos que INCLUEM a entidade selecionada (N:N)
+5. Grade exibe colunas para todos os produtos relevantes
+6. Export itera diretamente sobre pedido.itens (ja funciona)
+```
+
+---
+
+### Validacoes a Fazer Apos Implementacao
+
+| Cenario | Esperado |
+|---------|----------|
+| Pedido com multiplos produtos | Todos aparecem na grade e export |
+| Produto vinculado a mais de um tipo | Aparece em ambas as entidades |
+| Pedido recem-criado | Todos os itens visiveis |
+| Pedido antigo (> 1000 pedidos atras) | Carregado e exibido corretamente |
 
 ---
 
 ### Secao Tecnica
 
-**Classes CSS utilizadas:**
-- `max-h-[90vh]`: altura maxima de 90% do viewport
-- `flex flex-col`: container flex em coluna
-- `overflow-hidden`: previne scroll no container
-- `flex-shrink-0`: impede que header/footer encolham
-- `flex-1`: body ocupa espaco restante
-- `overflow-y-auto`: scroll vertical quando necessario
-- `border-t`: separador visual no footer
+**Por que `entidadeIds.includes()` resolve:**
+- A propriedade `entidadeIds` e um array preenchido a partir da tabela `produto_entidades` (N:N)
+- Contem TODAS as entidades as quais o produto pertence
+- O filtro correto verifica se o produto esta associado a entidade selecionada
 
-**Por que funciona:**
-O layout flexbox com `flex-col` distribui o espaco entre header (fixo), body (flexivel com scroll) e footer (fixo). O `max-h-[90vh]` garante que o modal nunca ultrapasse 90% da tela, forcando o scroll interno no body quando necessario.
+**Por que a paginacao de pedidos e necessaria:**
+- PostgREST/Supabase tem limite padrao de 1000 linhas
+- Pedidos sao ordenados por data decrescente
+- Sem paginacao, apenas os 1000 mais recentes sao carregados
+- Itens de pedidos antigos nunca seriam buscados
 
