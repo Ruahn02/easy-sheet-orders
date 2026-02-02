@@ -68,10 +68,10 @@ export default function Pedidos() {
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
 
-  // Produtos APENAS da entidade selecionada
+  // Produtos da entidade selecionada (usando relacionamento N:N)
   const produtosDaEntidade = useMemo(() => {
     if (!selectedEntidadeId) return [];
-    return produtos.filter((p) => p.entidadeId === selectedEntidadeId);
+    return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
   }, [produtos, selectedEntidadeId]);
 
   // Pedidos APENAS da entidade selecionada

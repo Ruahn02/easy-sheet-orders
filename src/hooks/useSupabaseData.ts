@@ -351,13 +351,32 @@ export function usePedidos() {
   const [loading, setLoading] = useState(true);
 
   const fetchPedidos = useCallback(async () => {
-    // Fetch pedidos
-    const { data: pedidosData, error: pedidosError } = await supabase
-      .from('pedidos')
-      .select('*')
-      .order('data', { ascending: false });
+    // Buscar pedidos em lotes para contornar limite de 1000 do PostgREST
+    let allPedidos: any[] = [];
+    let pedidoOffset = 0;
+    const pedidoPageSize = 1000;
+    let pedidoHasMore = true;
 
-    if (pedidosError || !pedidosData) {
+    while (pedidoHasMore) {
+      const { data: batch, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .order('data', { ascending: false })
+        .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
+
+      if (error) {
+        console.error('Erro ao buscar pedidos:', error);
+        break;
+      }
+
+      allPedidos = [...allPedidos, ...(batch || [])];
+      pedidoHasMore = (batch?.length || 0) === pedidoPageSize;
+      pedidoOffset += pedidoPageSize;
+    }
+
+    const pedidosData = allPedidos;
+
+    if (pedidosData.length === 0) {
       setLoading(false);
       return;
     }
