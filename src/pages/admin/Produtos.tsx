@@ -409,11 +409,11 @@ export default function Produtos() {
 
         {/* Modal */}
         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-          <DialogContent className="bg-card">
-            <DialogHeader>
+          <DialogContent className="bg-card max-h-[90vh] flex flex-col overflow-hidden">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>{editingProduto ? 'Editar Produto' : 'Novo Produto'}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="flex-1 overflow-y-auto space-y-4 py-4 px-1">
               {/* Entidades de Pedido - Multi-select */}
               <div>
                 <label className="text-sm font-medium text-foreground mb-2 block">Entidades de Pedido *</label>
@@ -561,7 +561,7 @@ export default function Produtos() {
                 </p>
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
                 Cancelar
               </Button>
