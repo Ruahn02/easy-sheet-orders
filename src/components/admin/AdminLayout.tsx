@@ -13,6 +13,8 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { MaintenanceBanner } from './MaintenanceBanner';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -82,34 +84,41 @@ function SidebarContent() {
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  const { isMaintenanceMode, loading } = useMaintenanceMode();
+
   return (
-    <div className="min-h-screen bg-background flex w-full">
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card">
-        <SidebarContent />
-      </aside>
+    <div className="min-h-screen bg-background flex flex-col w-full">
+      {/* Maintenance Banner */}
+      {!loading && isMaintenanceMode && <MaintenanceBanner />}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center gap-4 border-b border-border bg-card p-4">
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <SidebarContent />
-            </SheetContent>
-          </Sheet>
-          <h1 className="font-bold text-foreground">Painel Admin</h1>
-        </header>
+      <div className="flex flex-1">
+        {/* Desktop Sidebar */}
+        <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card">
+          <SidebarContent />
+        </aside>
 
-        {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
-          {children}
-        </main>
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col">
+          {/* Mobile Header */}
+          <header className="lg:hidden flex items-center gap-4 border-b border-border bg-card p-4">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 p-0">
+                <SidebarContent />
+              </SheetContent>
+            </Sheet>
+            <h1 className="font-bold text-foreground">Painel Admin</h1>
+          </header>
+
+          {/* Page Content */}
+          <main className="flex-1 p-4 lg:p-6 overflow-auto">
+            {children}
+          </main>
+        </div>
       </div>
     </div>
   );
