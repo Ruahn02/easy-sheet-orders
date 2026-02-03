@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
@@ -15,12 +16,29 @@ import Produtos from "./pages/admin/Produtos";
 import Entidades from "./pages/admin/Entidades";
 import Inventario from "./pages/admin/Inventario";
 import { useAcesso } from "./store/useLojaAuth";
+import { useMaintenanceMode } from "./hooks/useMaintenanceMode";
+import { MaintenanceScreen } from "./components/MaintenanceScreen";
 
 const queryClient = new QueryClient();
 
 // Componente para proteger rotas públicas (exige acesso liberado)
 const RequireAcesso = ({ children }: { children: React.ReactNode }) => {
   const { acessoLiberado } = useAcesso();
+  const { isMaintenanceMode, loading } = useMaintenanceMode();
+  
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  // Maintenance mode blocks stores
+  if (isMaintenanceMode) {
+    return <MaintenanceScreen />;
+  }
   
   if (!acessoLiberado) {
     return <Navigate to="/acesso" replace />;

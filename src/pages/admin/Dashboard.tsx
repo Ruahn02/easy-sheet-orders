@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Check, ChevronsUpDown } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Check, ChevronsUpDown, Wrench } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
 import { format } from 'date-fns';
@@ -13,12 +13,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
   const { pedidos, loading: loadingPedidos } = usePedidos();
   const { lojas, loading: loadingLojas } = useLojas();
   const { produtos, loading: loadingProdutos } = useProdutos();
   const { entidades, loading: loadingEntidades } = useEntidades();
+  const { isMaintenanceMode, toggleMaintenanceMode, loading: loadingMaintenance } = useMaintenanceMode();
+  const { toast } = useToast();
 
   // Filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
@@ -29,8 +33,30 @@ export default function Dashboard() {
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
   const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
   const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
+
+  const handleToggleMaintenance = async () => {
+    setIsToggling(true);
+    const success = await toggleMaintenanceMode();
+    setIsToggling(false);
+    
+    if (success) {
+      toast({
+        title: isMaintenanceMode ? 'Manutenção desativada' : 'Manutenção ativada',
+        description: isMaintenanceMode 
+          ? 'Sistema liberado para usuários.' 
+          : 'Usuários externos estão bloqueados.',
+      });
+    } else {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível alterar o modo de manutenção.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Pedidos filtrados
   const pedidosFiltrados = useMemo(() => {
@@ -216,17 +242,32 @@ export default function Dashboard() {
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground">Visão geral do sistema</p>
           </div>
-          {entidadeFiltro !== 'todas' && (
-            <Badge variant="secondary" className="flex items-center gap-2 w-fit">
-              <Filter className="h-3 w-3" />
-              Contexto: {entidades.find(e => e.id === entidadeFiltro)?.nome}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {entidadeFiltro !== 'todas' && (
+              <Badge variant="secondary" className="flex items-center gap-2 w-fit">
+                <Filter className="h-3 w-3" />
+                Contexto: {entidades.find(e => e.id === entidadeFiltro)?.nome}
+              </Badge>
+            )}
+            <Button
+              variant={isMaintenanceMode ? 'destructive' : 'outline'}
+              onClick={handleToggleMaintenance}
+              disabled={isToggling || loadingMaintenance}
+              className="gap-2"
+            >
+              {isToggling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Wrench className="h-4 w-4" />
+              )}
+              {isMaintenanceMode ? 'Desativar Manutenção' : 'Ativar Manutenção'}
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
