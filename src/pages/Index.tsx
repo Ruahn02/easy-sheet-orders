@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Settings, Package, Lock, Loader2 } from 'lucide-react';
+import { Settings, Package, Lock, Loader2, ClipboardList } from 'lucide-react';
 import { useEntidades } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -114,8 +114,14 @@ const Index = () => {
         )}
       </div>
 
-      {/* Link para Admin */}
-      <div className="p-4">
+      {/* Links de navegação */}
+      <div className="p-4 space-y-2">
+        <Link to="/pedidos-enviados">
+          <Button variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Ver pedidos enviados deste computador
+          </Button>
+        </Link>
         <Link to="/admin">
           <Button variant="outline" className="w-full">
             <Settings className="h-4 w-4 mr-2" />
