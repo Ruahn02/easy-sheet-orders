@@ -1,362 +1,265 @@
 
+# Diagnostico: Solicitacoes Nao Aparecem para Almoxarifado
 
-## Plano: Modo Manutencao Global
+## FASE 1 - INVESTIGACAO COMPLETA
 
-### Visao Geral
+### 1. Frontend (Formulario de Pedido)
 
-Implementar um sistema de manutencao que permite bloquear temporariamente o acesso das lojas ao sistema, enquanto administradores continuam com acesso normal e veem um banner de aviso.
+**Fluxo analisado (`FormularioPedido.tsx` linhas 114-149):**
+
+| Ponto | Comportamento | Status |
+|-------|---------------|--------|
+| Clique em "Enviar" | Abre modal de confirmacao | OK |
+| Modal de confirmacao | Lista todos os itens selecionados | OK |
+| Botao "Confirmar Envio" | Chama `addPedido()` e aguarda resultado | OK |
+| Insert do pedido | Salva no banco e espera resposta | OK |
+| Insert dos itens | Salva todos os itens vinculados ao pedido | OK |
+| Rollback em falha | Se itens falharem, deleta pedido pai | OK |
+| Toast de sucesso | So aparece se insert retornar dados | OK |
+
+**Conclusao Frontend:** O fluxo de envio esta correto e aguarda confirmacao do banco.
 
 ---
 
-### Arquitetura da Solucao
+### 2. Backend / Banco de Dados
 
-```text
-+------------------+
-|   configuracoes  |
-|  (banco de dados)|
-+--------+---------+
-         |
-         v
-+--------+---------+
-| useMaintenanceMode|  <-- Hook React
-+--------+---------+
-         |
-    +----+----+
-    |         |
-    v         v
-+-------+  +----------+
-| Lojas |  |  Admin   |
-+-------+  +----------+
-    |           |
-    v           v
-+---------+ +----------+
-|Tela de  | |Banner de |
-|Manutencao| |Aviso     |
-+---------+ +----------+
+**Verificacao de dados:**
+
+| Metrica | Valor | Observacao |
+|---------|-------|------------|
+| Total de pedidos | 261 | Todos com dados validos |
+| Total de itens | 4530 | Nenhum item orfao |
+| Pedidos sem itens | 0 | Rollback funcionando |
+| Pedidos com itens | 261 | 100% de integridade |
+| Pedidos pendentes | 69 | Esperando processamento |
+| Pedidos feitos | 192 | Ja processados |
+
+**Conclusao Backend:** Os dados estao sendo salvos corretamente. Nao ha pedidos orfaos ou itens perdidos.
+
+---
+
+### 3. Listagem do Almoxarifado (Pedidos.tsx)
+
+**Filtros aplicados:**
+
+| Filtro | Descricao | Impacto |
+|--------|-----------|---------|
+| `selectedEntidadeId` | Obrigatorio | Filtra pedidos por entidade |
+| `statusFilter` | Opcional | Pode ocultar pedidos feitos/pendentes |
+| `selectedLojaId` | Opcional | Pode filtrar por loja |
+| `startDate` / `endDate` | Opcional | Pode cortar pedidos antigos |
+| `searchQuery` | Opcional | Busca em produtos |
+
+**PONTO CRITICO IDENTIFICADO (linha 72-74):**
+
+```typescript
+const produtosDaEntidade = useMemo(() => {
+  if (!selectedEntidadeId) return [];
+  return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
+}, [produtos, selectedEntidadeId]);
 ```
 
+Este filtro define quais COLUNAS aparecem na grade. Se um produto nao esta vinculado via N:N a entidade do pedido, sua coluna NAO aparece - mesmo que haja itens solicitando esse produto.
+
 ---
 
-### 1. Inserir Configuracao no Banco
+### 4. RLS (Row Level Security)
 
-Usar o insert tool para adicionar a linha de configuracao:
+**Politicas verificadas:**
+
+| Tabela | SELECT | INSERT | UPDATE | DELETE |
+|--------|--------|--------|--------|--------|
+| pedidos | true (publico) | true | true | true |
+| pedido_itens | true (publico) | true | NAO | NAO |
+| produtos | true (publico) | true | true | true |
+
+**Conclusao RLS:** Nao ha bloqueio de visualizacao. Todos podem ver todos os dados.
+
+---
+
+### 5. UX (Experiencia do Usuario)
+
+| Pergunta | Resposta |
+|----------|----------|
+| Usuario ve a propria solicitacao apos enviar? | NAO - nao ha tela "Minhas Solicitacoes" |
+| Existe numero ou confirmacao clara? | SIM - toast com "Pedido enviado com sucesso" |
+| Existe tela de historico para lojas? | NAO |
+
+---
+
+## FASE 2 - HIPOTESES
+
+### ALTA PROBABILIDADE
+
+**Hipotese 1: Colunas de produtos ausentes na grade**
+
+| Item | Detalhe |
+|------|---------|
+| Causa | Grade filtra colunas por `produto.entidadeIds.includes(entidadeId)` |
+| Sintoma | Pedido existe, itens existem, mas coluna do produto nao aparece |
+| Evidencia | 53 itens em 9 pedidos tem produtos com N:N correto mas `entidade_id` diferente |
+| Como confirmar | Verificar se apos a correcao do filtro N:N (ja feita) os itens aparecem |
+
+**Hipotese 2: Produtos sem vinculo N:N apos migracao**
+
+| Item | Detalhe |
+|------|---------|
+| Causa | Produto foi solicitado quando pertencia a entidade A, depois vinculo foi alterado para entidade B |
+| Sintoma | Item existe no pedido mas coluna nao aparece pois produto nao pertence mais a entidade |
+| Evidencia | 8 itens em 8 pedidos referem produtos SEM vinculo N:N a entidade do pedido |
+| Como confirmar | Query mostra produto "Calculadora Pequena" em pedidos de "MATERIAL ESCRITORIO" mas vinculado apenas a "ESCRITORIO INTERNA" |
+
+### MEDIA PROBABILIDADE
+
+**Hipotese 3: Usuario seleciona entidade errada ao visualizar**
+
+| Item | Detalhe |
+|------|---------|
+| Causa | Admin seleciona entidade A para ver pedidos, mas pedido foi feito na entidade B |
+| Sintoma | Pedido "nao aparece" pois esta em outra aba |
+| Como confirmar | Verificar com usuario qual entidade foi selecionada |
+
+**Hipotese 4: Filtro de data oculta pedidos recentes**
+
+| Item | Detalhe |
+|------|---------|
+| Causa | Data de inicio/fim aplicada pode estar cortando pedidos |
+| Sintoma | Pedidos existem mas nao aparecem devido ao filtro |
+| Como confirmar | Limpar filtros de data e verificar se pedido aparece |
+
+### BAIXA PROBABILIDADE
+
+**Hipotese 5: Limite de 1000 pedidos**
+
+| Item | Detalhe |
+|------|---------|
+| Causa | PostgREST tem limite de 1000 linhas por query |
+| Sintoma | Pedidos antigos nao aparecem |
+| Status | JA CORRIGIDO - paginacao implementada em `useSupabaseData.ts` |
+
+**Hipotese 6: Falha silenciosa no insert**
+
+| Item | Detalhe |
+|------|---------|
+| Causa | Insert falha mas toast de sucesso aparece |
+| Status | DESCARTADA - codigo faz await e so exibe sucesso se retornar dados |
+
+---
+
+## FASE 3 - CORRECOES PROPOSTAS
+
+### Correcao 1: Grade deve mostrar TODOS os produtos dos itens (CRITICO)
+
+**Arquivo:** `src/pages/admin/Pedidos.tsx`
+
+**Problema:** Grade filtra colunas apenas por produtos vinculados a entidade, ignorando itens de produtos historicos.
+
+**Solucao:** Extrair produtos unicos dos itens dos pedidos filtrados e mesclar com produtos da entidade.
+
+```typescript
+// ANTES (linha 72-75)
+const produtosDaEntidade = useMemo(() => {
+  if (!selectedEntidadeId) return [];
+  return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
+}, [produtos, selectedEntidadeId]);
+
+// DEPOIS - incluir produtos dos itens dos pedidos filtrados
+const produtosDaEntidade = useMemo(() => {
+  if (!selectedEntidadeId) return [];
+  
+  // Produtos vinculados via N:N
+  const produtosVinculados = produtos.filter(
+    (p) => p.entidadeIds.includes(selectedEntidadeId)
+  );
+  
+  // IDs dos produtos que aparecem nos itens dos pedidos filtrados
+  const produtosIdsNosItens = new Set(
+    filteredPedidos.flatMap(p => p.itens.map(i => i.produtoId))
+  );
+  
+  // Produtos que estao nos itens mas NAO estao vinculados
+  const produtosHistoricos = produtos.filter(
+    (p) => produtosIdsNosItens.has(p.id) && !p.entidadeIds.includes(selectedEntidadeId)
+  );
+  
+  // Mesclar ambos (vinculados primeiro, historicos depois)
+  return [...produtosVinculados, ...produtosHistoricos];
+}, [produtos, selectedEntidadeId, filteredPedidos]);
+```
+
+**Impacto:** Todos os itens solicitados terao colunas visiveis, mesmo que o produto nao esteja mais vinculado a entidade.
+
+---
+
+### Correcao 2: Indicador visual para produtos historicos (UX)
+
+**Arquivo:** `src/pages/admin/Pedidos.tsx`
+
+**Descricao:** Marcar visualmente produtos que aparecem nos pedidos mas nao estao mais vinculados a entidade.
+
+**Implementacao:** No cabecalho da coluna, adicionar icone de alerta se produto for historico.
+
+---
+
+### Correcao 3: Adicionar confirmacao/historico para lojas (UX - OPCIONAL)
+
+**Descricao:** Criar tela simples para loja ver seus pedidos enviados.
+
+**Beneficio:** Loja pode confirmar que pedido foi enviado sem precisar contatar admin.
+
+---
+
+## RESUMO EXECUTIVO
+
+| Aspecto | Diagnostico |
+|---------|-------------|
+| Pedidos estao sendo salvos? | SIM - 100% de integridade |
+| Itens estao sendo salvos? | SIM - 4530 itens, nenhum orfao |
+| RLS bloqueia visualizacao? | NAO - todas as policies sao permissivas |
+| Causa raiz | Grade nao exibe colunas de produtos sem vinculo N:N atual |
+| Pedidos afetados | 8 pedidos com itens de produtos "historicos" |
+| Solucao principal | Modificar filtro para incluir produtos dos itens existentes |
+
+---
+
+## SECAO TECNICA
+
+### Dados de evidencia coletados
+
+**Pedidos sem itens (orfaos):** 0
+
+**Itens com produto de entidade diferente (N:N correto):** 53 itens em 9 pedidos
+
+**Itens com produto de entidade diferente (SEM N:N):** 8 itens em 8 pedidos
+
+**Produto problematico identificado:**
+- Codigo: 101855
+- Nome: Calculadora Pequena
+- Entidade legado: SOLICITACAO ESCRITORIO INTERNA
+- Pedidos em: MATERIAL ESCRITORIO (sem vinculo N:N)
+
+### Query para identificar itens invisiveis
 
 ```sql
-INSERT INTO configuracoes (chave, valor)
-VALUES ('maintenance_mode', 'false');
-```
-
-Nao e necessaria migration - a tabela ja existe com RLS permissiva.
-
----
-
-### 2. Hook useMaintenanceMode
-
-**Novo arquivo:** `src/hooks/useMaintenanceMode.ts`
-
-```typescript
-import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-
-export function useMaintenanceMode() {
-  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const fetchMaintenanceMode = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('configuracoes')
-      .select('valor')
-      .eq('chave', 'maintenance_mode')
-      .single();
-
-    if (!error && data) {
-      setIsMaintenanceMode(data.valor === 'true');
-    }
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    fetchMaintenanceMode();
-  }, [fetchMaintenanceMode]);
-
-  const toggleMaintenanceMode = async () => {
-    const newValue = !isMaintenanceMode;
-    const { error } = await supabase
-      .from('configuracoes')
-      .update({ valor: newValue ? 'true' : 'false' })
-      .eq('chave', 'maintenance_mode');
-
-    if (!error) {
-      setIsMaintenanceMode(newValue);
-      return true;
-    }
-    return false;
-  };
-
-  return { 
-    isMaintenanceMode, 
-    loading, 
-    toggleMaintenanceMode, 
-    refetch: fetchMaintenanceMode 
-  };
-}
-```
-
----
-
-### 3. Componente MaintenanceScreen
-
-**Novo arquivo:** `src/components/MaintenanceScreen.tsx`
-
-Tela fullscreen para lojas quando em manutencao:
-
-```typescript
-import { Wrench } from 'lucide-react';
-
-export function MaintenanceScreen() {
-  return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="text-center space-y-6 max-w-md">
-        <div className="mx-auto w-24 h-24 rounded-full bg-amber-100 
-                        flex items-center justify-center">
-          <Wrench className="h-12 w-12 text-amber-600" />
-        </div>
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold text-foreground">
-            Sistema em Manutencao
-          </h1>
-          <p className="text-muted-foreground">
-            Estamos realizando ajustes no sistema.
-            Em breve ele estara disponivel novamente.
-          </p>
-        </div>
-      </div>
-    </div>
+SELECT 
+  pi.*, ped.entidade_id as pedido_entidade,
+  p.entidade_id as produto_entidade_legado
+FROM pedido_itens pi
+JOIN pedidos ped ON ped.id = pi.pedido_id
+JOIN produtos p ON p.id = pi.produto_id
+WHERE p.entidade_id != ped.entidade_id
+  AND NOT EXISTS (
+    SELECT 1 FROM produto_entidades pe 
+    WHERE pe.produto_id = pi.produto_id 
+      AND pe.entidade_id = ped.entidade_id
   );
-}
 ```
 
----
+### Arquivos a modificar
 
-### 4. Componente MaintenanceBanner
-
-**Novo arquivo:** `src/components/admin/MaintenanceBanner.tsx`
-
-Banner fixo para admins:
-
-```typescript
-import { AlertTriangle } from 'lucide-react';
-
-export function MaintenanceBanner() {
-  return (
-    <div className="bg-amber-500 text-amber-950 px-4 py-2 
-                    flex items-center justify-center gap-2 text-sm font-medium">
-      <AlertTriangle className="h-4 w-4" />
-      <span>
-        SISTEMA EM MANUTENCAO - Usuarios externos estao bloqueados no momento
-      </span>
-    </div>
-  );
-}
-```
-
----
-
-### 5. Atualizar App.tsx
-
-Modificar o componente `RequireAcesso` para verificar manutencao:
-
-```typescript
-const RequireAcesso = ({ children }: { children: React.ReactNode }) => {
-  const { acessoLiberado } = useAcesso();
-  const { isMaintenanceMode, loading } = useMaintenanceMode();
-  
-  // Loading
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-  
-  // Manutencao bloqueia lojas
-  if (isMaintenanceMode) {
-    return <MaintenanceScreen />;
-  }
-  
-  // Acesso normal
-  if (!acessoLiberado) {
-    return <Navigate to="/acesso" replace />;
-  }
-  
-  return <>{children}</>;
-};
-```
-
----
-
-### 6. Atualizar AdminLayout
-
-Adicionar banner condicional:
-
-```typescript
-export function AdminLayout({ children }: AdminLayoutProps) {
-  const { isMaintenanceMode, loading } = useMaintenanceMode();
-  
-  return (
-    <div className="min-h-screen bg-background flex flex-col w-full">
-      {/* Banner de Manutencao */}
-      {!loading && isMaintenanceMode && <MaintenanceBanner />}
-      
-      <div className="flex flex-1">
-        {/* Sidebar Desktop */}
-        <aside className="hidden lg:flex w-64 ...">
-          <SidebarContent />
-        </aside>
-        
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Mobile Header */}
-          <header className="lg:hidden ...">
-            ...
-          </header>
-          
-          <main className="flex-1 p-4 lg:p-6 overflow-auto">
-            {children}
-          </main>
-        </div>
-      </div>
-    </div>
-  );
-}
-```
-
----
-
-### 7. Controle no Dashboard
-
-Adicionar botao na area de admin do Dashboard:
-
-```typescript
-// No Dashboard.tsx
-const { isMaintenanceMode, toggleMaintenanceMode } = useMaintenanceMode();
-const [isToggling, setIsToggling] = useState(false);
-
-const handleToggleMaintenance = async () => {
-  setIsToggling(true);
-  const success = await toggleMaintenanceMode();
-  setIsToggling(false);
-  
-  if (success) {
-    toast({
-      title: isMaintenanceMode ? 'Manutencao desativada' : 'Manutencao ativada',
-      description: isMaintenanceMode 
-        ? 'Sistema liberado para usuarios.' 
-        : 'Usuarios externos estao bloqueados.',
-    });
-  }
-};
-
-// No JSX do header:
-<Button
-  variant={isMaintenanceMode ? 'destructive' : 'outline'}
-  onClick={handleToggleMaintenance}
-  disabled={isToggling}
->
-  {isToggling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wrench className="h-4 w-4" />}
-  {isMaintenanceMode ? 'Desativar Manutencao' : 'Ativar Manutencao'}
-</Button>
-```
-
----
-
-### 8. Arquivos a Criar/Modificar
-
-| Arquivo | Acao |
-|---------|------|
-| (banco) configuracoes | INSERT nova linha |
-| `src/hooks/useMaintenanceMode.ts` | CRIAR |
-| `src/components/MaintenanceScreen.tsx` | CRIAR |
-| `src/components/admin/MaintenanceBanner.tsx` | CRIAR |
-| `src/App.tsx` | MODIFICAR RequireAcesso |
-| `src/components/admin/AdminLayout.tsx` | MODIFICAR para banner |
-| `src/pages/admin/Dashboard.tsx` | MODIFICAR para botao |
-
----
-
-### 9. Fluxo de Uso
-
-```text
-Admin acessa Dashboard
-        |
-        v
-Clica em [Ativar Manutencao]
-        |
-        v
-configuracoes.maintenance_mode = 'true'
-        |
-        +--------------------+
-        |                    |
-        v                    v
-   Lojas veem         Admin ve banner
-   tela fixa          amarelo no topo
-        |                    |
-        v                    |
-  Nao conseguem              |
-  fazer pedidos              |
-        |                    |
-        +--------------------+
-                |
-                v
-       Admin clica em
-    [Desativar Manutencao]
-                |
-                v
-   configuracoes.maintenance_mode = 'false'
-                |
-                v
-       Sistema volta ao normal
-```
-
----
-
-### 10. Comportamento Esperado
-
-| Cenario | Antes | Depois |
-|---------|-------|--------|
-| Loja tenta acessar /pedido | Formulario normal | Tela de manutencao |
-| Loja tenta enviar pedido | Funciona | Bloqueado (tela fixa) |
-| Admin acessa dashboard | Normal | Normal + banner amarelo |
-| Admin alterna manutencao | Nao existe | 1 clique |
-| Pedidos existentes | - | Nao afetados |
-| Dados no banco | - | Nao afetados |
-
----
-
-### 11. Secao Tecnica
-
-**Por que usar configuracoes em vez de nova tabela:**
-- Tabela ja existe com RLS configurada
-- Padrao key-value ja usado (codigo_admin, codigo_acesso)
-- Nao requer migration
-- Simples de consultar e atualizar
-
-**Por que verificar no RequireAcesso:**
-- Ponto central de protecao de rotas publicas
-- Nao precisa modificar cada pagina individualmente
-- Manutencao afeta todas as rotas de loja automaticamente
-
-**Otimizacao futura (opcional):**
-- Realtime subscription para atualizar automaticamente
-- Campo para mensagem customizada de manutencao
-- Log de quem ativou/desativou com timestamp
-
----
-
-### 12. Reversibilidade
-
-Para remover completamente:
-1. Deletar linha `maintenance_mode` da tabela configuracoes
-2. Remover hook useMaintenanceMode
-3. Remover componentes MaintenanceScreen e MaintenanceBanner
-4. Reverter alteracoes em App.tsx e AdminLayout
-
-Nenhum dado sera perdido, pedidos continuam funcionando.
+| Arquivo | Alteracao | Prioridade |
+|---------|-----------|------------|
+| `src/pages/admin/Pedidos.tsx` | Filtro de produtos incluir historicos | ALTA |
+| `src/pages/admin/Pedidos.tsx` | Indicador visual para produtos historicos | MEDIA |
+| (novo) Tela historico loja | Opcional para UX | BAIXA |
 
