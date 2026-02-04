@@ -30,7 +30,7 @@ const FormularioPedido = () => {
   const { lojas, loading: loadingLojas } = useLojas();
   const { addPedido } = usePedidos();
   const { toast } = useToast();
-  const { logout } = useAcesso();
+  const { logout, setUltimaLojaId } = useAcesso();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -130,6 +130,9 @@ const FormularioPedido = () => {
     setIsSubmitting(false);
 
     if (result) {
+      // Salva a loja usada para histórico local
+      setUltimaLojaId(selectedLojaId!);
+      
       // Reset form
       setQuantities({});
       setSearchQuery('');

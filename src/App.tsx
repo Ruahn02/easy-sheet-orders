@@ -9,6 +9,7 @@ import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/AdminLogin";
 import FormularioPedido from "./pages/FormularioPedido";
 import AcessoLoja from "./pages/AcessoLoja";
+import PedidosEnviados from "./pages/uso-consumo/PedidosEnviados";
 import Dashboard from "./pages/admin/Dashboard";
 import Pedidos from "./pages/admin/Pedidos";
 import Lojas from "./pages/admin/Lojas";
@@ -61,6 +62,7 @@ const App = () => (
           <Route path="/" element={<RequireAcesso><Index /></RequireAcesso>} />
           <Route path="/pedido" element={<RequireAcesso><Index /></RequireAcesso>} />
           <Route path="/pedido/:entidadeId" element={<RequireAcesso><FormularioPedido /></RequireAcesso>} />
+          <Route path="/pedidos-enviados" element={<RequireAcesso><PedidosEnviados /></RequireAcesso>} />
           
           {/* Rotas admin (não exigem código) */}
           <Route path="/admin" element={<AdminLogin />} />
