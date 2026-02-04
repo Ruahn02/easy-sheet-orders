@@ -68,13 +68,7 @@ export default function Pedidos() {
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
 
-  // Produtos da entidade selecionada (usando relacionamento N:N)
-  const produtosDaEntidade = useMemo(() => {
-    if (!selectedEntidadeId) return [];
-    return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
-  }, [produtos, selectedEntidadeId]);
-
-  // Pedidos APENAS da entidade selecionada
+  // Pedidos APENAS da entidade selecionada (movido para cima para usar em produtosDaEntidade)
   const filteredPedidos = useMemo(() => {
     if (!selectedEntidadeId) return [];
     
@@ -123,6 +117,39 @@ export default function Pedidos() {
       return true;
     });
   }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos]);
+
+  // Produtos da entidade selecionada (usando relacionamento N:N) + produtos históricos dos pedidos
+  const produtosDaEntidade = useMemo(() => {
+    if (!selectedEntidadeId) return [];
+    
+    // Produtos vinculados via N:N à entidade
+    const produtosVinculados = produtos.filter(
+      (p) => p.entidadeIds.includes(selectedEntidadeId)
+    );
+    
+    // IDs dos produtos que aparecem nos itens dos pedidos filtrados
+    const produtosIdsNosItens = new Set(
+      filteredPedidos.flatMap(p => p.itens.map(i => i.produtoId))
+    );
+    
+    // Produtos que estão nos itens mas NÃO estão vinculados via N:N (históricos)
+    const produtosHistoricos = produtos.filter(
+      (p) => produtosIdsNosItens.has(p.id) && !p.entidadeIds.includes(selectedEntidadeId)
+    );
+    
+    // Mesclar ambos (vinculados primeiro, históricos depois)
+    return [...produtosVinculados, ...produtosHistoricos];
+  }, [produtos, selectedEntidadeId, filteredPedidos]);
+
+  // Set de IDs de produtos históricos para indicador visual
+  const produtosHistoricosIds = useMemo(() => {
+    if (!selectedEntidadeId) return new Set<string>();
+    return new Set(
+      produtosDaEntidade
+        .filter(p => !p.entidadeIds.includes(selectedEntidadeId))
+        .map(p => p.id)
+    );
+  }, [produtosDaEntidade, selectedEntidadeId]);
 
   // Carregar separações quando os pedidos filtrados mudam
   useEffect(() => {
@@ -725,6 +752,7 @@ export default function Pedidos() {
                     </th>
                     {produtosDaEntidade.map((produto, produtoIndex) => {
                       const colIndex = 5 + produtoIndex;
+                      const isHistorico = produtosHistoricosIds.has(produto.id);
                       return (
                         <th 
                           key={produto.id} 
@@ -734,14 +762,22 @@ export default function Pedidos() {
                             "px-2 py-1.5 text-center text-xs font-medium text-foreground whitespace-nowrap min-w-[60px] cursor-pointer select-text",
                             focusedCell?.row === -1 && focusedCell?.col === colIndex && 
                               "ring-2 ring-primary ring-inset bg-primary/10",
-                            produto.status === 'inativo' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+                            produto.status === 'inativo' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                            isHistorico && "bg-amber-100 dark:bg-amber-900/30"
                           )}
                           onClick={() => setFocusedCell({ row: -1, col: colIndex })}
+                          title={isHistorico ? `Produto histórico: não está mais vinculado a esta entidade` : undefined}
                         >
-                          <span className="select-text">{produto.codigo}</span>
+                          <div className="flex items-center justify-center gap-1">
+                            <span className="select-text">{produto.codigo}</span>
+                            {isHistorico && (
+                              <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                            )}
+                          </div>
                           <div className={cn(
                             "text-[10px] truncate max-w-[80px] select-text",
-                            produto.status === 'inativo' ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+                            produto.status === 'inativo' ? "text-red-600 dark:text-red-400" : 
+                            isHistorico ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
                           )} title={produto.nome}>
                             {produto.nome}
                           </div>
