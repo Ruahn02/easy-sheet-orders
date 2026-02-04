@@ -1,265 +1,289 @@
 
-# Diagnostico: Solicitacoes Nao Aparecem para Almoxarifado
 
-## FASE 1 - INVESTIGACAO COMPLETA
+## Plano: Tela "Pedidos Enviados" para Lojas
 
-### 1. Frontend (Formulario de Pedido)
+### Visao Geral
 
-**Fluxo analisado (`FormularioPedido.tsx` linhas 114-149):**
-
-| Ponto | Comportamento | Status |
-|-------|---------------|--------|
-| Clique em "Enviar" | Abre modal de confirmacao | OK |
-| Modal de confirmacao | Lista todos os itens selecionados | OK |
-| Botao "Confirmar Envio" | Chama `addPedido()` e aguarda resultado | OK |
-| Insert do pedido | Salva no banco e espera resposta | OK |
-| Insert dos itens | Salva todos os itens vinculados ao pedido | OK |
-| Rollback em falha | Se itens falharem, deleta pedido pai | OK |
-| Toast de sucesso | So aparece se insert retornar dados | OK |
-
-**Conclusao Frontend:** O fluxo de envio esta correto e aguarda confirmacao do banco.
+Criar uma tela simples e exclusiva para lojas visualizarem os pedidos enviados a partir do terminal atual. A identificacao sera feita pelo `loja_id` armazenado no localStorage quando um pedido e enviado.
 
 ---
 
-### 2. Backend / Banco de Dados
+### Arquitetura da Solucao
 
-**Verificacao de dados:**
-
-| Metrica | Valor | Observacao |
-|---------|-------|------------|
-| Total de pedidos | 261 | Todos com dados validos |
-| Total de itens | 4530 | Nenhum item orfao |
-| Pedidos sem itens | 0 | Rollback funcionando |
-| Pedidos com itens | 261 | 100% de integridade |
-| Pedidos pendentes | 69 | Esperando processamento |
-| Pedidos feitos | 192 | Ja processados |
-
-**Conclusao Backend:** Os dados estao sendo salvos corretamente. Nao ha pedidos orfaos ou itens perdidos.
+```text
++-------------------+
+|   localStorage    |
+| (ultima loja_id)  |
++--------+----------+
+         |
+         v
++--------+----------+
+|  PedidosEnviados  |
+|      (pagina)     |
++--------+----------+
+         |
+         v
++--------+----------+
+|   pedidos table   |
+| (filtro: loja_id) |
++-------------------+
+```
 
 ---
 
-### 3. Listagem do Almoxarifado (Pedidos.tsx)
+### 1. Identificacao do Terminal
 
-**Filtros aplicados:**
+**Problema:** Atualmente nao existe identificador de terminal no localStorage.
 
-| Filtro | Descricao | Impacto |
-|--------|-----------|---------|
-| `selectedEntidadeId` | Obrigatorio | Filtra pedidos por entidade |
-| `statusFilter` | Opcional | Pode ocultar pedidos feitos/pendentes |
-| `selectedLojaId` | Opcional | Pode filtrar por loja |
-| `startDate` / `endDate` | Opcional | Pode cortar pedidos antigos |
-| `searchQuery` | Opcional | Busca em produtos |
+**Solucao:** Salvar o `loja_id` selecionado quando um pedido e enviado.
 
-**PONTO CRITICO IDENTIFICADO (linha 72-74):**
+**Arquivo:** `src/store/useLojaAuth.ts`
 
 ```typescript
-const produtosDaEntidade = useMemo(() => {
-  if (!selectedEntidadeId) return [];
-  return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
-}, [produtos, selectedEntidadeId]);
+interface AcessoState {
+  acessoLiberado: boolean;
+  ultimaLojaId: string | null;  // NOVO
+  setAcessoLiberado: (liberado: boolean) => void;
+  setUltimaLojaId: (lojaId: string) => void;  // NOVO
+  logout: () => void;
+}
 ```
 
-Este filtro define quais COLUNAS aparecem na grade. Se um produto nao esta vinculado via N:N a entidade do pedido, sua coluna NAO aparece - mesmo que haja itens solicitando esse produto.
-
 ---
 
-### 4. RLS (Row Level Security)
+### 2. Salvar Loja ao Enviar Pedido
 
-**Politicas verificadas:**
+**Arquivo:** `src/pages/FormularioPedido.tsx`
 
-| Tabela | SELECT | INSERT | UPDATE | DELETE |
-|--------|--------|--------|--------|--------|
-| pedidos | true (publico) | true | true | true |
-| pedido_itens | true (publico) | true | NAO | NAO |
-| produtos | true (publico) | true | true | true |
-
-**Conclusao RLS:** Nao ha bloqueio de visualizacao. Todos podem ver todos os dados.
-
----
-
-### 5. UX (Experiencia do Usuario)
-
-| Pergunta | Resposta |
-|----------|----------|
-| Usuario ve a propria solicitacao apos enviar? | NAO - nao ha tela "Minhas Solicitacoes" |
-| Existe numero ou confirmacao clara? | SIM - toast com "Pedido enviado com sucesso" |
-| Existe tela de historico para lojas? | NAO |
-
----
-
-## FASE 2 - HIPOTESES
-
-### ALTA PROBABILIDADE
-
-**Hipotese 1: Colunas de produtos ausentes na grade**
-
-| Item | Detalhe |
-|------|---------|
-| Causa | Grade filtra colunas por `produto.entidadeIds.includes(entidadeId)` |
-| Sintoma | Pedido existe, itens existem, mas coluna do produto nao aparece |
-| Evidencia | 53 itens em 9 pedidos tem produtos com N:N correto mas `entidade_id` diferente |
-| Como confirmar | Verificar se apos a correcao do filtro N:N (ja feita) os itens aparecem |
-
-**Hipotese 2: Produtos sem vinculo N:N apos migracao**
-
-| Item | Detalhe |
-|------|---------|
-| Causa | Produto foi solicitado quando pertencia a entidade A, depois vinculo foi alterado para entidade B |
-| Sintoma | Item existe no pedido mas coluna nao aparece pois produto nao pertence mais a entidade |
-| Evidencia | 8 itens em 8 pedidos referem produtos SEM vinculo N:N a entidade do pedido |
-| Como confirmar | Query mostra produto "Calculadora Pequena" em pedidos de "MATERIAL ESCRITORIO" mas vinculado apenas a "ESCRITORIO INTERNA" |
-
-### MEDIA PROBABILIDADE
-
-**Hipotese 3: Usuario seleciona entidade errada ao visualizar**
-
-| Item | Detalhe |
-|------|---------|
-| Causa | Admin seleciona entidade A para ver pedidos, mas pedido foi feito na entidade B |
-| Sintoma | Pedido "nao aparece" pois esta em outra aba |
-| Como confirmar | Verificar com usuario qual entidade foi selecionada |
-
-**Hipotese 4: Filtro de data oculta pedidos recentes**
-
-| Item | Detalhe |
-|------|---------|
-| Causa | Data de inicio/fim aplicada pode estar cortando pedidos |
-| Sintoma | Pedidos existem mas nao aparecem devido ao filtro |
-| Como confirmar | Limpar filtros de data e verificar se pedido aparece |
-
-### BAIXA PROBABILIDADE
-
-**Hipotese 5: Limite de 1000 pedidos**
-
-| Item | Detalhe |
-|------|---------|
-| Causa | PostgREST tem limite de 1000 linhas por query |
-| Sintoma | Pedidos antigos nao aparecem |
-| Status | JA CORRIGIDO - paginacao implementada em `useSupabaseData.ts` |
-
-**Hipotese 6: Falha silenciosa no insert**
-
-| Item | Detalhe |
-|------|---------|
-| Causa | Insert falha mas toast de sucesso aparece |
-| Status | DESCARTADA - codigo faz await e so exibe sucesso se retornar dados |
-
----
-
-## FASE 3 - CORRECOES PROPOSTAS
-
-### Correcao 1: Grade deve mostrar TODOS os produtos dos itens (CRITICO)
-
-**Arquivo:** `src/pages/admin/Pedidos.tsx`
-
-**Problema:** Grade filtra colunas apenas por produtos vinculados a entidade, ignorando itens de produtos historicos.
-
-**Solucao:** Extrair produtos unicos dos itens dos pedidos filtrados e mesclar com produtos da entidade.
+Modificar `handleSubmit` para salvar a loja apos envio bem-sucedido:
 
 ```typescript
-// ANTES (linha 72-75)
-const produtosDaEntidade = useMemo(() => {
-  if (!selectedEntidadeId) return [];
-  return produtos.filter((p) => p.entidadeIds.includes(selectedEntidadeId));
-}, [produtos, selectedEntidadeId]);
-
-// DEPOIS - incluir produtos dos itens dos pedidos filtrados
-const produtosDaEntidade = useMemo(() => {
-  if (!selectedEntidadeId) return [];
-  
-  // Produtos vinculados via N:N
-  const produtosVinculados = produtos.filter(
-    (p) => p.entidadeIds.includes(selectedEntidadeId)
-  );
-  
-  // IDs dos produtos que aparecem nos itens dos pedidos filtrados
-  const produtosIdsNosItens = new Set(
-    filteredPedidos.flatMap(p => p.itens.map(i => i.produtoId))
-  );
-  
-  // Produtos que estao nos itens mas NAO estao vinculados
-  const produtosHistoricos = produtos.filter(
-    (p) => produtosIdsNosItens.has(p.id) && !p.entidadeIds.includes(selectedEntidadeId)
-  );
-  
-  // Mesclar ambos (vinculados primeiro, historicos depois)
-  return [...produtosVinculados, ...produtosHistoricos];
-}, [produtos, selectedEntidadeId, filteredPedidos]);
+if (result) {
+  setUltimaLojaId(selectedLojaId!);  // NOVO
+  // Reset form...
+  toast({ title: 'Pedido enviado com sucesso!' });
+}
 ```
 
-**Impacto:** Todos os itens solicitados terao colunas visiveis, mesmo que o produto nao esteja mais vinculado a entidade.
+---
+
+### 3. Criar Pagina PedidosEnviados
+
+**Arquivo:** `src/pages/uso-consumo/PedidosEnviados.tsx`
+
+| Elemento | Descricao |
+|----------|-----------|
+| Header | Titulo "Pedidos Enviados" + botao voltar |
+| Aviso | Texto explicativo sobre filtragem por terminal |
+| Lista | Cards com numero, data, ML e status |
+| Vazio | Mensagem quando nao ha pedidos |
+
+**Dados exibidos por pedido:**
+
+| Campo | Fonte | Formato |
+|-------|-------|---------|
+| Numero | pedido.id (primeiros 8 chars) | #XXXXXXXX |
+| Data | pedido.data | DD/MM/YYYY HH:mm |
+| ML | loja.nome | ML XX |
+| Status | fixo | "Enviado ao Almoxarifado" |
+
+**Dados NAO exibidos:**
+- Itens
+- Produtos
+- Quantidades
+- Observacoes
+- Status de separacao
 
 ---
 
-### Correcao 2: Indicador visual para produtos historicos (UX)
+### 4. Consulta ao Banco
 
-**Arquivo:** `src/pages/admin/Pedidos.tsx`
+**Query simplificada:**
 
-**Descricao:** Marcar visualmente produtos que aparecem nos pedidos mas nao estao mais vinculados a entidade.
-
-**Implementacao:** No cabecalho da coluna, adicionar icone de alerta se produto for historico.
-
----
-
-### Correcao 3: Adicionar confirmacao/historico para lojas (UX - OPCIONAL)
-
-**Descricao:** Criar tela simples para loja ver seus pedidos enviados.
-
-**Beneficio:** Loja pode confirmar que pedido foi enviado sem precisar contatar admin.
-
----
-
-## RESUMO EXECUTIVO
-
-| Aspecto | Diagnostico |
-|---------|-------------|
-| Pedidos estao sendo salvos? | SIM - 100% de integridade |
-| Itens estao sendo salvos? | SIM - 4530 itens, nenhum orfao |
-| RLS bloqueia visualizacao? | NAO - todas as policies sao permissivas |
-| Causa raiz | Grade nao exibe colunas de produtos sem vinculo N:N atual |
-| Pedidos afetados | 8 pedidos com itens de produtos "historicos" |
-| Solucao principal | Modificar filtro para incluir produtos dos itens existentes |
-
----
-
-## SECAO TECNICA
-
-### Dados de evidencia coletados
-
-**Pedidos sem itens (orfaos):** 0
-
-**Itens com produto de entidade diferente (N:N correto):** 53 itens em 9 pedidos
-
-**Itens com produto de entidade diferente (SEM N:N):** 8 itens em 8 pedidos
-
-**Produto problematico identificado:**
-- Codigo: 101855
-- Nome: Calculadora Pequena
-- Entidade legado: SOLICITACAO ESCRITORIO INTERNA
-- Pedidos em: MATERIAL ESCRITORIO (sem vinculo N:N)
-
-### Query para identificar itens invisiveis
-
-```sql
-SELECT 
-  pi.*, ped.entidade_id as pedido_entidade,
-  p.entidade_id as produto_entidade_legado
-FROM pedido_itens pi
-JOIN pedidos ped ON ped.id = pi.pedido_id
-JOIN produtos p ON p.id = pi.produto_id
-WHERE p.entidade_id != ped.entidade_id
-  AND NOT EXISTS (
-    SELECT 1 FROM produto_entidades pe 
-    WHERE pe.produto_id = pi.produto_id 
-      AND pe.entidade_id = ped.entidade_id
-  );
+```typescript
+// Buscar apenas pedidos da loja armazenada no localStorage
+const { data } = await supabase
+  .from('pedidos')
+  .select('id, data, loja_id, entidade_id')
+  .eq('loja_id', ultimaLojaId)
+  .order('data', { ascending: false });
 ```
 
-### Arquivos a modificar
+**Nao buscar:**
+- pedido_itens (nao mostrar produtos)
+- produtos (nao mostrar detalhes)
 
-| Arquivo | Alteracao | Prioridade |
-|---------|-----------|------------|
-| `src/pages/admin/Pedidos.tsx` | Filtro de produtos incluir historicos | ALTA |
-| `src/pages/admin/Pedidos.tsx` | Indicador visual para produtos historicos | MEDIA |
-| (novo) Tela historico loja | Opcional para UX | BAIXA |
+---
+
+### 5. Routing
+
+**Arquivo:** `src/App.tsx`
+
+```typescript
+// Nova rota protegida (requer acesso liberado)
+<Route 
+  path="/pedidos-enviados" 
+  element={
+    <RequireAcesso>
+      <PedidosEnviados />
+    </RequireAcesso>
+  } 
+/>
+```
+
+---
+
+### 6. Link de Acesso
+
+**Arquivo:** `src/pages/Index.tsx`
+
+Adicionar botao/link discreto no rodape da pagina de selecao de tipo:
+
+```typescript
+<Link to="/pedidos-enviados">
+  <Button variant="ghost" size="sm">
+    <ClipboardList className="h-4 w-4 mr-2" />
+    Ver pedidos enviados
+  </Button>
+</Link>
+```
+
+---
+
+### 7. Estrutura de Arquivos
+
+| Arquivo | Acao |
+|---------|------|
+| `src/store/useLojaAuth.ts` | MODIFICAR - adicionar ultimaLojaId |
+| `src/pages/FormularioPedido.tsx` | MODIFICAR - salvar loja no envio |
+| `src/pages/uso-consumo/PedidosEnviados.tsx` | CRIAR |
+| `src/App.tsx` | MODIFICAR - adicionar rota |
+| `src/pages/Index.tsx` | MODIFICAR - adicionar link |
+
+---
+
+### 8. Layout da Pagina
+
+```text
++------------------------------------------+
+|  <- Voltar          PEDIDOS ENVIADOS     |
++------------------------------------------+
+|                                          |
+|  Esta tela mostra apenas pedidos         |
+|  enviados a partir deste computador.     |
+|  Pedidos feitos em outro computador      |
+|  nao aparecem aqui.                      |
+|                                          |
++------------------------------------------+
+|  +------------------------------------+  |
+|  | #A1B2C3D4                          |  |
+|  | 04/02/2026 15:30                   |  |
+|  | ML 01                              |  |
+|  | Enviado ao Almoxarifado            |  |
+|  +------------------------------------+  |
+|                                          |
+|  +------------------------------------+  |
+|  | #E5F6G7H8                          |  |
+|  | 03/02/2026 10:15                   |  |
+|  | ML 01                              |  |
+|  | Enviado ao Almoxarifado            |  |
+|  +------------------------------------+  |
+|                                          |
++------------------------------------------+
+```
+
+---
+
+### 9. Estado Vazio
+
+```text
++------------------------------------------+
+|  <- Voltar          PEDIDOS ENVIADOS     |
++------------------------------------------+
+|                                          |
+|  Esta tela mostra apenas pedidos         |
+|  enviados a partir deste computador.     |
+|                                          |
++------------------------------------------+
+|                                          |
+|          (icone de lista vazia)          |
+|                                          |
+|    Nenhum pedido foi enviado a partir    |
+|    deste computador.                     |
+|                                          |
+|    Faca seu primeiro pedido para         |
+|    ve-lo aqui.                           |
+|                                          |
++------------------------------------------+
+```
+
+---
+
+### 10. Seguranca e Isolamento
+
+| Regra | Implementacao |
+|-------|---------------|
+| Filtro obrigatorio | WHERE loja_id = ultimaLojaId |
+| Sem loja salva | Exibe estado vazio (nao erro) |
+| Acesso admin | Rota NAO adicionada ao menu admin |
+| Dados sensiveis | Nao exibe itens/quantidades |
+
+---
+
+### 11. Comportamento Esperado
+
+| Cenario | Resultado |
+|---------|-----------|
+| Primeiro acesso (sem pedidos) | Estado vazio com orientacao |
+| Terminal com pedidos | Lista ordenada por data |
+| Outro terminal | Nao ve pedidos deste |
+| Admin acessa /pedidos-enviados | Nao ve link, mas rota funciona se souber URL |
+
+---
+
+### 12. Secao Tecnica
+
+**Por que usar loja_id como identificador:**
+- Ja existe no banco de dados
+- E selecionado pelo usuario ao fazer pedido
+- Nao requer alteracao de schema
+- "ML" e a terminologia usada (lojas sao ML 01, ML 02, etc.)
+
+**Limitacoes conhecidas:**
+- Se usuario trocar de ML no mesmo terminal, vera apenas pedidos da ultima ML usada
+- Nao e um identificador unico de hardware (e uma escolha do usuario)
+
+**Alternativa nao implementada:**
+- Gerar UUID unico por browser e salvar em cada pedido
+- Requer alteracao de schema (adicionar coluna terminal_id)
+- Mais complexo e invasivo
+
+---
+
+### 13. Fluxo Completo
+
+```text
+Loja acessa sistema
+        |
+        v
+Seleciona tipo de pedido
+        |
+        v
+Seleciona ML (loja) -> Salvo em state
+        |
+        v
+Preenche itens
+        |
+        v
+Envia pedido
+        |
+        v
+loja_id salvo no localStorage  <-- NOVO
+        |
+        v
+Pode clicar em "Ver pedidos enviados"
+        |
+        v
+Ve lista filtrada pelo loja_id salvo
+```
 
