@@ -424,7 +424,7 @@ export function usePedidos() {
         entidadeId: p.entidade_id,
         observacoes: p.observacoes || undefined,
         data: new Date(p.data),
-        status: p.status as 'pendente' | 'feito',
+        status: p.status as 'pendente' | 'feito' | 'nao_atendido',
         corLinha: p.cor_linha || undefined,
         itens,
       };
@@ -486,10 +486,13 @@ export function usePedidos() {
     return pedidoData;
   };
 
-  const updatePedidoStatus = async (id: string, status: 'pendente' | 'feito') => {
+  const updatePedidoStatus = async (id: string, status: 'pendente' | 'feito' | 'nao_atendido', observacoes?: string) => {
+    const updates: Record<string, unknown> = { status };
+    if (observacoes !== undefined) updates.observacoes = observacoes;
+    
     const { error } = await supabase
       .from('pedidos')
-      .update({ status })
+      .update(updates)
       .eq('id', id);
     
     if (!error) {

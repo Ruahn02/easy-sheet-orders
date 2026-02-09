@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown, X, FileText } from 'lucide-react';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown, X, FileText, XCircle } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +59,8 @@ export default function Pedidos() {
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
+  const [pedidoParaNaoAtender, setPedidoParaNaoAtender] = useState<string | null>(null);
+  const [motivoNaoAtendido, setMotivoNaoAtendido] = useState<string>('');
   const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
   
   // Estado para navegação estilo planilha
@@ -80,6 +82,7 @@ export default function Pedidos() {
       if (statusFilter !== 'all') {
         if (statusFilter === 'pendente' && pedido.status !== 'pendente') return false;
         if (statusFilter === 'feito' && pedido.status !== 'feito') return false;
+        if (statusFilter === 'nao_atendido' && pedido.status !== 'nao_atendido') return false;
       }
 
       // Filter by store
@@ -166,6 +169,21 @@ export default function Pedidos() {
     }
   };
 
+  const handleMarcarNaoAtendido = async (pedidoId: string) => {
+    const pedido = pedidos.find(p => p.id === pedidoId);
+    const motivoTexto = motivoNaoAtendido 
+      ? `[Não atendido: ${motivoNaoAtendido}]` 
+      : '[Não atendido]';
+    const obsAtual = pedido?.observacoes || '';
+    const novaObs = obsAtual ? `${motivoTexto} ${obsAtual}` : motivoTexto;
+    
+    const success = await updatePedidoStatus(pedidoId, 'nao_atendido', novaObs);
+    if (success) {
+      toast({ title: 'Pedido marcado como não atendido' });
+    }
+    setMotivoNaoAtendido('');
+  };
+
   const handleUpdateCor = async (pedidoId: string, cor: string | undefined) => {
     await updatePedidoCor(pedidoId, cor);
   };
@@ -205,7 +223,7 @@ export default function Pedidos() {
       case 1: return format(new Date(pedido.data), 'HH:mm');
       case 2: return loja?.nome || '-';
       case 3: return pedido.observacoes || '-';
-      case 4: return pedido.status === 'feito' ? 'Feito' : 'Pendente';
+      case 4: return pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente';
       default: {
         // Colunas de produtos (índice 5 em diante)
         const produtoIndex = colIndex - 5;
@@ -380,7 +398,7 @@ export default function Pedidos() {
               'Produto': produto?.nome || '-',
               'Código': produto?.codigo || '-',
               'Quantidade': item.quantidade,
-              'Status': pedido.status === 'feito' ? 'Feito' : 'Pendente'
+              'Status': pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'
             };
           })
       );
@@ -450,7 +468,7 @@ export default function Pedidos() {
         yPosition += 5;
         doc.text(`Loja: ${loja?.nome || '-'}`, 14, yPosition);
         yPosition += 5;
-        doc.text(`Status: ${pedido.status === 'feito' ? 'Feito' : 'Pendente'}`, 14, yPosition);
+        doc.text(`Status: ${pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'}`, 14, yPosition);
         if (pedido.observacoes) {
           yPosition += 5;
           doc.text(`Obs: ${pedido.observacoes}`, 14, yPosition);
@@ -640,6 +658,7 @@ export default function Pedidos() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="pendente">Pendentes</SelectItem>
                 <SelectItem value="feito">Feitos</SelectItem>
+                <SelectItem value="nao_atendido">Não Atendidos</SelectItem>
               </SelectContent>
             </Select>
 
@@ -797,7 +816,8 @@ export default function Pedidos() {
                           key={pedido.id}
                           className={cn(
                             'border-b border-border transition-colors',
-                            pedido.status === 'feito' && 'opacity-60'
+                            pedido.status === 'feito' && 'opacity-60',
+                            pedido.status === 'nao_atendido' && 'opacity-50'
                           )}
                           style={{ backgroundColor: pedido.corLinha }}
                         >
@@ -866,15 +886,17 @@ export default function Pedidos() {
                             onClick={() => setFocusedCell({ row: rowIndex, col: 4 })}
                           >
                             <Badge
-                              variant={pedido.status === 'feito' ? 'default' : 'secondary'}
+                              variant={pedido.status === 'feito' ? 'default' : pedido.status === 'nao_atendido' ? 'outline' : 'secondary'}
                               className={cn(
                                 "text-[10px] px-1.5 py-0",
                                 pedido.status === 'feito'
                                   ? 'bg-accent text-accent-foreground'
+                                  : pedido.status === 'nao_atendido'
+                                  ? 'bg-muted text-muted-foreground'
                                   : 'bg-warning/20 text-warning-foreground'
                               )}
                             >
-                              {pedido.status === 'feito' ? 'Feito' : 'Pendente'}
+                              {pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'}
                             </Badge>
                           </td>
                           {produtosDaEntidade.map((produto, produtoIndex) => {
@@ -919,14 +941,25 @@ export default function Pedidos() {
                           <td className="px-2 py-1 sticky right-0 bg-inherit">
                             <div className="flex items-center justify-center gap-1">
                               {pedido.status === 'pendente' && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => setPedidoParaConcluir(pedido.id)}
-                                  className="bg-accent text-accent-foreground hover:bg-accent/90 h-6 px-2 text-xs"
-                                >
-                                  <Check className="h-3 w-3 mr-0.5" />
-                                  Feito
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => setPedidoParaConcluir(pedido.id)}
+                                    className="bg-accent text-accent-foreground hover:bg-accent/90 h-6 px-2 text-xs"
+                                  >
+                                    <Check className="h-3 w-3 mr-0.5" />
+                                    Feito
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setPedidoParaNaoAtender(pedido.id)}
+                                    className="h-6 px-2 text-xs text-muted-foreground"
+                                  >
+                                    <XCircle className="h-3 w-3 mr-0.5" />
+                                    Não Atendido
+                                  </Button>
+                                </>
                               )}
                               <Popover>
                                 <PopoverTrigger asChild>
@@ -991,6 +1024,57 @@ export default function Pedidos() {
                 setPedidoParaConcluir(null);
               }
             }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog 
+        open={!!pedidoParaNaoAtender} 
+        onOpenChange={(open) => {
+          if (!open) {
+            setPedidoParaNaoAtender(null);
+            setMotivoNaoAtendido('');
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Marcar como Não Atendido</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este pedido será removido da lista de pendentes e marcado como não atendido.
+              Os dados serão mantidos no histórico.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-2">
+            <label className="text-sm font-medium text-foreground mb-2 block">
+              Motivo (opcional):
+            </label>
+            <Select value={motivoNaoAtendido} onValueChange={setMotivoNaoAtendido}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione um motivo..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Pedido duplicado">Pedido duplicado</SelectItem>
+                <SelectItem value="Pedido errado">Pedido errado</SelectItem>
+                <SelectItem value="Item indisponível">Item indisponível</SelectItem>
+                <SelectItem value="Cancelado pela loja">Cancelado pela loja</SelectItem>
+                <SelectItem value="Outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (pedidoParaNaoAtender) {
+                  handleMarcarNaoAtendido(pedidoParaNaoAtender);
+                  setPedidoParaNaoAtender(null);
+                }
+              }}
+              className="bg-muted text-muted-foreground hover:bg-muted/80"
+            >
               Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>

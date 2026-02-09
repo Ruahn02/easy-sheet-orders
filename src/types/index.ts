@@ -37,7 +37,7 @@ export interface Pedido {
   entidadeId: string;
   observacoes?: string;
   data: Date;
-  status: 'pendente' | 'feito';
+  status: 'pendente' | 'feito' | 'nao_atendido';
   corLinha?: string;
   itens: PedidoItem[];
 }
