@@ -1,289 +1,153 @@
 
 
-## Plano: Tela "Pedidos Enviados" para Lojas
+## Plano: Status "Nao Atendido" para Pedidos
 
-### Visao Geral
+### Analise do Fluxo Atual
 
-Criar uma tela simples e exclusiva para lojas visualizarem os pedidos enviados a partir do terminal atual. A identificacao sera feita pelo `loja_id` armazenado no localStorage quando um pedido e enviado.
+**Criacao:** Loja envia pedido -> status = `pendente` -> salvo em `pedidos` + `pedido_itens`
+
+**Visualizacao:** Admin seleciona entidade -> grade mostra pedidos com filtro de status (`all`, `pendente`, `feito`)
+
+**Botao "Feito":** Aparece apenas quando `status = 'pendente'`. Ao clicar, abre AlertDialog de confirmacao e atualiza para `feito`. O pedido continua visivel na grade.
+
+**Metricas (Dashboard):** `pedidosPendentes` conta `status === 'pendente'`, `pedidosFeitos` conta `status === 'feito'`. Nao existe tratamento para outro status.
+
+**Exportacao:** PDF e XLSX mostram status como `Feito` ou `Pendente`. Nao ha terceira opcao.
 
 ---
 
-### Arquitetura da Solucao
+### Onde o "Nao Atendido" se Encaixa
+
+| Aspecto | Impacto |
+|---------|---------|
+| Lista operacional | Sai da lista de pendentes (nao precisa mais ser processado) |
+| Historico | Permanece visivel com filtro especifico |
+| Metricas | NAO conta como "feito" nem como "pendente" |
+| Dados | Nenhum dado apagado |
+
+---
+
+### Alteracoes Necessarias
+
+#### 1. Banco de Dados (Migration)
+
+Nenhuma migration necessaria. O campo `status` ja e do tipo `text` sem constraint. Basta salvar `'nao_atendido'` como valor.
+
+#### 2. TypeScript (`src/types/index.ts`)
+
+Expandir o tipo do status:
+
+```typescript
+status: 'pendente' | 'feito' | 'nao_atendido';
+```
+
+#### 3. Hook `useSupabaseData.ts`
+
+- Atualizar o cast do status no `fetchPedidos` para incluir `'nao_atendido'`
+- Atualizar a assinatura de `updatePedidoStatus` para aceitar `'nao_atendido'`
+
+#### 4. Pagina `Pedidos.tsx` - Botao e Filtro
+
+**Novo botao:** Ao lado de "Feito", visivel apenas quando `status === 'pendente'`:
 
 ```text
-+-------------------+
-|   localStorage    |
-| (ultima loja_id)  |
-+--------+----------+
-         |
-         v
-+--------+----------+
-|  PedidosEnviados  |
-|      (pagina)     |
-+--------+----------+
-         |
-         v
-+--------+----------+
-|   pedidos table   |
-| (filtro: loja_id) |
-+-------------------+
+[Feito]  [Nao Atendido]  [Cor]
 ```
 
----
+- "Feito": estilo verde (ja existente)
+- "Nao Atendido": estilo neutro/outline com icone `XCircle`
 
-### 1. Identificacao do Terminal
+**Confirmacao:** AlertDialog similar ao "Feito", com campo opcional de motivo (select simples, nao obrigatorio):
+- Pedido duplicado
+- Pedido errado
+- Item indisponivel
+- Cancelado pela loja
+- Outro
 
-**Problema:** Atualmente nao existe identificador de terminal no localStorage.
+O motivo sera salvo no campo `observacoes` do pedido (concatenado ao existente, se houver), evitando nova coluna.
 
-**Solucao:** Salvar o `loja_id` selecionado quando um pedido e enviado.
-
-**Arquivo:** `src/store/useLojaAuth.ts`
-
-```typescript
-interface AcessoState {
-  acessoLiberado: boolean;
-  ultimaLojaId: string | null;  // NOVO
-  setAcessoLiberado: (liberado: boolean) => void;
-  setUltimaLojaId: (lojaId: string) => void;  // NOVO
-  logout: () => void;
-}
-```
-
----
-
-### 2. Salvar Loja ao Enviar Pedido
-
-**Arquivo:** `src/pages/FormularioPedido.tsx`
-
-Modificar `handleSubmit` para salvar a loja apos envio bem-sucedido:
-
-```typescript
-if (result) {
-  setUltimaLojaId(selectedLojaId!);  // NOVO
-  // Reset form...
-  toast({ title: 'Pedido enviado com sucesso!' });
-}
-```
-
----
-
-### 3. Criar Pagina PedidosEnviados
-
-**Arquivo:** `src/pages/uso-consumo/PedidosEnviados.tsx`
-
-| Elemento | Descricao |
-|----------|-----------|
-| Header | Titulo "Pedidos Enviados" + botao voltar |
-| Aviso | Texto explicativo sobre filtragem por terminal |
-| Lista | Cards com numero, data, ML e status |
-| Vazio | Mensagem quando nao ha pedidos |
-
-**Dados exibidos por pedido:**
-
-| Campo | Fonte | Formato |
-|-------|-------|---------|
-| Numero | pedido.id (primeiros 8 chars) | #XXXXXXXX |
-| Data | pedido.data | DD/MM/YYYY HH:mm |
-| ML | loja.nome | ML XX |
-| Status | fixo | "Enviado ao Almoxarifado" |
-
-**Dados NAO exibidos:**
-- Itens
-- Produtos
-- Quantidades
-- Observacoes
-- Status de separacao
-
----
-
-### 4. Consulta ao Banco
-
-**Query simplificada:**
-
-```typescript
-// Buscar apenas pedidos da loja armazenada no localStorage
-const { data } = await supabase
-  .from('pedidos')
-  .select('id, data, loja_id, entidade_id')
-  .eq('loja_id', ultimaLojaId)
-  .order('data', { ascending: false });
-```
-
-**Nao buscar:**
-- pedido_itens (nao mostrar produtos)
-- produtos (nao mostrar detalhes)
-
----
-
-### 5. Routing
-
-**Arquivo:** `src/App.tsx`
-
-```typescript
-// Nova rota protegida (requer acesso liberado)
-<Route 
-  path="/pedidos-enviados" 
-  element={
-    <RequireAcesso>
-      <PedidosEnviados />
-    </RequireAcesso>
-  } 
-/>
-```
-
----
-
-### 6. Link de Acesso
-
-**Arquivo:** `src/pages/Index.tsx`
-
-Adicionar botao/link discreto no rodape da pagina de selecao de tipo:
-
-```typescript
-<Link to="/pedidos-enviados">
-  <Button variant="ghost" size="sm">
-    <ClipboardList className="h-4 w-4 mr-2" />
-    Ver pedidos enviados
-  </Button>
-</Link>
-```
-
----
-
-### 7. Estrutura de Arquivos
-
-| Arquivo | Acao |
-|---------|------|
-| `src/store/useLojaAuth.ts` | MODIFICAR - adicionar ultimaLojaId |
-| `src/pages/FormularioPedido.tsx` | MODIFICAR - salvar loja no envio |
-| `src/pages/uso-consumo/PedidosEnviados.tsx` | CRIAR |
-| `src/App.tsx` | MODIFICAR - adicionar rota |
-| `src/pages/Index.tsx` | MODIFICAR - adicionar link |
-
----
-
-### 8. Layout da Pagina
+**Filtro de status:** Adicionar opcao "Nao Atendido" ao select:
 
 ```text
-+------------------------------------------+
-|  <- Voltar          PEDIDOS ENVIADOS     |
-+------------------------------------------+
-|                                          |
-|  Esta tela mostra apenas pedidos         |
-|  enviados a partir deste computador.     |
-|  Pedidos feitos em outro computador      |
-|  nao aparecem aqui.                      |
-|                                          |
-+------------------------------------------+
-|  +------------------------------------+  |
-|  | #A1B2C3D4                          |  |
-|  | 04/02/2026 15:30                   |  |
-|  | ML 01                              |  |
-|  | Enviado ao Almoxarifado            |  |
-|  +------------------------------------+  |
-|                                          |
-|  +------------------------------------+  |
-|  | #E5F6G7H8                          |  |
-|  | 03/02/2026 10:15                   |  |
-|  | ML 01                              |  |
-|  | Enviado ao Almoxarifado            |  |
-|  +------------------------------------+  |
-|                                          |
-+------------------------------------------+
+Todos | Pendentes | Feitos | Nao Atendidos
 ```
 
----
+**Badge de status:** Novo visual para `nao_atendido`:
+- Cor: cinza/neutro
+- Texto: "Nao Atendido"
 
-### 9. Estado Vazio
+#### 5. Dashboard (`Dashboard.tsx`) - Metricas
 
-```text
-+------------------------------------------+
-|  <- Voltar          PEDIDOS ENVIADOS     |
-+------------------------------------------+
-|                                          |
-|  Esta tela mostra apenas pedidos         |
-|  enviados a partir deste computador.     |
-|                                          |
-+------------------------------------------+
-|                                          |
-|          (icone de lista vazia)          |
-|                                          |
-|    Nenhum pedido foi enviado a partir    |
-|    deste computador.                     |
-|                                          |
-|    Faca seu primeiro pedido para         |
-|    ve-lo aqui.                           |
-|                                          |
-+------------------------------------------+
+Adicionar contagem separada:
+
+```typescript
+const pedidosNaoAtendidos = pedidosFiltrados.filter(
+  p => p.status === 'nao_atendido'
+).length;
 ```
 
+Novo card de metrica ou indicador no dashboard mostrando "Nao Atendidos" separado de "Feitos" e "Pendentes".
+
+#### 6. Exportacao (XLSX e PDF)
+
+Atualizar mapeamento de status nos exports:
+- `'feito'` -> `'Feito'`
+- `'pendente'` -> `'Pendente'`
+- `'nao_atendido'` -> `'Nao Atendido'`
+
+Se houver motivo, ele ja estara nas observacoes.
+
 ---
 
-### 10. Seguranca e Isolamento
+### Arquivos a Modificar
 
-| Regra | Implementacao |
-|-------|---------------|
-| Filtro obrigatorio | WHERE loja_id = ultimaLojaId |
-| Sem loja salva | Exibe estado vazio (nao erro) |
-| Acesso admin | Rota NAO adicionada ao menu admin |
-| Dados sensiveis | Nao exibe itens/quantidades |
-
----
-
-### 11. Comportamento Esperado
-
-| Cenario | Resultado |
+| Arquivo | Alteracao |
 |---------|-----------|
-| Primeiro acesso (sem pedidos) | Estado vazio com orientacao |
-| Terminal com pedidos | Lista ordenada por data |
-| Outro terminal | Nao ve pedidos deste |
-| Admin acessa /pedidos-enviados | Nao ve link, mas rota funciona se souber URL |
+| `src/types/index.ts` | Adicionar `'nao_atendido'` ao tipo status |
+| `src/hooks/useSupabaseData.ts` | Atualizar cast e assinatura de updatePedidoStatus |
+| `src/pages/admin/Pedidos.tsx` | Botao, AlertDialog com motivo, filtro, badge, export |
+| `src/pages/admin/Dashboard.tsx` | Metrica separada para nao atendidos |
 
 ---
 
-### 12. Secao Tecnica
+### O que Muda
 
-**Por que usar loja_id como identificador:**
-- Ja existe no banco de dados
-- E selecionado pelo usuario ao fazer pedido
-- Nao requer alteracao de schema
-- "ML" e a terminologia usada (lojas sao ML 01, ML 02, etc.)
+| Item | Antes | Depois |
+|------|-------|--------|
+| Status possiveis | pendente, feito | pendente, feito, nao_atendido |
+| Botoes na linha | Feito + Cor | Feito + Nao Atendido + Cor |
+| Filtro de status | Todos/Pendentes/Feitos | Todos/Pendentes/Feitos/Nao Atendidos |
+| Dashboard | Pendentes + Feitos | Pendentes + Feitos + Nao Atendidos |
+| Export | Pendente/Feito | Pendente/Feito/Nao Atendido |
 
-**Limitacoes conhecidas:**
-- Se usuario trocar de ML no mesmo terminal, vera apenas pedidos da ultima ML usada
-- Nao e um identificador unico de hardware (e uma escolha do usuario)
+### O que NAO Muda
 
-**Alternativa nao implementada:**
-- Gerar UUID unico por browser e salvar em cada pedido
-- Requer alteracao de schema (adicionar coluna terminal_id)
-- Mais complexo e invasivo
+| Item | Comportamento |
+|------|---------------|
+| Dados existentes | Nenhum pedido alterado |
+| Fluxo de criacao | Lojas continuam criando normalmente |
+| Botao "Feito" | Funciona exatamente igual |
+| Separacao (toggle) | Nao afetado |
+| Cores de linha | Nao afetado |
+| Tela "Pedidos Enviados" (lojas) | Nao afetada |
+| Schema do banco | Nenhuma migration necessaria |
 
 ---
 
-### 13. Fluxo Completo
+### Secao Tecnica
 
-```text
-Loja acessa sistema
-        |
-        v
-Seleciona tipo de pedido
-        |
-        v
-Seleciona ML (loja) -> Salvo em state
-        |
-        v
-Preenche itens
-        |
-        v
-Envia pedido
-        |
-        v
-loja_id salvo no localStorage  <-- NOVO
-        |
-        v
-Pode clicar em "Ver pedidos enviados"
-        |
-        v
-Ve lista filtrada pelo loja_id salvo
-```
+**Por que nao criar nova coluna:**
+- O campo `status` ja e `text` sem constraint
+- Aceita qualquer valor, basta expandir o tipo TypeScript
+- Nenhuma migration = zero risco para dados existentes
+
+**Por que salvar motivo nas observacoes:**
+- Evita criar nova coluna no banco
+- Campo ja existe e e exibido na grade
+- Motivo e informacao secundaria, nao operacional
+- Formato: `[Nao atendido: Pedido duplicado] observacao original`
+
+**Reversibilidade:**
+- Para desfazer: reverter os 4 arquivos e executar `UPDATE pedidos SET status = 'pendente' WHERE status = 'nao_atendido'`
+- Nenhum dado e perdido
 
