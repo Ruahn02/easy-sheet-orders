@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Check, ChevronsUpDown, Wrench } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Check, ChevronsUpDown, Wrench, XCircle } from 'lucide-react';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
 import { format } from 'date-fns';
@@ -114,6 +114,7 @@ export default function Dashboard() {
     // Status dos pedidos filtrados
     const pedidosPendentes = pedidosFiltrados.filter(p => p.status === 'pendente').length;
     const pedidosFeitos = pedidosFiltrados.filter(p => p.status === 'feito').length;
+    const pedidosNaoAtendidos = pedidosFiltrados.filter(p => p.status === 'nao_atendido').length;
 
     return {
       totalPedidos: pedidos.length,
@@ -124,6 +125,7 @@ export default function Dashboard() {
       totalItens,
       pedidosPendentes,
       pedidosFeitos,
+      pedidosNaoAtendidos,
     };
   }, [pedidos, pedidosFiltrados, produtos, entidadeFiltro, produtoFiltro]);
 
@@ -547,7 +549,7 @@ export default function Dashboard() {
         </div>
 
         {/* Stats Cards - Linha 2: Produtos e Status */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -605,6 +607,20 @@ export default function Dashboard() {
                 <div>
                   <p className="text-2xl font-bold text-green-600">{stats.pedidosFeitos}</p>
                   <p className="text-xs text-muted-foreground">Concluídos</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-muted-foreground">{stats.pedidosNaoAtendidos}</p>
+                  <p className="text-xs text-muted-foreground">Não Atendidos</p>
                 </div>
               </div>
             </CardContent>
