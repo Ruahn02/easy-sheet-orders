@@ -37,11 +37,23 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const CORES_DISPONIVEIS = [
   { value: undefined, label: 'Sem cor' },
+  // Suaves
   { value: '#dcfce7', label: 'Verde claro' },
   { value: '#fef3c7', label: 'Amarelo claro' },
-  { value: '#fce7f3', label: 'Rosa claro' },
   { value: '#dbeafe', label: 'Azul claro' },
+  { value: '#fce7f3', label: 'Rosa claro' },
   { value: '#f3e8ff', label: 'Roxo claro' },
+  { value: '#f1f5f9', label: 'Cinza claro' },
+  // Chamativas
+  { value: '#86efac', label: 'Verde' },
+  { value: '#fde047', label: 'Amarelo' },
+  { value: '#fdba74', label: 'Laranja' },
+  { value: '#f9a8d4', label: 'Rosa' },
+  { value: '#93c5fd', label: 'Azul' },
+  { value: '#c4b5fd', label: 'Roxo' },
+  { value: '#fca5a5', label: 'Vermelho' },
+  { value: '#67e8f9', label: 'Ciano' },
+  { value: '#bef264', label: 'Lima' },
 ];
 
 export default function Pedidos() {
