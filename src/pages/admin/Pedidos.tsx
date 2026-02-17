@@ -393,7 +393,8 @@ export default function Pedidos() {
     }
 
     try {
-      const XLSX = await import('xlsx');
+      const xlsxModule = await import('xlsx');
+      const XLSX = xlsxModule.default || xlsxModule;
       
       // Gerar dados NORMALIZADOS - cada linha = 1 item de pedido
       const rows = filteredPedidos.flatMap(pedido => 
