@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2, X, Upload } from 'lucide-react';
+import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2, X, Upload, ArrowUpDown } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useProdutos } from '@/hooks/useSupabaseData';
 import { useImageUpload } from '@/hooks/useImageUpload';
@@ -32,9 +32,10 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Produto } from '@/types';
+import { ReorderProducts } from '@/components/admin/ReorderProducts';
 
 export default function Produtos() {
-  const { produtos, loading, addProduto, updateProduto, deleteProduto } = useProdutos();
+  const { produtos, loading, addProduto, updateProduto, deleteProduto, reorderProdutos } = useProdutos();
   const { entidades } = useEntidades();
   const { uploadImage } = useImageUpload();
   const { toast } = useToast();
@@ -64,6 +65,7 @@ export default function Produtos() {
   // Confirmações
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [inativarConfirm, setInativarConfirm] = useState<Produto | null>(null);
+  const [isReorderOpen, setIsReorderOpen] = useState(false);
 
   // Produtos filtrados - usando N:N
   const produtosFiltrados = useMemo(() => {
@@ -274,10 +276,18 @@ export default function Produtos() {
             <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
             <p className="text-muted-foreground">Gerencie os produtos do catálogo</p>
           </div>
-          <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Produto
-          </Button>
+          <div className="flex gap-2">
+            {entidadeFiltro && entidadeFiltro !== 'all' && (
+              <Button variant="outline" onClick={() => setIsReorderOpen(true)}>
+                <ArrowUpDown className="h-4 w-4 mr-2" />
+                Reordenar Catálogo
+              </Button>
+            )}
+            <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Produto
+            </Button>
+          </div>
         </div>
 
         {/* Filtros */}
@@ -609,6 +619,14 @@ export default function Produtos() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Reorder Modal */}
+        <ReorderProducts
+          open={isReorderOpen}
+          onOpenChange={setIsReorderOpen}
+          produtos={produtosFiltrados.filter(p => p.status === 'ativo')}
+          onSave={reorderProdutos}
+        />
       </div>
     </AdminLayout>
   );
