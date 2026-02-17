@@ -342,7 +342,15 @@ export function useProdutos() {
     return false;
   };
 
-  return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto };
+  const reorderProdutos = async (orderedIds: string[]) => {
+    const updates = orderedIds.map((id, index) =>
+      supabase.from('produtos').update({ ordem: index + 1 }).eq('id', id)
+    );
+    await Promise.all(updates);
+    await fetchProdutos();
+  };
+
+  return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto, reorderProdutos };
 }
 
 // ============= PEDIDOS =============
