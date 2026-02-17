@@ -1,51 +1,34 @@
 
 
-## Ampliar Paleta de Cores dos Pedidos
+## Corrigir Exportacao XLSX
 
-### Problema Atual
+### Problema
 
-Existem apenas 5 cores, todas em tons muito claros (pastel), dificultando a diferenciacao visual entre pedidos na grade.
+O import dinamico `await import('xlsx')` retorna um objeto de modulo ES. A biblioteca `xlsx` exporta como `default`, entao `XLSX.utils` e `XLSX.writeFile` estao `undefined` -- o que causa erro silencioso no catch.
 
-### Cores Atuais
+O PDF funciona porque `jspdf` usa named exports (`const { jsPDF } = await import('jspdf')`), enquanto o xlsx nao.
 
-- Verde claro (#dcfce7)
-- Amarelo claro (#fef3c7)
-- Rosa claro (#fce7f3)
-- Azul claro (#dbeafe)
-- Roxo claro (#f3e8ff)
+### Correcao
 
-### Nova Paleta (15 cores + "Sem cor")
+**Arquivo:** `src/pages/admin/Pedidos.tsx` (linha 396)
 
-Organizada em dois grupos: claras e chamativas.
+Trocar:
+```typescript
+const XLSX = await import('xlsx');
+```
 
-**Claras (suaves):**
-- Verde claro (#dcfce7)
-- Amarelo claro (#fef3c7)
-- Azul claro (#dbeafe)
-- Rosa claro (#fce7f3)
-- Roxo claro (#f3e8ff)
-- Cinza claro (#f1f5f9)
+Por:
+```typescript
+const xlsxModule = await import('xlsx');
+const XLSX = xlsxModule.default || xlsxModule;
+```
 
-**Chamativas (mais vibrantes):**
-- Verde (#86efac)
-- Amarelo (#fde047)
-- Laranja (#fdba74)
-- Rosa (#f9a8d4)
-- Azul (#93c5fd)
-- Roxo (#c4b5fd)
-- Vermelho (#fca5a5)
-- Ciano (#67e8f9)
-- Lima (#bef264)
-
-### Alteracao
-
-**Arquivo:** `src/pages/admin/Pedidos.tsx`
-
-Substituir o array `CORES_DISPONIVEIS` (linhas 38-45) pela nova paleta expandida com 15 opcoes.
+Isso garante compatibilidade tanto com bundlers que resolvem o default automaticamente quanto com os que nao resolvem.
 
 ### Impacto
 
-- Pedidos ja coloridos mantem suas cores (os valores antigos continuam na lista)
-- Nenhuma alteracao de banco ou logica
-- Apenas a lista de opcoes no popover de cores muda
+- Apenas 1 linha alterada
+- Nenhuma mudanca de logica ou layout
+- PDF continua funcionando normalmente
+- Dados exportados permanecem identicos
 
