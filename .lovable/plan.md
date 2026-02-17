@@ -1,34 +1,33 @@
 
 
-## Corrigir Exportacao XLSX
+## Botao de Modo Noturno/Dia no Dashboard
 
-### Problema
+### Situacao Atual
 
-O import dinamico `await import('xlsx')` retorna um objeto de modulo ES. A biblioteca `xlsx` exporta como `default`, entao `XLSX.utils` e `XLSX.writeFile` estao `undefined` -- o que causa erro silencioso no catch.
+O projeto ja tem a biblioteca `next-themes` instalada e variaveis CSS para `.dark` definidas no `index.css`, mas nao existe nenhum `ThemeProvider` configurado -- ou seja, o modo escuro nunca e ativado.
 
-O PDF funciona porque `jspdf` usa named exports (`const { jsPDF } = await import('jspdf')`), enquanto o xlsx nao.
+### O que sera feito
 
-### Correcao
+1. **Envolver o app com `ThemeProvider`** (`src/App.tsx`)
+   - Importar `ThemeProvider` de `next-themes`
+   - Envolver todo o conteudo do app com ele (atributo `attribute="class"`, `defaultTheme="light"`)
 
-**Arquivo:** `src/pages/admin/Pedidos.tsx` (linha 396)
+2. **Adicionar botao de alternancia no header do AdminLayout** (`src/components/admin/AdminLayout.tsx`)
+   - Icone de sol/lua no canto superior direito
+   - Ao clicar, alterna entre `light` e `dark`
+   - Visivel tanto no header mobile quanto no desktop
 
-Trocar:
-```typescript
-const XLSX = await import('xlsx');
-```
+### Arquivos a modificar
 
-Por:
-```typescript
-const xlsxModule = await import('xlsx');
-const XLSX = xlsxModule.default || xlsxModule;
-```
-
-Isso garante compatibilidade tanto com bundlers que resolvem o default automaticamente quanto com os que nao resolvem.
+| Arquivo | Alteracao |
+|---------|-----------|
+| `src/App.tsx` | Adicionar `ThemeProvider` envolvendo o app |
+| `src/components/admin/AdminLayout.tsx` | Adicionar botao sol/lua no header |
 
 ### Impacto
 
-- Apenas 1 linha alterada
-- Nenhuma mudanca de logica ou layout
-- PDF continua funcionando normalmente
-- Dados exportados permanecem identicos
+- Todas as paginas admin ganham suporte a modo escuro (as variaveis CSS `.dark` ja existem)
+- Preferencia do usuario e salva automaticamente no `localStorage` pelo `next-themes`
+- Nenhuma alteracao de banco, logica de pedidos ou metricas
+- Paginas publicas (lojas) tambem respeitam o tema escolhido
 
