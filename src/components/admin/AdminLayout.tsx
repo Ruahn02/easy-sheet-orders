@@ -9,7 +9,10 @@ import {
   FolderOpen,
   LogOut,
   Menu,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -83,6 +86,21 @@ function SidebarContent() {
   );
 }
 
+function ThemeToggle() {
+  const { theme, setTheme } = useTheme();
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}
+    >
+      <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+    </Button>
+  );
+}
+
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { isMaintenanceMode, loading } = useMaintenanceMode();
 
@@ -99,6 +117,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
+          {/* Desktop Theme Toggle */}
+          <div className="hidden lg:flex justify-end p-4 pb-0">
+            <ThemeToggle />
+          </div>
+
           {/* Mobile Header */}
           <header className="lg:hidden flex items-center gap-4 border-b border-border bg-card p-4">
             <Sheet>
@@ -111,7 +134,8 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 <SidebarContent />
               </SheetContent>
             </Sheet>
-            <h1 className="font-bold text-foreground">Painel Admin</h1>
+            <h1 className="flex-1 font-bold text-foreground">Painel Admin</h1>
+            <ThemeToggle />
           </header>
 
           {/* Page Content */}
