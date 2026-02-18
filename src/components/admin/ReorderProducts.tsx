@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -96,13 +96,11 @@ export function ReorderProducts({ open, onOpenChange, produtos, onSave }: Reorde
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  // Sync items when dialog opens
-  const handleOpenChange = (isOpen: boolean) => {
-    if (isOpen) {
+  useEffect(() => {
+    if (open) {
       setItems([...produtos]);
     }
-    onOpenChange(isOpen);
-  };
+  }, [open, produtos]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -129,7 +127,7 @@ export function ReorderProducts({ open, onOpenChange, produtos, onSave }: Reorde
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-card max-h-[90vh] flex flex-col overflow-hidden sm:max-w-lg">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle>Reordenar Catálogo</DialogTitle>
