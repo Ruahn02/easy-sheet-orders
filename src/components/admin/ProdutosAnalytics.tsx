@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Package, Calendar, List, X } from 'lucide-react';
-import { format, subDays, startOfDay, endOfDay } from 'date-fns';
+import { format, subDays, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths, subQuarters } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Dialog,
@@ -16,7 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import type { Pedido, Produto } from '@/types';
 
-type PeriodoPreset = 'hoje' | '7dias' | '30dias' | 'personalizado';
+type PeriodoPreset = 'hoje' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'trimestre' | 'semestre' | 'ano' | 'personalizado';
 
 interface ProdutosAnalyticsProps {
   pedidos: Pedido[];
@@ -33,7 +33,7 @@ export function ProdutosAnalytics({
   open,
   onOpenChange,
 }: ProdutosAnalyticsProps) {
-  const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>('30dias');
+  const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>('este_mes');
   const [dataInicioLocal, setDataInicioLocal] = useState<Date | undefined>(undefined);
   const [dataFimLocal, setDataFimLocal] = useState<Date | undefined>(undefined);
 
@@ -43,20 +43,26 @@ export function ProdutosAnalytics({
     
     switch (periodoPreset) {
       case 'hoje':
-        return {
-          dataInicio: startOfDay(hoje),
-          dataFim: endOfDay(hoje),
-        };
-      case '7dias':
-        return {
-          dataInicio: startOfDay(subDays(hoje, 7)),
-          dataFim: endOfDay(hoje),
-        };
-      case '30dias':
-        return {
-          dataInicio: startOfDay(subDays(hoje, 30)),
-          dataFim: endOfDay(hoje),
-        };
+        return { dataInicio: startOfDay(hoje), dataFim: endOfDay(hoje) };
+      case 'esta_semana':
+        return { dataInicio: startOfWeek(hoje, { weekStartsOn: 1 }), dataFim: endOfDay(hoje) };
+      case 'semana_passada': {
+        const inicioSemanaPassada = startOfWeek(subDays(hoje, 7), { weekStartsOn: 1 });
+        const fimSemanaPassada = endOfDay(subDays(startOfWeek(hoje, { weekStartsOn: 1 }), 1));
+        return { dataInicio: inicioSemanaPassada, dataFim: fimSemanaPassada };
+      }
+      case 'este_mes':
+        return { dataInicio: startOfMonth(hoje), dataFim: endOfDay(hoje) };
+      case 'mes_passado': {
+        const mesPassado = subMonths(hoje, 1);
+        return { dataInicio: startOfMonth(mesPassado), dataFim: endOfDay(subDays(startOfMonth(hoje), 1)) };
+      }
+      case 'trimestre':
+        return { dataInicio: startOfQuarter(hoje), dataFim: endOfDay(hoje) };
+      case 'semestre':
+        return { dataInicio: startOfDay(subMonths(hoje, 6)), dataFim: endOfDay(hoje) };
+      case 'ano':
+        return { dataInicio: startOfYear(hoje), dataFim: endOfDay(hoje) };
       case 'personalizado':
         return {
           dataInicio: dataInicioLocal ? startOfDay(dataInicioLocal) : undefined,
@@ -110,19 +116,20 @@ export function ProdutosAnalytics({
 
   const getPresetLabel = () => {
     switch (periodoPreset) {
-      case 'hoje':
-        return 'Hoje';
-      case '7dias':
-        return 'Últimos 7 dias';
-      case '30dias':
-        return 'Últimos 30 dias';
+      case 'hoje': return 'Hoje';
+      case 'esta_semana': return 'Esta Semana';
+      case 'semana_passada': return 'Semana Passada';
+      case 'este_mes': return 'Este Mês';
+      case 'mes_passado': return 'Mês Passado';
+      case 'trimestre': return 'Trimestre';
+      case 'semestre': return 'Semestre';
+      case 'ano': return 'Ano';
       case 'personalizado':
         if (dataInicioLocal && dataFimLocal) {
           return `${format(dataInicioLocal, 'dd/MM')} - ${format(dataFimLocal, 'dd/MM')}`;
         }
         return 'Personalizado';
-      default:
-        return '';
+      default: return '';
     }
   };
 
@@ -145,34 +152,26 @@ export function ProdutosAnalytics({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              variant={periodoPreset === 'hoje' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriodoPreset('hoje')}
-            >
-              Hoje
-            </Button>
-            <Button
-              variant={periodoPreset === '7dias' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriodoPreset('7dias')}
-            >
-              7 dias
-            </Button>
-            <Button
-              variant={periodoPreset === '30dias' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriodoPreset('30dias')}
-            >
-              30 dias
-            </Button>
-            <Button
-              variant={periodoPreset === 'personalizado' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPeriodoPreset('personalizado')}
-            >
-              Personalizado
-            </Button>
+            {([
+              ['hoje', 'Hoje'],
+              ['esta_semana', 'Esta Semana'],
+              ['semana_passada', 'Sem. Passada'],
+              ['este_mes', 'Este Mês'],
+              ['mes_passado', 'Mês Passado'],
+              ['trimestre', 'Trimestre'],
+              ['semestre', 'Semestre'],
+              ['ano', 'Ano'],
+              ['personalizado', 'Personalizado'],
+            ] as [PeriodoPreset, string][]).map(([key, label]) => (
+              <Button
+                key={key}
+                variant={periodoPreset === key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPeriodoPreset(key)}
+              >
+                {label}
+              </Button>
+            ))}
           </div>
 
           {periodoPreset === 'personalizado' && (
