@@ -156,6 +156,14 @@ const FormularioPedido = () => {
       entidadeId: entidadeId!,
       observacoes: observacoes.trim() || undefined,
       itens,
+      ...(isControle ? {
+        nomeSolicitante: nomeSolicitante.trim(),
+        emailSolicitante: emailSolicitante.trim(),
+        nomeColaborador: nomeColaborador.trim(),
+        funcaoColaborador: funcaoColaborador.trim(),
+        matriculaFuncionario: matriculaFuncionario.trim(),
+        motivoSolicitacao: motivoSolicitacao.trim(),
+      } : {}),
     });
 
     setIsSubmitting(false);
