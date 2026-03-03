@@ -404,7 +404,7 @@ export default function Pedidos() {
           .map(item => {
             const produto = produtos.find(p => p.id === item.produtoId);
             const loja = lojas.find(l => l.id === pedido.lojaId);
-            return {
+            const base: Record<string, any> = {
               'Data': format(new Date(pedido.data), 'dd/MM/yyyy'),
               'Hora': format(new Date(pedido.data), 'HH:mm'),
               'Pedido': pedido.id.slice(0, 8),
@@ -414,6 +414,15 @@ export default function Pedidos() {
               'Quantidade': item.quantidade,
               'Status': pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'
             };
+            if (isControle) {
+              base['Solicitante'] = pedido.nomeSolicitante || '-';
+              base['Email'] = pedido.emailSolicitante || '-';
+              base['Colaborador'] = pedido.nomeColaborador || '-';
+              base['Função'] = pedido.funcaoColaborador || '-';
+              base['Matrícula'] = pedido.matriculaFuncionario || '-';
+              base['Motivo'] = pedido.motivoSolicitacao || '-';
+            }
+            return base;
           })
       );
 
