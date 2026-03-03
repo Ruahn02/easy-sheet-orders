@@ -76,10 +76,11 @@ export default function Entidades() {
       setFormData({
         nome: entidade.nome,
         aceitandoPedidos: entidade.aceitandoPedidos,
+        tipoPedido: entidade.tipoPedido,
       });
     } else {
       setEditingEntidade(null);
-      setFormData({ nome: '', aceitandoPedidos: true });
+      setFormData({ nome: '', aceitandoPedidos: true, tipoPedido: 'padrao' });
     }
     setIsModalOpen(true);
   };
