@@ -2,6 +2,7 @@ export interface Entidade {
   id: string;
   nome: string;
   aceitandoPedidos: boolean; // Controla se o link está aberto para pedidos
+  tipoPedido: 'padrao' | 'controle'; // Define se exige rastreabilidade
   criadoEm: Date;
 }
 
