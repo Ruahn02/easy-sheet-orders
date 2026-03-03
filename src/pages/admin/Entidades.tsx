@@ -99,7 +99,7 @@ export default function Entidades() {
         toast({ title: 'Entidade atualizada!' });
       }
     } else {
-      const result = await addEntidade(formData.nome, formData.aceitandoPedidos);
+      const result = await addEntidade(formData.nome, formData.aceitandoPedidos, formData.tipoPedido);
       if (result) {
         toast({ title: 'Entidade criada!' });
       }
