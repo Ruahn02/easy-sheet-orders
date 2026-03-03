@@ -41,6 +41,13 @@ export interface Pedido {
   status: 'pendente' | 'feito' | 'nao_atendido';
   corLinha?: string;
   itens: PedidoItem[];
+  // Campos de rastreabilidade (tipo "controle")
+  nomeSolicitante?: string;
+  emailSolicitante?: string;
+  nomeColaborador?: string;
+  funcaoColaborador?: string;
+  matriculaFuncionario?: string;
+  motivoSolicitacao?: string;
 }
 
 export interface PedidoComDetalhes extends Pedido {
