@@ -215,16 +215,17 @@ export default function Pedidos() {
 
   // Função para obter conteúdo da célula (suporta cabeçalho com row = -1)
   const getCellContent = useCallback((rowIndex: number, colIndex: number): string => {
-    // CABEÇALHO (row = -1): retorna apenas o código do produto
+    const controleLabels = isControle ? ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'] : [];
+    const allHeaderLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status', ...controleLabels];
+
+    // CABEÇALHO (row = -1)
     if (rowIndex === -1) {
-      if (colIndex >= 5) {
-        const produtoIndex = colIndex - 5;
-        const produto = produtosDaEntidade[produtoIndex];
-        return produto?.codigo || '';
+      if (colIndex < allHeaderLabels.length) {
+        return allHeaderLabels[colIndex] || '';
       }
-      // Colunas fixas do cabeçalho
-      const headerLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status'];
-      return headerLabels[colIndex] || '';
+      const produtoIndex = colIndex - fixedCols;
+      const produto = produtosDaEntidade[produtoIndex];
+      return produto?.codigo || '';
     }
 
     // CORPO DA TABELA (row >= 0)
@@ -240,8 +241,17 @@ export default function Pedidos() {
       case 3: return pedido.observacoes || '-';
       case 4: return pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente';
       default: {
-        // Colunas de produtos (índice 5 em diante)
-        const produtoIndex = colIndex - 5;
+        // Colunas de controle (5-10 se isControle)
+        if (isControle && colIndex >= 5 && colIndex < 11) {
+          const controleFields = [
+            pedido.nomeSolicitante, pedido.emailSolicitante,
+            pedido.nomeColaborador, pedido.funcaoColaborador,
+            pedido.matriculaFuncionario, pedido.motivoSolicitacao
+          ];
+          return controleFields[colIndex - 5] || '-';
+        }
+        // Colunas de produtos
+        const produtoIndex = colIndex - fixedCols;
         const produto = produtosDaEntidade[produtoIndex];
         if (produto) {
           const item = pedido.itens.find(i => i.produtoId === produto.id);
@@ -250,7 +260,7 @@ export default function Pedidos() {
         return '';
       }
     }
-  }, [filteredPedidos, lojas, produtosDaEntidade]);
+  }, [filteredPedidos, lojas, produtosDaEntidade, isControle, fixedCols]);
 
   // Navegação por teclado e Ctrl+C
   useEffect(() => {
