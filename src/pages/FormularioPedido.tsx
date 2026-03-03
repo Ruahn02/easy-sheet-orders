@@ -325,6 +325,39 @@ const FormularioPedido = () => {
         )}
       </div>
 
+      {/* Campos de Controle (rastreabilidade) */}
+      {isControle && produtosDaEntidade.length > 0 && (
+        <div className="px-4 py-4 border-t border-border mt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">🔒 Dados de Rastreabilidade (obrigatórios)</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Solicitante *</label>
+              <Input value={nomeSolicitante} onChange={(e) => setNomeSolicitante(e.target.value)} placeholder="Quem está solicitando" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email do Solicitante *</label>
+              <Input type="email" value={emailSolicitante} onChange={(e) => setEmailSolicitante(e.target.value)} placeholder="email@empresa.com" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Colaborador *</label>
+              <Input value={nomeColaborador} onChange={(e) => setNomeColaborador(e.target.value)} placeholder="Para quem é o pedido" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Função do Colaborador *</label>
+              <Input value={funcaoColaborador} onChange={(e) => setFuncaoColaborador(e.target.value)} placeholder="Cargo/função" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Matrícula do Funcionário *</label>
+              <Input value={matriculaFuncionario} onChange={(e) => setMatriculaFuncionario(e.target.value)} placeholder="Número da matrícula" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Motivo da Solicitação *</label>
+              <Textarea value={motivoSolicitacao} onChange={(e) => setMotivoSolicitacao(e.target.value)} placeholder="Justificativa do pedido" rows={2} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Campo ÚNICO de Observações - no final */}
       {produtosDaEntidade.length > 0 && (
         <div className="px-4 py-4 border-t border-border mt-4">
