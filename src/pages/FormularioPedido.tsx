@@ -48,11 +48,10 @@ const FormularioPedido = () => {
   const [matriculaFuncionario, setMatriculaFuncionario] = useState('');
   const [motivoSolicitacao, setMotivoSolicitacao] = useState('');
 
-  const isControle = entidade?.tipoPedido === 'controle';
-  const [showConfirmation, setShowConfirmation] = useState(false);
-
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
+
+  const isControle = entidade?.tipoPedido === 'controle';
 
   // Filtra produtos desta entidade (ativos e inativos) - usando N:N
   const produtosDaEntidade = produtos.filter(
