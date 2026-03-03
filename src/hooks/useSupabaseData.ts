@@ -18,6 +18,7 @@ export function useEntidades() {
         id: e.id,
         nome: e.nome,
         aceitandoPedidos: e.aceitando_pedidos,
+        tipoPedido: ((e as any).tipo_pedido || 'padrao') as 'padrao' | 'controle',
         criadoEm: new Date(e.criado_em),
       })));
     }
