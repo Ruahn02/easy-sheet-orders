@@ -62,6 +62,7 @@ export default function Entidades() {
   const [formData, setFormData] = useState({
     nome: '',
     aceitandoPedidos: true,
+    tipoPedido: 'padrao' as 'padrao' | 'controle',
   });
   const [isSaving, setIsSaving] = useState(false);
 
