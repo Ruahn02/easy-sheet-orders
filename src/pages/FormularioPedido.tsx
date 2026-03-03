@@ -40,6 +40,17 @@ const FormularioPedido = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  // Campos de controle (rastreabilidade)
+  const [nomeSolicitante, setNomeSolicitante] = useState('');
+  const [emailSolicitante, setEmailSolicitante] = useState('');
+  const [nomeColaborador, setNomeColaborador] = useState('');
+  const [funcaoColaborador, setFuncaoColaborador] = useState('');
+  const [matriculaFuncionario, setMatriculaFuncionario] = useState('');
+  const [motivoSolicitacao, setMotivoSolicitacao] = useState('');
+
+  const isControle = entidade?.tipoPedido === 'controle';
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
 
