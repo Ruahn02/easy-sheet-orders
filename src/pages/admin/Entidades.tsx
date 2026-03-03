@@ -376,6 +376,26 @@ export default function Entidades() {
                   placeholder="Ex: Material de Escritório"
                 />
               </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Tipo de Pedido *</label>
+                <Select
+                  value={formData.tipoPedido}
+                  onValueChange={(value: 'padrao' | 'controle') => setFormData((prev) => ({ ...prev, tipoPedido: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="padrao">📋 Padrão - Sem rastreabilidade</SelectItem>
+                    <SelectItem value="controle">🔒 Controle - Exige dados do solicitante/colaborador</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.tipoPedido === 'controle' 
+                    ? 'O formulário exigirá nome do solicitante, colaborador, matrícula e motivo.' 
+                    : 'Formulário padrão, sem campos extras obrigatórios.'}
+                </p>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
