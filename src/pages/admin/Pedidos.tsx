@@ -804,8 +804,27 @@ export default function Pedidos() {
                     >
                       Status
                     </th>
+                    {/* Colunas de Controle (rastreabilidade) */}
+                    {isControle && ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'].map((label, i) => {
+                      const colIndex = 5 + i;
+                      return (
+                        <th
+                          key={label}
+                          data-row={-1}
+                          data-col={colIndex}
+                          className={cn(
+                            "px-2 py-1.5 text-left text-xs font-medium text-foreground whitespace-nowrap cursor-pointer",
+                            focusedCell?.row === -1 && focusedCell?.col === colIndex && 
+                              "ring-2 ring-primary ring-inset bg-primary/10"
+                          )}
+                          onClick={() => setFocusedCell({ row: -1, col: colIndex })}
+                        >
+                          {label}
+                        </th>
+                      );
+                    })}
                     {produtosDaEntidade.map((produto, produtoIndex) => {
-                      const colIndex = 5 + produtoIndex;
+                      const colIndex = fixedCols + produtoIndex;
                       const isHistorico = produtosHistoricosIds.has(produto.id);
                       return (
                         <th 
