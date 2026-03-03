@@ -8,7 +8,7 @@ import { OrderFooter } from '@/components/order/OrderFooter';
 import { StoreSelect } from '@/components/order/StoreSelect';
 import { useToast } from '@/hooks/use-toast';
 import { PedidoItem } from '@/types';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAcesso } from '@/store/useLojaAuth';
