@@ -41,6 +41,14 @@ export default function Entidades() {
 
   const baseUrl = window.location.origin;
 
+  // Contagem de pedidos pendentes por entidade
+  const pendentesCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    pedidos.filter(p => p.status === 'pendente').forEach(p => {
+      map[p.entidadeId] = (map[p.entidadeId] || 0) + 1;
+    });
+    return map;
+  }, [pedidos]);
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
