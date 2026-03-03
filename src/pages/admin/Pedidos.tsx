@@ -81,6 +81,7 @@ export default function Pedidos() {
 
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
+  const isControle = entidadeSelecionada?.tipoPedido === 'controle';
 
   // Pedidos APENAS da entidade selecionada (movido para cima para usar em produtosDaEntidade)
   const filteredPedidos = useMemo(() => {
