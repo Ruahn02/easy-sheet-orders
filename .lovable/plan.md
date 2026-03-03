@@ -1,34 +1,58 @@
 
 
-## Corrigir "Nenhum produto para reordenar"
+## Atualizar Sistema de Pedidos com Tipo de Entidade e Rastreabilidade
 
-### Problema
+### Resumo
 
-O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
+Adicionar `tipo_pedido` como propriedade da entidade (nao do pedido individual). Entidades "controle" exigem campos de rastreabilidade no formulario. Badge de pedidos pendentes por entidade. Sem empresa_id por enquanto. Manter entidade_id (uuid).
 
-### Correcao
+### 1. Migracao no Banco (Supabase)
 
-**Arquivo:** `src/components/admin/ReorderProducts.tsx`
+**Tabela `entidades`** - adicionar coluna:
+- `tipo_pedido` (text, default 'padrao') -- valores: 'padrao' ou 'controle'
 
-Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
+**Tabela `pedidos`** - adicionar colunas:
+- `nome_solicitante` (text, nullable)
+- `email_solicitante` (text, nullable)
+- `nome_colaborador` (text, nullable)
+- `funcao_colaborador` (text, nullable)
+- `matricula_funcionario` (text, nullable)
+- `motivo_solicitacao` (text, nullable)
 
-```typescript
-// Remover handleOpenChange e usar useEffect
-useEffect(() => {
-  if (open) {
-    setItems([...produtos]);
-  }
-}, [open, produtos]);
-```
+Todas nullable porque pedidos "padrao" nao precisam desses campos.
 
-E no Dialog, voltar a usar `onOpenChange` diretamente:
+### 2. Arquivos a Modificar
 
-```typescript
-<Dialog open={open} onOpenChange={onOpenChange}>
-```
+| Arquivo | O que muda |
+|---------|-----------|
+| `src/types/index.ts` | Adicionar `tipoPedido` em Entidade; campos de rastreio em Pedido |
+| `src/hooks/useSupabaseData.ts` | Mapear novos campos no fetch/insert de entidades e pedidos |
+| `src/pages/admin/Entidades.tsx` | Select de tipo (padrao/controle) ao criar/editar entidade; badge de pendentes |
+| `src/pages/FormularioPedido.tsx` | Campos extras obrigatorios quando entidade e "controle"; validacao frontend |
+| `src/pages/admin/Pedidos.tsx` | Exibir novas colunas na planilha quando entidade e controle |
 
-### Impacto
+### 3. Detalhes por Ponto
 
-- Corrige o bug sem alterar nenhuma outra logica
-- Apenas 1 arquivo modificado
-- Nenhuma mudanca no banco ou em outros componentes
+**Badge de pendentes (Entidades.tsx):**
+- Query `pedidos` agrupando por `entidade_id` onde `status = 'pendente'`
+- Exibir badge vermelho com numero ao lado de cada card de entidade
+- Atualiza automaticamente porque o hook `usePedidos` ja faz fetch dos pedidos
+
+**Formulario (FormularioPedido.tsx):**
+- Se `entidade.tipoPedido === 'controle'`, mostrar secao extra com:
+  - Nome do solicitante, Email, Nome do colaborador, Funcao, Matricula, Motivo
+- Validacao: bloquear envio se campos obrigatorios estiverem vazios
+- Campos salvos no insert do pedido
+
+**Planilha (Pedidos.tsx):**
+- Quando entidade selecionada for "controle", adicionar colunas extras na tabela
+- Exportacao XLSX tambem inclui os novos campos
+
+### 4. O que NAO muda
+
+- Logica de pedidos "padrao" continua identica
+- Sem empresa_id (futuro)
+- entidade_id continua como uuid
+- Separacao, inventario, analytics - intocados
+- Status mantém 'pendente', 'feito', 'nao_atendido' (expansao futura)
+
