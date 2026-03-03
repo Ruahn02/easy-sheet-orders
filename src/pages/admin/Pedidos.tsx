@@ -81,6 +81,7 @@ export default function Pedidos() {
 
   // Entidade selecionada
   const entidadeSelecionada = entidades.find(e => e.id === selectedEntidadeId);
+  const isControle = entidadeSelecionada?.tipoPedido === 'controle';
 
   // Pedidos APENAS da entidade selecionada (movido para cima para usar em produtosDaEntidade)
   const filteredPedidos = useMemo(() => {
@@ -208,20 +209,23 @@ export default function Pedidos() {
   };
 
   // Número total de colunas navegáveis (excluindo Ações)
-  const totalCols = 5 + produtosDaEntidade.length; // Data, Hora, Loja, Obs, Status + produtos
+  const controleCols = isControle ? 6 : 0; // 6 colunas extras para controle
+  const fixedCols = 5 + controleCols; // Data, Hora, Loja, Obs, Status + [controle]
+  const totalCols = fixedCols + produtosDaEntidade.length;
 
   // Função para obter conteúdo da célula (suporta cabeçalho com row = -1)
   const getCellContent = useCallback((rowIndex: number, colIndex: number): string => {
-    // CABEÇALHO (row = -1): retorna apenas o código do produto
+    const controleLabels = isControle ? ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'] : [];
+    const allHeaderLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status', ...controleLabels];
+
+    // CABEÇALHO (row = -1)
     if (rowIndex === -1) {
-      if (colIndex >= 5) {
-        const produtoIndex = colIndex - 5;
-        const produto = produtosDaEntidade[produtoIndex];
-        return produto?.codigo || '';
+      if (colIndex < allHeaderLabels.length) {
+        return allHeaderLabels[colIndex] || '';
       }
-      // Colunas fixas do cabeçalho
-      const headerLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status'];
-      return headerLabels[colIndex] || '';
+      const produtoIndex = colIndex - fixedCols;
+      const produto = produtosDaEntidade[produtoIndex];
+      return produto?.codigo || '';
     }
 
     // CORPO DA TABELA (row >= 0)
@@ -237,8 +241,17 @@ export default function Pedidos() {
       case 3: return pedido.observacoes || '-';
       case 4: return pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente';
       default: {
-        // Colunas de produtos (índice 5 em diante)
-        const produtoIndex = colIndex - 5;
+        // Colunas de controle (5-10 se isControle)
+        if (isControle && colIndex >= 5 && colIndex < 11) {
+          const controleFields = [
+            pedido.nomeSolicitante, pedido.emailSolicitante,
+            pedido.nomeColaborador, pedido.funcaoColaborador,
+            pedido.matriculaFuncionario, pedido.motivoSolicitacao
+          ];
+          return controleFields[colIndex - 5] || '-';
+        }
+        // Colunas de produtos
+        const produtoIndex = colIndex - fixedCols;
         const produto = produtosDaEntidade[produtoIndex];
         if (produto) {
           const item = pedido.itens.find(i => i.produtoId === produto.id);
@@ -247,7 +260,7 @@ export default function Pedidos() {
         return '';
       }
     }
-  }, [filteredPedidos, lojas, produtosDaEntidade]);
+  }, [filteredPedidos, lojas, produtosDaEntidade, isControle, fixedCols]);
 
   // Navegação por teclado e Ctrl+C
   useEffect(() => {
@@ -403,7 +416,7 @@ export default function Pedidos() {
           .map(item => {
             const produto = produtos.find(p => p.id === item.produtoId);
             const loja = lojas.find(l => l.id === pedido.lojaId);
-            return {
+            const base: Record<string, any> = {
               'Data': format(new Date(pedido.data), 'dd/MM/yyyy'),
               'Hora': format(new Date(pedido.data), 'HH:mm'),
               'Pedido': pedido.id.slice(0, 8),
@@ -413,6 +426,15 @@ export default function Pedidos() {
               'Quantidade': item.quantidade,
               'Status': pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'
             };
+            if (isControle) {
+              base['Solicitante'] = pedido.nomeSolicitante || '-';
+              base['Email'] = pedido.emailSolicitante || '-';
+              base['Colaborador'] = pedido.nomeColaborador || '-';
+              base['Função'] = pedido.funcaoColaborador || '-';
+              base['Matrícula'] = pedido.matriculaFuncionario || '-';
+              base['Motivo'] = pedido.motivoSolicitacao || '-';
+            }
+            return base;
           })
       );
 
@@ -782,8 +804,27 @@ export default function Pedidos() {
                     >
                       Status
                     </th>
+                    {/* Colunas de Controle (rastreabilidade) */}
+                    {isControle && ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'].map((label, i) => {
+                      const colIndex = 5 + i;
+                      return (
+                        <th
+                          key={label}
+                          data-row={-1}
+                          data-col={colIndex}
+                          className={cn(
+                            "px-2 py-1.5 text-left text-xs font-medium text-foreground whitespace-nowrap cursor-pointer",
+                            focusedCell?.row === -1 && focusedCell?.col === colIndex && 
+                              "ring-2 ring-primary ring-inset bg-primary/10"
+                          )}
+                          onClick={() => setFocusedCell({ row: -1, col: colIndex })}
+                        >
+                          {label}
+                        </th>
+                      );
+                    })}
                     {produtosDaEntidade.map((produto, produtoIndex) => {
-                      const colIndex = 5 + produtoIndex;
+                      const colIndex = fixedCols + produtoIndex;
                       const isHistorico = produtosHistoricosIds.has(produto.id);
                       return (
                         <th 
@@ -912,9 +953,32 @@ export default function Pedidos() {
                               {pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'}
                             </Badge>
                           </td>
+                          {/* Colunas de Controle */}
+                          {isControle && [
+                            pedido.nomeSolicitante, pedido.emailSolicitante,
+                            pedido.nomeColaborador, pedido.funcaoColaborador,
+                            pedido.matriculaFuncionario, pedido.motivoSolicitacao
+                          ].map((value, i) => {
+                            const colIndex = 5 + i;
+                            return (
+                              <td
+                                key={`ctrl-${i}`}
+                                data-row={rowIndex}
+                                data-col={colIndex}
+                                className={cn(
+                                  "px-2 py-1 text-xs text-foreground whitespace-nowrap cursor-pointer select-text",
+                                  focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
+                                    "ring-2 ring-primary ring-inset bg-primary/10"
+                                )}
+                                onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
+                              >
+                                {value || <span className="text-muted-foreground">-</span>}
+                              </td>
+                            );
+                          })}
                           {produtosDaEntidade.map((produto, produtoIndex) => {
                             const qty = getQuantidadeProduto(pedido.id, produto.id);
-                            const colIndex = 5 + produtoIndex;
+                            const colIndex = fixedCols + produtoIndex;
                             const separado = isSeparado(pedido.id, produto.id);
                             return (
                               <td 

@@ -18,6 +18,7 @@ export function useEntidades() {
         id: e.id,
         nome: e.nome,
         aceitandoPedidos: e.aceitando_pedidos,
+        tipoPedido: ((e as any).tipo_pedido || 'padrao') as 'padrao' | 'controle',
         criadoEm: new Date(e.criado_em),
       })));
     }
@@ -28,10 +29,10 @@ export function useEntidades() {
     fetchEntidades();
   }, [fetchEntidades]);
 
-  const addEntidade = async (nome: string, aceitandoPedidos: boolean) => {
+  const addEntidade = async (nome: string, aceitandoPedidos: boolean, tipoPedido: 'padrao' | 'controle' = 'padrao') => {
     const { data, error } = await supabase
       .from('entidades')
-      .insert({ nome, aceitando_pedidos: aceitandoPedidos })
+      .insert({ nome, aceitando_pedidos: aceitandoPedidos, tipo_pedido: tipoPedido } as any)
       .select()
       .single();
     
@@ -42,10 +43,11 @@ export function useEntidades() {
     return null;
   };
 
-  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean }>) => {
+  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean; tipoPedido: 'padrao' | 'controle' }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.aceitandoPedidos !== undefined) dbUpdates.aceitando_pedidos = updates.aceitandoPedidos;
+    if (updates.tipoPedido !== undefined) dbUpdates.tipo_pedido = updates.tipoPedido;
 
     const { error } = await supabase
       .from('entidades')
@@ -435,6 +437,12 @@ export function usePedidos() {
         status: p.status as 'pendente' | 'feito' | 'nao_atendido',
         corLinha: p.cor_linha || undefined,
         itens,
+        nomeSolicitante: (p as any).nome_solicitante || undefined,
+        emailSolicitante: (p as any).email_solicitante || undefined,
+        nomeColaborador: (p as any).nome_colaborador || undefined,
+        funcaoColaborador: (p as any).funcao_colaborador || undefined,
+        matriculaFuncionario: (p as any).matricula_funcionario || undefined,
+        motivoSolicitacao: (p as any).motivo_solicitacao || undefined,
       };
     });
 
@@ -446,7 +454,7 @@ export function usePedidos() {
     fetchPedidos();
   }, [fetchPedidos]);
 
-  const addPedido = async (pedido: { lojaId: string; entidadeId: string; observacoes?: string; itens: PedidoItem[] }) => {
+  const addPedido = async (pedido: { lojaId: string; entidadeId: string; observacoes?: string; itens: PedidoItem[]; nomeSolicitante?: string; emailSolicitante?: string; nomeColaborador?: string; funcaoColaborador?: string; matriculaFuncionario?: string; motivoSolicitacao?: string }) => {
     // Insert pedido
     const { data: pedidoData, error: pedidoError } = await supabase
       .from('pedidos')
@@ -455,7 +463,13 @@ export function usePedidos() {
         entidade_id: pedido.entidadeId,
         observacoes: pedido.observacoes || null,
         status: 'pendente',
-      })
+        nome_solicitante: pedido.nomeSolicitante || null,
+        email_solicitante: pedido.emailSolicitante || null,
+        nome_colaborador: pedido.nomeColaborador || null,
+        funcao_colaborador: pedido.funcaoColaborador || null,
+        matricula_funcionario: pedido.matriculaFuncionario || null,
+        motivo_solicitacao: pedido.motivoSolicitacao || null,
+      } as any)
       .select()
       .single();
 

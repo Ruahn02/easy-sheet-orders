@@ -2,6 +2,7 @@ export interface Entidade {
   id: string;
   nome: string;
   aceitandoPedidos: boolean; // Controla se o link está aberto para pedidos
+  tipoPedido: 'padrao' | 'controle'; // Define se exige rastreabilidade
   criadoEm: Date;
 }
 
@@ -40,6 +41,13 @@ export interface Pedido {
   status: 'pendente' | 'feito' | 'nao_atendido';
   corLinha?: string;
   itens: PedidoItem[];
+  // Campos de rastreabilidade (tipo "controle")
+  nomeSolicitante?: string;
+  emailSolicitante?: string;
+  nomeColaborador?: string;
+  funcaoColaborador?: string;
+  matriculaFuncionario?: string;
+  motivoSolicitacao?: string;
 }
 
 export interface PedidoComDetalhes extends Pedido {

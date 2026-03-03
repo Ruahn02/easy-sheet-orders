@@ -8,6 +8,7 @@ import { OrderFooter } from '@/components/order/OrderFooter';
 import { StoreSelect } from '@/components/order/StoreSelect';
 import { useToast } from '@/hooks/use-toast';
 import { PedidoItem } from '@/types';
+import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -39,8 +40,18 @@ const FormularioPedido = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  // Campos de controle (rastreabilidade)
+  const [nomeSolicitante, setNomeSolicitante] = useState('');
+  const [emailSolicitante, setEmailSolicitante] = useState('');
+  const [nomeColaborador, setNomeColaborador] = useState('');
+  const [funcaoColaborador, setFuncaoColaborador] = useState('');
+  const [matriculaFuncionario, setMatriculaFuncionario] = useState('');
+  const [motivoSolicitacao, setMotivoSolicitacao] = useState('');
+
   // Encontra a entidade
   const entidade = entidades.find((e) => e.id === entidadeId);
+
+  const isControle = entidade?.tipoPedido === 'controle';
 
   // Filtra produtos desta entidade (ativos e inativos) - usando N:N
   const produtosDaEntidade = produtos.filter(
@@ -108,6 +119,26 @@ const FormularioPedido = () => {
       return;
     }
 
+    // Validação de campos obrigatórios para entidades "controle"
+    if (isControle) {
+      const camposFaltantes: string[] = [];
+      if (!nomeSolicitante.trim()) camposFaltantes.push('Nome do Solicitante');
+      if (!emailSolicitante.trim()) camposFaltantes.push('Email do Solicitante');
+      if (!nomeColaborador.trim()) camposFaltantes.push('Nome do Colaborador');
+      if (!funcaoColaborador.trim()) camposFaltantes.push('Função do Colaborador');
+      if (!matriculaFuncionario.trim()) camposFaltantes.push('Matrícula do Funcionário');
+      if (!motivoSolicitacao.trim()) camposFaltantes.push('Motivo da Solicitação');
+
+      if (camposFaltantes.length > 0) {
+        toast({
+          title: 'Campos obrigatórios',
+          description: `Preencha: ${camposFaltantes.join(', ')}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setShowConfirmation(true);
   };
 
@@ -125,6 +156,14 @@ const FormularioPedido = () => {
       entidadeId: entidadeId!,
       observacoes: observacoes.trim() || undefined,
       itens,
+      ...(isControle ? {
+        nomeSolicitante: nomeSolicitante.trim(),
+        emailSolicitante: emailSolicitante.trim(),
+        nomeColaborador: nomeColaborador.trim(),
+        funcaoColaborador: funcaoColaborador.trim(),
+        matriculaFuncionario: matriculaFuncionario.trim(),
+        motivoSolicitacao: motivoSolicitacao.trim(),
+      } : {}),
     });
 
     setIsSubmitting(false);
@@ -137,6 +176,12 @@ const FormularioPedido = () => {
       setQuantities({});
       setSearchQuery('');
       setObservacoes('');
+      setNomeSolicitante('');
+      setEmailSolicitante('');
+      setNomeColaborador('');
+      setFuncaoColaborador('');
+      setMatriculaFuncionario('');
+      setMotivoSolicitacao('');
 
       toast({
         title: 'Pedido enviado com sucesso!',
@@ -279,6 +324,39 @@ const FormularioPedido = () => {
           </div>
         )}
       </div>
+
+      {/* Campos de Controle (rastreabilidade) */}
+      {isControle && produtosDaEntidade.length > 0 && (
+        <div className="px-4 py-4 border-t border-border mt-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">🔒 Dados de Rastreabilidade (obrigatórios)</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Solicitante *</label>
+              <Input value={nomeSolicitante} onChange={(e) => setNomeSolicitante(e.target.value)} placeholder="Quem está solicitando" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email do Solicitante *</label>
+              <Input type="email" value={emailSolicitante} onChange={(e) => setEmailSolicitante(e.target.value)} placeholder="email@empresa.com" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Colaborador *</label>
+              <Input value={nomeColaborador} onChange={(e) => setNomeColaborador(e.target.value)} placeholder="Para quem é o pedido" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Função do Colaborador *</label>
+              <Input value={funcaoColaborador} onChange={(e) => setFuncaoColaborador(e.target.value)} placeholder="Cargo/função" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Matrícula do Funcionário *</label>
+              <Input value={matriculaFuncionario} onChange={(e) => setMatriculaFuncionario(e.target.value)} placeholder="Número da matrícula" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Motivo da Solicitação *</label>
+              <Textarea value={motivoSolicitacao} onChange={(e) => setMotivoSolicitacao(e.target.value)} placeholder="Justificativa do pedido" rows={2} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Campo ÚNICO de Observações - no final */}
       {produtosDaEntidade.length > 0 && (

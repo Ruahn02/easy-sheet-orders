@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useProdutos, usePedidos, useCodigoAdmin } from '@/hooks/useSupabaseData';
@@ -22,6 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Entidade } from '@/types';
 
@@ -34,6 +41,14 @@ export default function Entidades() {
 
   const baseUrl = window.location.origin;
 
+  // Contagem de pedidos pendentes por entidade
+  const pendentesCountMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    pedidos.filter(p => p.status === 'pendente').forEach(p => {
+      map[p.entidadeId] = (map[p.entidadeId] || 0) + 1;
+    });
+    return map;
+  }, [pedidos]);
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text);
     toast({
@@ -47,6 +62,7 @@ export default function Entidades() {
   const [formData, setFormData] = useState({
     nome: '',
     aceitandoPedidos: true,
+    tipoPedido: 'padrao' as 'padrao' | 'controle',
   });
   const [isSaving, setIsSaving] = useState(false);
 
@@ -60,10 +76,11 @@ export default function Entidades() {
       setFormData({
         nome: entidade.nome,
         aceitandoPedidos: entidade.aceitandoPedidos,
+        tipoPedido: entidade.tipoPedido,
       });
     } else {
       setEditingEntidade(null);
-      setFormData({ nome: '', aceitandoPedidos: true });
+      setFormData({ nome: '', aceitandoPedidos: true, tipoPedido: 'padrao' });
     }
     setIsModalOpen(true);
   };
@@ -82,7 +99,7 @@ export default function Entidades() {
         toast({ title: 'Entidade atualizada!' });
       }
     } else {
-      const result = await addEntidade(formData.nome, formData.aceitandoPedidos);
+      const result = await addEntidade(formData.nome, formData.aceitandoPedidos, formData.tipoPedido);
       if (result) {
         toast({ title: 'Entidade criada!' });
       }
@@ -255,10 +272,20 @@ export default function Entidades() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                    {(pendentesCountMap[entidade.id] || 0) > 0 && (
+                      <Badge variant="destructive" className="text-xs">
+                        {pendentesCountMap[entidade.id]} pendente{pendentesCountMap[entidade.id] > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {getProdutosCount(entidade.id)} produtos ({getProdutosAtivosCount(entidade.id)} ativos)
                   </p>
+                  <Badge variant="outline" className="mt-1 text-xs">
+                    {entidade.tipoPedido === 'controle' ? '🔒 Controle' : '📋 Padrão'}
+                  </Badge>
                 </div>
               </div>
 
@@ -348,6 +375,26 @@ export default function Entidades() {
                   onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
                   placeholder="Ex: Material de Escritório"
                 />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">Tipo de Pedido *</label>
+                <Select
+                  value={formData.tipoPedido}
+                  onValueChange={(value: 'padrao' | 'controle') => setFormData((prev) => ({ ...prev, tipoPedido: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="padrao">📋 Padrão - Sem rastreabilidade</SelectItem>
+                    <SelectItem value="controle">🔒 Controle - Exige dados do solicitante/colaborador</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formData.tipoPedido === 'controle' 
+                    ? 'O formulário exigirá nome do solicitante, colaborador, matrícula e motivo.' 
+                    : 'Formulário padrão, sem campos extras obrigatórios.'}
+                </p>
               </div>
             </div>
             <DialogFooter>
