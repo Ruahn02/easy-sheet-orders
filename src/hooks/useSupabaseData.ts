@@ -437,6 +437,12 @@ export function usePedidos() {
         status: p.status as 'pendente' | 'feito' | 'nao_atendido',
         corLinha: p.cor_linha || undefined,
         itens,
+        nomeSolicitante: (p as any).nome_solicitante || undefined,
+        emailSolicitante: (p as any).email_solicitante || undefined,
+        nomeColaborador: (p as any).nome_colaborador || undefined,
+        funcaoColaborador: (p as any).funcao_colaborador || undefined,
+        matriculaFuncionario: (p as any).matricula_funcionario || undefined,
+        motivoSolicitacao: (p as any).motivo_solicitacao || undefined,
       };
     });
 
