@@ -43,10 +43,11 @@ export function useEntidades() {
     return null;
   };
 
-  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean }>) => {
+  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean; tipoPedido: 'padrao' | 'controle' }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.aceitandoPedidos !== undefined) dbUpdates.aceitando_pedidos = updates.aceitandoPedidos;
+    if (updates.tipoPedido !== undefined) dbUpdates.tipo_pedido = updates.tipoPedido;
 
     const { error } = await supabase
       .from('entidades')
