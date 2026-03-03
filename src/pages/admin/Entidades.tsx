@@ -272,10 +272,20 @@ export default function Entidades() {
             >
               <div className="flex items-start justify-between">
                 <div>
-                  <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-foreground">{entidade.nome}</h3>
+                    {(pendentesCountMap[entidade.id] || 0) > 0 && (
+                      <Badge variant="destructive" className="text-xs">
+                        {pendentesCountMap[entidade.id]} pendente{pendentesCountMap[entidade.id] > 1 ? 's' : ''}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {getProdutosCount(entidade.id)} produtos ({getProdutosAtivosCount(entidade.id)} ativos)
                   </p>
+                  <Badge variant="outline" className="mt-1 text-xs">
+                    {entidade.tipoPedido === 'controle' ? '🔒 Controle' : '📋 Padrão'}
+                  </Badge>
                 </div>
               </div>
 
