@@ -176,6 +176,12 @@ const FormularioPedido = () => {
       setQuantities({});
       setSearchQuery('');
       setObservacoes('');
+      setNomeSolicitante('');
+      setEmailSolicitante('');
+      setNomeColaborador('');
+      setFuncaoColaborador('');
+      setMatriculaFuncionario('');
+      setMotivoSolicitacao('');
 
       toast({
         title: 'Pedido enviado com sucesso!',
