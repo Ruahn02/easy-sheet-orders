@@ -9,6 +9,7 @@ import { StoreSelect } from '@/components/order/StoreSelect';
 import { useToast } from '@/hooks/use-toast';
 import { PedidoItem } from '@/types';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAcesso } from '@/store/useLojaAuth';
