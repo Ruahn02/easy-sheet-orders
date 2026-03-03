@@ -29,10 +29,10 @@ export function useEntidades() {
     fetchEntidades();
   }, [fetchEntidades]);
 
-  const addEntidade = async (nome: string, aceitandoPedidos: boolean) => {
+  const addEntidade = async (nome: string, aceitandoPedidos: boolean, tipoPedido: 'padrao' | 'controle' = 'padrao') => {
     const { data, error } = await supabase
       .from('entidades')
-      .insert({ nome, aceitando_pedidos: aceitandoPedidos })
+      .insert({ nome, aceitando_pedidos: aceitandoPedidos, tipo_pedido: tipoPedido } as any)
       .select()
       .single();
     
