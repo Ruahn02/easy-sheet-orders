@@ -38,18 +38,21 @@ export type Database = {
           criado_em: string
           id: string
           nome: string
+          tipo_pedido: string
         }
         Insert: {
           aceitando_pedidos?: boolean
           criado_em?: string
           id?: string
           nome: string
+          tipo_pedido?: string
         }
         Update: {
           aceitando_pedidos?: boolean
           criado_em?: string
           id?: string
           nome?: string
+          tipo_pedido?: string
         }
         Relationships: []
       }
@@ -207,27 +210,45 @@ export type Database = {
         Row: {
           cor_linha: string | null
           data: string
+          email_solicitante: string | null
           entidade_id: string
+          funcao_colaborador: string | null
           id: string
           loja_id: string
+          matricula_funcionario: string | null
+          motivo_solicitacao: string | null
+          nome_colaborador: string | null
+          nome_solicitante: string | null
           observacoes: string | null
           status: string
         }
         Insert: {
           cor_linha?: string | null
           data?: string
+          email_solicitante?: string | null
           entidade_id: string
+          funcao_colaborador?: string | null
           id?: string
           loja_id: string
+          matricula_funcionario?: string | null
+          motivo_solicitacao?: string | null
+          nome_colaborador?: string | null
+          nome_solicitante?: string | null
           observacoes?: string | null
           status?: string
         }
         Update: {
           cor_linha?: string | null
           data?: string
+          email_solicitante?: string | null
           entidade_id?: string
+          funcao_colaborador?: string | null
           id?: string
           loja_id?: string
+          matricula_funcionario?: string | null
+          motivo_solicitacao?: string | null
+          nome_colaborador?: string | null
+          nome_solicitante?: string | null
           observacoes?: string | null
           status?: string
         }
