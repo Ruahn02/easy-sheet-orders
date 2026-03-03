@@ -953,9 +953,32 @@ export default function Pedidos() {
                               {pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'}
                             </Badge>
                           </td>
+                          {/* Colunas de Controle */}
+                          {isControle && [
+                            pedido.nomeSolicitante, pedido.emailSolicitante,
+                            pedido.nomeColaborador, pedido.funcaoColaborador,
+                            pedido.matriculaFuncionario, pedido.motivoSolicitacao
+                          ].map((value, i) => {
+                            const colIndex = 5 + i;
+                            return (
+                              <td
+                                key={`ctrl-${i}`}
+                                data-row={rowIndex}
+                                data-col={colIndex}
+                                className={cn(
+                                  "px-2 py-1 text-xs text-foreground whitespace-nowrap cursor-pointer select-text",
+                                  focusedCell?.row === rowIndex && focusedCell?.col === colIndex && 
+                                    "ring-2 ring-primary ring-inset bg-primary/10"
+                                )}
+                                onClick={() => setFocusedCell({ row: rowIndex, col: colIndex })}
+                              >
+                                {value || <span className="text-muted-foreground">-</span>}
+                              </td>
+                            );
+                          })}
                           {produtosDaEntidade.map((produto, produtoIndex) => {
                             const qty = getQuantidadeProduto(pedido.id, produto.id);
-                            const colIndex = 5 + produtoIndex;
+                            const colIndex = fixedCols + produtoIndex;
                             const separado = isSeparado(pedido.id, produto.id);
                             return (
                               <td 
