@@ -119,6 +119,26 @@ const FormularioPedido = () => {
       return;
     }
 
+    // Validação de campos obrigatórios para entidades "controle"
+    if (isControle) {
+      const camposFaltantes: string[] = [];
+      if (!nomeSolicitante.trim()) camposFaltantes.push('Nome do Solicitante');
+      if (!emailSolicitante.trim()) camposFaltantes.push('Email do Solicitante');
+      if (!nomeColaborador.trim()) camposFaltantes.push('Nome do Colaborador');
+      if (!funcaoColaborador.trim()) camposFaltantes.push('Função do Colaborador');
+      if (!matriculaFuncionario.trim()) camposFaltantes.push('Matrícula do Funcionário');
+      if (!motivoSolicitacao.trim()) camposFaltantes.push('Motivo da Solicitação');
+
+      if (camposFaltantes.length > 0) {
+        toast({
+          title: 'Campos obrigatórios',
+          description: `Preencha: ${camposFaltantes.join(', ')}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     setShowConfirmation(true);
   };
 
