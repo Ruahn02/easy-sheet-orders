@@ -454,7 +454,7 @@ export function usePedidos() {
     fetchPedidos();
   }, [fetchPedidos]);
 
-  const addPedido = async (pedido: { lojaId: string; entidadeId: string; observacoes?: string; itens: PedidoItem[] }) => {
+  const addPedido = async (pedido: { lojaId: string; entidadeId: string; observacoes?: string; itens: PedidoItem[]; nomeSolicitante?: string; emailSolicitante?: string; nomeColaborador?: string; funcaoColaborador?: string; matriculaFuncionario?: string; motivoSolicitacao?: string }) => {
     // Insert pedido
     const { data: pedidoData, error: pedidoError } = await supabase
       .from('pedidos')
@@ -463,7 +463,13 @@ export function usePedidos() {
         entidade_id: pedido.entidadeId,
         observacoes: pedido.observacoes || null,
         status: 'pendente',
-      })
+        nome_solicitante: pedido.nomeSolicitante || null,
+        email_solicitante: pedido.emailSolicitante || null,
+        nome_colaborador: pedido.nomeColaborador || null,
+        funcao_colaborador: pedido.funcaoColaborador || null,
+        matricula_funcionario: pedido.matriculaFuncionario || null,
+        motivo_solicitacao: pedido.motivoSolicitacao || null,
+      } as any)
       .select()
       .single();
 
