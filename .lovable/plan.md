@@ -1,34 +1,47 @@
 
 
-## Corrigir "Nenhum produto para reordenar"
+## 3 Alteracoes no Sistema de Pedidos
 
-### Problema
+### 1. Badge de pendentes no seletor de entidade (Pedidos.tsx)
 
-O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
+Atualmente o badge de pendentes fica em Entidades.tsx. O usuario quer que no dropdown de "Tipo de Pedido" em Pedidos.tsx, cada opcao mostre a contagem de pendentes ao lado do nome.
 
-### Correcao
+**Arquivo:** `src/pages/admin/Pedidos.tsx` (linhas 593-604)
 
-**Arquivo:** `src/components/admin/ReorderProducts.tsx`
+- Calcular contagem de pedidos pendentes por entidade_id a partir dos dados ja carregados em `pedidos`
+- No `SelectItem`, exibir `{ent.nome} (X pendentes)` com badge
 
-Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
+### 2. Email obrigatorio no pedido padrao
 
-```typescript
-// Remover handleOpenChange e usar useEffect
-useEffect(() => {
-  if (open) {
-    setItems([...produtos]);
-  }
-}, [open, produtos]);
-```
+Adicionar campo `email_solicitante` obrigatorio para TODOS os pedidos (nao so controle). A coluna ja existe no banco (nullable). No formulario, apos selecionar a loja, exibir campo de email obrigatorio. Bloquear envio sem email.
 
-E no Dialog, voltar a usar `onOpenChange` diretamente:
+**Arquivo:** `src/pages/FormularioPedido.tsx`
 
-```typescript
-<Dialog open={open} onOpenChange={onOpenChange}>
-```
+- Apos `<StoreSelect>`, adicionar campo de email obrigatorio
+- Na validacao `handleOpenConfirmation`, verificar email preenchido para TODOS os tipos
+- No `addPedido`, enviar `emailSolicitante` sempre
+- Remover o campo `emailSolicitante` da secao de controle (ja esta no fluxo geral)
 
-### Impacto
+**Arquivo:** `src/pages/admin/Pedidos.tsx`
 
-- Corrige o bug sem alterar nenhuma outra logica
-- Apenas 1 arquivo modificado
-- Nenhuma mudanca no banco ou em outros componentes
+- Adicionar coluna "Email" na planilha para TODOS os tipos (nao so controle)
+- Incluir no export XLSX/PDF
+
+### 3. Reordenar formulario controle: dados antes dos produtos
+
+No `FormularioPedido.tsx`, para entidades "controle", mover a secao de rastreabilidade para ANTES da lista de produtos. Ordem: Loja > Email > Dados de rastreabilidade > Produtos > Observacoes.
+
+**Arquivo:** `src/pages/FormularioPedido.tsx`
+
+- Mover o bloco de campos de controle (linhas 328-358) para logo apos o campo de email
+- Manter a busca e lista de produtos abaixo
+
+### Resumo de mudancas
+
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/pages/admin/Pedidos.tsx` | Badge pendentes no Select + coluna Email para todos |
+| `src/pages/FormularioPedido.tsx` | Campo email obrigatorio para todos + reordenar controle |
+
+Nenhuma migracao necessaria - a coluna `email_solicitante` ja existe no banco.
+
