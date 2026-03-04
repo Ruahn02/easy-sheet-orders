@@ -815,9 +815,22 @@ export default function Pedidos() {
                     >
                       Status
                     </th>
+                    {/* Coluna Email (para todos) */}
+                    <th
+                      data-row={-1}
+                      data-col={5}
+                      className={cn(
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 5 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 5 })}
+                    >
+                      Email
+                    </th>
                     {/* Colunas de Controle (rastreabilidade) */}
-                    {isControle && ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'].map((label, i) => {
-                      const colIndex = 5 + i;
+                    {isControle && ['Solicitante', 'Colaborador', 'Função', 'Matrícula', 'Motivo'].map((label, i) => {
+                      const colIndex = 6 + i;
                       return (
                         <th
                           key={label}
