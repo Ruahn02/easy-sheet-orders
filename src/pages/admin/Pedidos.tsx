@@ -422,6 +422,7 @@ export default function Pedidos() {
               'Hora': format(new Date(pedido.data), 'HH:mm'),
               'Pedido': pedido.id.slice(0, 8),
               'Loja': loja?.nome || '-',
+              'Email': pedido.emailSolicitante || '-',
               'Produto': produto?.nome || '-',
               'Código': produto?.codigo || '-',
               'Quantidade': item.quantidade,
@@ -429,7 +430,6 @@ export default function Pedidos() {
             };
             if (isControle) {
               base['Solicitante'] = pedido.nomeSolicitante || '-';
-              base['Email'] = pedido.emailSolicitante || '-';
               base['Colaborador'] = pedido.nomeColaborador || '-';
               base['Função'] = pedido.funcaoColaborador || '-';
               base['Matrícula'] = pedido.matriculaFuncionario || '-';
