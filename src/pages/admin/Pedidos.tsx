@@ -596,11 +596,21 @@ export default function Pedidos() {
               <SelectValue placeholder="👉 Escolha o tipo de pedido..." />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              {entidades.map((ent) => (
-                <SelectItem key={ent.id} value={ent.id}>
-                  {ent.nome}
-                </SelectItem>
-              ))}
+              {entidades.map((ent) => {
+                const pendentes = pedidos.filter(p => p.entidadeId === ent.id && p.status === 'pendente').length;
+                return (
+                  <SelectItem key={ent.id} value={ent.id}>
+                    <span className="flex items-center gap-2">
+                      {ent.nome}
+                      {pendentes > 0 && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 min-w-[20px] justify-center">
+                          {pendentes}
+                        </Badge>
+                      )}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
