@@ -977,13 +977,26 @@ export default function Pedidos() {
                               {pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'}
                             </Badge>
                           </td>
+                          {/* Coluna Email (para todos) */}
+                          <td
+                            data-row={rowIndex}
+                            data-col={5}
+                            className={cn(
+                              "px-2 py-1 text-xs text-foreground whitespace-nowrap cursor-pointer select-text",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 5 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 5 })}
+                          >
+                            {pedido.emailSolicitante || <span className="text-muted-foreground">-</span>}
+                          </td>
                           {/* Colunas de Controle */}
                           {isControle && [
-                            pedido.nomeSolicitante, pedido.emailSolicitante,
+                            pedido.nomeSolicitante,
                             pedido.nomeColaborador, pedido.funcaoColaborador,
                             pedido.matriculaFuncionario, pedido.motivoSolicitacao
                           ].map((value, i) => {
-                            const colIndex = 5 + i;
+                            const colIndex = 6 + i;
                             return (
                               <td
                                 key={`ctrl-${i}`}
