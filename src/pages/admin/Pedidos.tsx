@@ -215,8 +215,8 @@ export default function Pedidos() {
 
   // Função para obter conteúdo da célula (suporta cabeçalho com row = -1)
   const getCellContent = useCallback((rowIndex: number, colIndex: number): string => {
-    const controleLabels = isControle ? ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'] : [];
-    const allHeaderLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status', ...controleLabels];
+    const controleLabels = isControle ? ['Solicitante', 'Colaborador', 'Função', 'Matrícula', 'Motivo'] : [];
+    const allHeaderLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status', 'Email', ...controleLabels];
 
     // CABEÇALHO (row = -1)
     if (rowIndex === -1) {
