@@ -209,8 +209,8 @@ export default function Pedidos() {
   };
 
   // Número total de colunas navegáveis (excluindo Ações)
-  const controleCols = isControle ? 6 : 0; // 6 colunas extras para controle
-  const fixedCols = 5 + controleCols; // Data, Hora, Loja, Obs, Status + [controle]
+  const controleCols = isControle ? 5 : 0; // 5 colunas extras para controle (sem email, que agora é global)
+  const fixedCols = 6 + controleCols; // Data, Hora, Loja, Obs, Status, Email + [controle]
   const totalCols = fixedCols + produtosDaEntidade.length;
 
   // Função para obter conteúdo da célula (suporta cabeçalho com row = -1)
