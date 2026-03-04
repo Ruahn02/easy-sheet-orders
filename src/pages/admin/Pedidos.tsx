@@ -240,15 +240,16 @@ export default function Pedidos() {
       case 2: return loja?.nome || '-';
       case 3: return pedido.observacoes || '-';
       case 4: return pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente';
+      case 5: return pedido.emailSolicitante || '-';
       default: {
-        // Colunas de controle (5-10 se isControle)
-        if (isControle && colIndex >= 5 && colIndex < 11) {
+        // Colunas de controle (6-10 se isControle)
+        if (isControle && colIndex >= 6 && colIndex < 11) {
           const controleFields = [
-            pedido.nomeSolicitante, pedido.emailSolicitante,
+            pedido.nomeSolicitante,
             pedido.nomeColaborador, pedido.funcaoColaborador,
             pedido.matriculaFuncionario, pedido.motivoSolicitacao
           ];
-          return controleFields[colIndex - 5] || '-';
+          return controleFields[colIndex - 6] || '-';
         }
         // Colunas de produtos
         const produtoIndex = colIndex - fixedCols;
