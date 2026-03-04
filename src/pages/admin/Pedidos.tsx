@@ -209,14 +209,14 @@ export default function Pedidos() {
   };
 
   // Número total de colunas navegáveis (excluindo Ações)
-  const controleCols = isControle ? 6 : 0; // 6 colunas extras para controle
-  const fixedCols = 5 + controleCols; // Data, Hora, Loja, Obs, Status + [controle]
+  const controleCols = isControle ? 5 : 0; // 5 colunas extras para controle (sem email, que agora é global)
+  const fixedCols = 6 + controleCols; // Data, Hora, Loja, Obs, Status, Email + [controle]
   const totalCols = fixedCols + produtosDaEntidade.length;
 
   // Função para obter conteúdo da célula (suporta cabeçalho com row = -1)
   const getCellContent = useCallback((rowIndex: number, colIndex: number): string => {
-    const controleLabels = isControle ? ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'] : [];
-    const allHeaderLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status', ...controleLabels];
+    const controleLabels = isControle ? ['Solicitante', 'Colaborador', 'Função', 'Matrícula', 'Motivo'] : [];
+    const allHeaderLabels = ['Data', 'Hora', 'Loja', 'Observações', 'Status', 'Email', ...controleLabels];
 
     // CABEÇALHO (row = -1)
     if (rowIndex === -1) {
@@ -240,15 +240,16 @@ export default function Pedidos() {
       case 2: return loja?.nome || '-';
       case 3: return pedido.observacoes || '-';
       case 4: return pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente';
+      case 5: return pedido.emailSolicitante || '-';
       default: {
-        // Colunas de controle (5-10 se isControle)
-        if (isControle && colIndex >= 5 && colIndex < 11) {
+        // Colunas de controle (6-10 se isControle)
+        if (isControle && colIndex >= 6 && colIndex < 11) {
           const controleFields = [
-            pedido.nomeSolicitante, pedido.emailSolicitante,
+            pedido.nomeSolicitante,
             pedido.nomeColaborador, pedido.funcaoColaborador,
             pedido.matriculaFuncionario, pedido.motivoSolicitacao
           ];
-          return controleFields[colIndex - 5] || '-';
+          return controleFields[colIndex - 6] || '-';
         }
         // Colunas de produtos
         const produtoIndex = colIndex - fixedCols;
@@ -421,6 +422,7 @@ export default function Pedidos() {
               'Hora': format(new Date(pedido.data), 'HH:mm'),
               'Pedido': pedido.id.slice(0, 8),
               'Loja': loja?.nome || '-',
+              'Email': pedido.emailSolicitante || '-',
               'Produto': produto?.nome || '-',
               'Código': produto?.codigo || '-',
               'Quantidade': item.quantidade,
@@ -428,7 +430,6 @@ export default function Pedidos() {
             };
             if (isControle) {
               base['Solicitante'] = pedido.nomeSolicitante || '-';
-              base['Email'] = pedido.emailSolicitante || '-';
               base['Colaborador'] = pedido.nomeColaborador || '-';
               base['Função'] = pedido.funcaoColaborador || '-';
               base['Matrícula'] = pedido.matriculaFuncionario || '-';
@@ -595,11 +596,21 @@ export default function Pedidos() {
               <SelectValue placeholder="👉 Escolha o tipo de pedido..." />
             </SelectTrigger>
             <SelectContent className="bg-popover z-50">
-              {entidades.map((ent) => (
-                <SelectItem key={ent.id} value={ent.id}>
-                  {ent.nome}
-                </SelectItem>
-              ))}
+              {entidades.map((ent) => {
+                const pendentes = pedidos.filter(p => p.entidadeId === ent.id && p.status === 'pendente').length;
+                return (
+                  <SelectItem key={ent.id} value={ent.id}>
+                    <span className="flex items-center gap-2">
+                      {ent.nome}
+                      {pendentes > 0 && (
+                        <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 min-w-[20px] justify-center">
+                          {pendentes}
+                        </Badge>
+                      )}
+                    </span>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -804,9 +815,22 @@ export default function Pedidos() {
                     >
                       Status
                     </th>
+                    {/* Coluna Email (para todos) */}
+                    <th
+                      data-row={-1}
+                      data-col={5}
+                      className={cn(
+                        "px-2 py-1.5 text-left text-xs font-medium text-foreground cursor-pointer",
+                        focusedCell?.row === -1 && focusedCell?.col === 5 && 
+                          "ring-2 ring-primary ring-inset bg-primary/10"
+                      )}
+                      onClick={() => setFocusedCell({ row: -1, col: 5 })}
+                    >
+                      Email
+                    </th>
                     {/* Colunas de Controle (rastreabilidade) */}
-                    {isControle && ['Solicitante', 'Email', 'Colaborador', 'Função', 'Matrícula', 'Motivo'].map((label, i) => {
-                      const colIndex = 5 + i;
+                    {isControle && ['Solicitante', 'Colaborador', 'Função', 'Matrícula', 'Motivo'].map((label, i) => {
+                      const colIndex = 6 + i;
                       return (
                         <th
                           key={label}
@@ -953,13 +977,26 @@ export default function Pedidos() {
                               {pedido.status === 'feito' ? 'Feito' : pedido.status === 'nao_atendido' ? 'Não Atendido' : 'Pendente'}
                             </Badge>
                           </td>
+                          {/* Coluna Email (para todos) */}
+                          <td
+                            data-row={rowIndex}
+                            data-col={5}
+                            className={cn(
+                              "px-2 py-1 text-xs text-foreground whitespace-nowrap cursor-pointer select-text",
+                              focusedCell?.row === rowIndex && focusedCell?.col === 5 && 
+                                "ring-2 ring-primary ring-inset bg-primary/10"
+                            )}
+                            onClick={() => setFocusedCell({ row: rowIndex, col: 5 })}
+                          >
+                            {pedido.emailSolicitante || <span className="text-muted-foreground">-</span>}
+                          </td>
                           {/* Colunas de Controle */}
                           {isControle && [
-                            pedido.nomeSolicitante, pedido.emailSolicitante,
+                            pedido.nomeSolicitante,
                             pedido.nomeColaborador, pedido.funcaoColaborador,
                             pedido.matriculaFuncionario, pedido.motivoSolicitacao
                           ].map((value, i) => {
-                            const colIndex = 5 + i;
+                            const colIndex = 6 + i;
                             return (
                               <td
                                 key={`ctrl-${i}`}

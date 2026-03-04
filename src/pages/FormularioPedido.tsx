@@ -40,9 +40,11 @@ const FormularioPedido = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // Campos de controle (rastreabilidade)
-  const [nomeSolicitante, setNomeSolicitante] = useState('');
+  // Email obrigatório para todos os tipos
   const [emailSolicitante, setEmailSolicitante] = useState('');
+
+  // Campos de controle (rastreabilidade) - sem email (já é global)
+  const [nomeSolicitante, setNomeSolicitante] = useState('');
   const [nomeColaborador, setNomeColaborador] = useState('');
   const [funcaoColaborador, setFuncaoColaborador] = useState('');
   const [matriculaFuncionario, setMatriculaFuncionario] = useState('');
@@ -62,7 +64,6 @@ const FormularioPedido = () => {
   const produtosAtivos = produtosDaEntidade.filter(p => p.status === 'ativo');
 
   const filteredProdutos = useMemo(() => {
-    // Ordenar: ativos primeiro, depois inativos
     const sorted = [...produtosDaEntidade].sort((a, b) => {
       if (a.status === 'ativo' && b.status !== 'ativo') return -1;
       if (a.status !== 'ativo' && b.status === 'ativo') return 1;
@@ -110,6 +111,16 @@ const FormularioPedido = () => {
       return;
     }
 
+    // Email obrigatório para TODOS os tipos
+    if (!emailSolicitante.trim()) {
+      toast({
+        title: 'Email obrigatório',
+        description: 'Informe o email do solicitante para enviar o pedido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (selectedItems.length === 0) {
       toast({
         title: 'Nenhum item selecionado',
@@ -123,7 +134,6 @@ const FormularioPedido = () => {
     if (isControle) {
       const camposFaltantes: string[] = [];
       if (!nomeSolicitante.trim()) camposFaltantes.push('Nome do Solicitante');
-      if (!emailSolicitante.trim()) camposFaltantes.push('Email do Solicitante');
       if (!nomeColaborador.trim()) camposFaltantes.push('Nome do Colaborador');
       if (!funcaoColaborador.trim()) camposFaltantes.push('Função do Colaborador');
       if (!matriculaFuncionario.trim()) camposFaltantes.push('Matrícula do Funcionário');
@@ -155,10 +165,10 @@ const FormularioPedido = () => {
       lojaId: selectedLojaId!,
       entidadeId: entidadeId!,
       observacoes: observacoes.trim() || undefined,
+      emailSolicitante: emailSolicitante.trim(),
       itens,
       ...(isControle ? {
         nomeSolicitante: nomeSolicitante.trim(),
-        emailSolicitante: emailSolicitante.trim(),
         nomeColaborador: nomeColaborador.trim(),
         funcaoColaborador: funcaoColaborador.trim(),
         matriculaFuncionario: matriculaFuncionario.trim(),
@@ -169,15 +179,14 @@ const FormularioPedido = () => {
     setIsSubmitting(false);
 
     if (result) {
-      // Salva a loja usada para histórico local
       setUltimaLojaId(selectedLojaId!);
       
       // Reset form
       setQuantities({});
       setSearchQuery('');
       setObservacoes('');
-      setNomeSolicitante('');
       setEmailSolicitante('');
+      setNomeSolicitante('');
       setNomeColaborador('');
       setFuncaoColaborador('');
       setMatriculaFuncionario('');
@@ -206,7 +215,6 @@ const FormularioPedido = () => {
     );
   }
 
-  // Se entidade não existe
   if (!entidade) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -225,7 +233,6 @@ const FormularioPedido = () => {
     );
   }
 
-  // Se entidade NÃO está aceitando pedidos
   if (!entidade.aceitandoPedidos) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -293,6 +300,49 @@ const FormularioPedido = () => {
         onSelect={setSelectedLojaId} 
       />
 
+      {/* Email obrigatório - para TODOS os tipos */}
+      <div className="px-4 py-3">
+        <label className="text-sm font-medium text-foreground mb-1.5 block">
+          Email do Solicitante *
+        </label>
+        <Input 
+          type="email" 
+          value={emailSolicitante} 
+          onChange={(e) => setEmailSolicitante(e.target.value)} 
+          placeholder="email@empresa.com"
+          className="bg-card"
+        />
+      </div>
+
+      {/* Campos de Controle (rastreabilidade) - ANTES dos produtos */}
+      {isControle && produtosDaEntidade.length > 0 && (
+        <div className="px-4 py-4 border-t border-border space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">🔒 Dados de Rastreabilidade (obrigatórios)</h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Solicitante *</label>
+              <Input value={nomeSolicitante} onChange={(e) => setNomeSolicitante(e.target.value)} placeholder="Quem está solicitando" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Colaborador *</label>
+              <Input value={nomeColaborador} onChange={(e) => setNomeColaborador(e.target.value)} placeholder="Para quem é o pedido" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Função do Colaborador *</label>
+              <Input value={funcaoColaborador} onChange={(e) => setFuncaoColaborador(e.target.value)} placeholder="Cargo/função" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Matrícula do Funcionário *</label>
+              <Input value={matriculaFuncionario} onChange={(e) => setMatriculaFuncionario(e.target.value)} placeholder="Número da matrícula" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Motivo da Solicitação *</label>
+              <Textarea value={motivoSolicitacao} onChange={(e) => setMotivoSolicitacao(e.target.value)} placeholder="Justificativa do pedido" rows={2} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Alerta se não há produtos ativos */}
       {produtosAtivos.length === 0 && (
         <div className="px-4 py-2">
@@ -325,39 +375,6 @@ const FormularioPedido = () => {
         )}
       </div>
 
-      {/* Campos de Controle (rastreabilidade) */}
-      {isControle && produtosDaEntidade.length > 0 && (
-        <div className="px-4 py-4 border-t border-border mt-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">🔒 Dados de Rastreabilidade (obrigatórios)</h3>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Solicitante *</label>
-              <Input value={nomeSolicitante} onChange={(e) => setNomeSolicitante(e.target.value)} placeholder="Quem está solicitando" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Email do Solicitante *</label>
-              <Input type="email" value={emailSolicitante} onChange={(e) => setEmailSolicitante(e.target.value)} placeholder="email@empresa.com" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Nome do Colaborador *</label>
-              <Input value={nomeColaborador} onChange={(e) => setNomeColaborador(e.target.value)} placeholder="Para quem é o pedido" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Função do Colaborador *</label>
-              <Input value={funcaoColaborador} onChange={(e) => setFuncaoColaborador(e.target.value)} placeholder="Cargo/função" />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Matrícula do Funcionário *</label>
-              <Input value={matriculaFuncionario} onChange={(e) => setMatriculaFuncionario(e.target.value)} placeholder="Número da matrícula" />
-            </div>
-            <div className="sm:col-span-2">
-              <label className="text-xs font-medium text-muted-foreground mb-1 block">Motivo da Solicitação *</label>
-              <Textarea value={motivoSolicitacao} onChange={(e) => setMotivoSolicitacao(e.target.value)} placeholder="Justificativa do pedido" rows={2} />
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Campo ÚNICO de Observações - no final */}
       {produtosDaEntidade.length > 0 && (
         <div className="px-4 py-4 border-t border-border mt-4">
@@ -388,19 +405,21 @@ const FormularioPedido = () => {
             <AlertDialogTitle>Confirmar Pedido</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
-                {/* Nome da Loja */}
                 <div className="bg-muted rounded-lg p-3">
                   <p className="text-sm text-muted-foreground">Loja</p>
                   <p className="font-semibold text-foreground">{selectedLoja?.nome}</p>
                 </div>
 
-                {/* Quantidade Total */}
+                <div className="bg-muted rounded-lg p-3">
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-semibold text-foreground">{emailSolicitante}</p>
+                </div>
+
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Total de itens:</span>
                   <span className="font-bold text-lg text-primary">{itemCount}</span>
                 </div>
 
-                {/* Lista de Produtos */}
                 <div className="border rounded-lg max-h-[200px] overflow-y-auto">
                   <div className="p-2 space-y-1">
                     {produtosSelecionados.map((item, index) => (
