@@ -308,6 +308,7 @@ export type Database = {
       produtos: {
         Row: {
           codigo: string
+          cor_codigo: string | null
           criado_em: string
           entidade_id: string
           id: string
@@ -319,6 +320,7 @@ export type Database = {
         }
         Insert: {
           codigo: string
+          cor_codigo?: string | null
           criado_em?: string
           entidade_id: string
           id?: string
@@ -330,6 +332,7 @@ export type Database = {
         }
         Update: {
           codigo?: string
+          cor_codigo?: string | null
           criado_em?: string
           entidade_id?: string
           id?: string

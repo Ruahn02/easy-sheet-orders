@@ -1,32 +1,34 @@
 
 
-## Pintar Código do Produto na Planilha
+## Corrigir "Nenhum produto para reordenar"
 
-### O que muda
+### Problema
 
-Adicionar a opção de colorir individualmente cada coluna de código de produto no cabeçalho da planilha de Pedidos. Ao clicar com botão direito ou via um botão no header do código, abre um popover com as mesmas cores disponíveis para linhas. A cor aplicada pinta o header e toda a coluna daquele produto.
+O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
 
-### 1. Migração no Banco
+### Correcao
 
-**Tabela `produtos`** - adicionar coluna:
-- `cor_codigo` (text, nullable) -- armazena o valor hex da cor
+**Arquivo:** `src/components/admin/ReorderProducts.tsx`
 
-### 2. Arquivos a Modificar
+Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
 
-| Arquivo | Mudança |
-|---------|---------|
-| `src/types/index.ts` | Adicionar `corCodigo?: string` em Produto |
-| `src/hooks/useSupabaseData.ts` | Mapear `cor_codigo` no fetch/update de produtos |
-| `src/pages/admin/Pedidos.tsx` | Adicionar Popover de cores no header de cada produto (th) + aplicar cor no header e nas células da coluna |
+```typescript
+// Remover handleOpenChange e usar useEffect
+useEffect(() => {
+  if (open) {
+    setItems([...produtos]);
+  }
+}, [open, produtos]);
+```
 
-### 3. Detalhes
+E no Dialog, voltar a usar `onOpenChange` diretamente:
 
-**Header do produto (Pedidos.tsx, linhas 850-882):**
-- Envolver o `th` do produto com um Popover (ao clicar no código)
-- Mostrar as mesmas `CORES_DISPONIVEIS` já usadas para linhas
-- Ao selecionar cor, chamar `updateProduto` salvando `cor_codigo` no banco
-- Aplicar `style={{ backgroundColor: produto.corCodigo }}` no `th` e nos `td` da coluna correspondente
+```typescript
+<Dialog open={open} onOpenChange={onOpenChange}>
+```
 
-**Hook (useSupabaseData.ts):**
-- Adicionar função `updateProdutoCor(produtoId, cor)` ou reutilizar update existente
+### Impacto
 
+- Corrige o bug sem alterar nenhuma outra logica
+- Apenas 1 arquivo modificado
+- Nenhuma mudanca no banco ou em outros componentes

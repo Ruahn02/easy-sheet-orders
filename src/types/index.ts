@@ -24,6 +24,7 @@ export interface Produto {
   entidadeIds: string[];       // N:N - array de entidades
   entidadeId?: string;         // Fallback para compatibilidade
   ordem?: number;
+  corCodigo?: string;
   criadoEm: Date;
 }
 

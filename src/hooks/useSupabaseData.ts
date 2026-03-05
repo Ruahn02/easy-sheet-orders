@@ -250,6 +250,7 @@ export function useProdutos() {
       entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
       entidadeId: p.entidade_id, // manter para compatibilidade
       ordem: p.ordem ?? undefined,
+      corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
     })));
 
@@ -352,7 +353,20 @@ export function useProdutos() {
     await fetchProdutos();
   };
 
-  return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto, reorderProdutos };
+  const updateProdutoCor = async (id: string, cor: string | undefined) => {
+    const { error } = await supabase
+      .from('produtos')
+      .update({ cor_codigo: cor || null } as any)
+      .eq('id', id);
+    
+    if (!error) {
+      setProdutos(prev => prev.map(p => p.id === id ? { ...p, corCodigo: cor } : p));
+      return true;
+    }
+    return false;
+  };
+
+  return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto, reorderProdutos, updateProdutoCor };
 }
 
 // ============= PEDIDOS =============
