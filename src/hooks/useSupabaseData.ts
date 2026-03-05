@@ -353,8 +353,20 @@ export function useProdutos() {
     await fetchProdutos();
   };
 
-  return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto, reorderProdutos };
-}
+  const updateProdutoCor = async (id: string, cor: string | undefined) => {
+    const { error } = await supabase
+      .from('produtos')
+      .update({ cor_codigo: cor || null } as any)
+      .eq('id', id);
+    
+    if (!error) {
+      setProdutos(prev => prev.map(p => p.id === id ? { ...p, corCodigo: cor } : p));
+      return true;
+    }
+    return false;
+  };
+
+  return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto, reorderProdutos, updateProdutoCor };
 
 // ============= PEDIDOS =============
 export function usePedidos() {
