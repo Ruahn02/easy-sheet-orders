@@ -851,34 +851,54 @@ export default function Pedidos() {
                       const colIndex = fixedCols + produtoIndex;
                       const isHistorico = produtosHistoricosIds.has(produto.id);
                       return (
-                        <th 
-                          key={produto.id} 
-                          data-row={-1}
-                          data-col={colIndex}
-                          className={cn(
-                            "px-2 py-1.5 text-center text-xs font-medium text-foreground whitespace-nowrap min-w-[60px] cursor-pointer select-text",
-                            focusedCell?.row === -1 && focusedCell?.col === colIndex && 
-                              "ring-2 ring-primary ring-inset bg-primary/10",
-                            produto.status === 'inativo' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-                            isHistorico && "bg-amber-100 dark:bg-amber-900/30"
-                          )}
-                          onClick={() => setFocusedCell({ row: -1, col: colIndex })}
-                          title={isHistorico ? `Produto histórico: não está mais vinculado a esta entidade` : undefined}
-                        >
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="select-text">{produto.codigo}</span>
-                            {isHistorico && (
-                              <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                            )}
-                          </div>
-                          <div className={cn(
-                            "text-[10px] truncate max-w-[80px] select-text",
-                            produto.status === 'inativo' ? "text-red-600 dark:text-red-400" : 
-                            isHistorico ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
-                          )} title={produto.nome}>
-                            {produto.nome}
-                          </div>
-                        </th>
+                        <Popover key={produto.id}>
+                          <PopoverTrigger asChild>
+                            <th 
+                              data-row={-1}
+                              data-col={colIndex}
+                              className={cn(
+                                "px-2 py-1.5 text-center text-xs font-medium text-foreground whitespace-nowrap min-w-[60px] cursor-pointer select-text",
+                                focusedCell?.row === -1 && focusedCell?.col === colIndex && 
+                                  "ring-2 ring-primary ring-inset bg-primary/10",
+                                produto.status === 'inativo' && "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+                                isHistorico && "bg-amber-100 dark:bg-amber-900/30"
+                              )}
+                              style={produto.corCodigo ? { backgroundColor: produto.corCodigo } : undefined}
+                              title={isHistorico ? `Produto histórico: não está mais vinculado a esta entidade` : 'Clique para pintar este código'}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="select-text">{produto.codigo}</span>
+                                {isHistorico && (
+                                  <AlertCircle className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                                )}
+                              </div>
+                              <div className={cn(
+                                "text-[10px] truncate max-w-[80px] select-text",
+                                produto.status === 'inativo' ? "text-red-600 dark:text-red-400" : 
+                                isHistorico ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground"
+                              )} title={produto.nome}>
+                                {produto.nome}
+                              </div>
+                            </th>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-2" align="center">
+                            <div className="grid grid-cols-4 gap-1">
+                              {CORES_DISPONIVEIS.map((cor, i) => (
+                                <button
+                                  key={i}
+                                  className={cn(
+                                    "w-6 h-6 rounded border border-border hover:scale-110 transition-transform",
+                                    !cor.value && "bg-background",
+                                    produto.corCodigo === cor.value && "ring-2 ring-primary"
+                                  )}
+                                  style={cor.value ? { backgroundColor: cor.value } : undefined}
+                                  title={cor.label}
+                                  onClick={() => updateProdutoCor(produto.id, cor.value)}
+                                />
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       );
                     })}
                     <th className="px-2 py-1.5 text-center text-xs font-medium text-foreground sticky right-0 bg-secondary z-20">Ações</th>
