@@ -30,6 +30,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  ContextMenu,
+  ContextMenuTrigger,
+  ContextMenuContent,
+} from '@/components/ui/context-menu';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
