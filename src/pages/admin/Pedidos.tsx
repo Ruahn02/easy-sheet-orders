@@ -856,8 +856,8 @@ export default function Pedidos() {
                       const colIndex = fixedCols + produtoIndex;
                       const isHistorico = produtosHistoricosIds.has(produto.id);
                       return (
-                        <Popover key={produto.id}>
-                          <PopoverTrigger asChild>
+                        <ContextMenu key={produto.id}>
+                          <ContextMenuTrigger asChild>
                             <th 
                               data-row={-1}
                               data-col={colIndex}
@@ -869,7 +869,8 @@ export default function Pedidos() {
                                 isHistorico && "bg-amber-100 dark:bg-amber-900/30"
                               )}
                               style={produto.corCodigo ? { backgroundColor: produto.corCodigo } : undefined}
-                              title={isHistorico ? `Produto histórico: não está mais vinculado a esta entidade` : 'Clique para pintar este código'}
+                              title={isHistorico ? `Produto histórico: não está mais vinculado a esta entidade` : 'Clique direito para pintar este código'}
+                              onClick={() => setFocusedCell({ row: -1, col: colIndex })}
                             >
                               <div className="flex items-center justify-center gap-1">
                                 <span className="select-text">{produto.codigo}</span>
@@ -885,8 +886,8 @@ export default function Pedidos() {
                                 {produto.nome}
                               </div>
                             </th>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-2" align="center">
+                          </ContextMenuTrigger>
+                          <ContextMenuContent className="w-auto p-2">
                             <div className="grid grid-cols-4 gap-1">
                               {CORES_DISPONIVEIS.map((cor, i) => (
                                 <button
@@ -902,8 +903,8 @@ export default function Pedidos() {
                                 />
                               ))}
                             </div>
-                          </PopoverContent>
-                        </Popover>
+                          </ContextMenuContent>
+                        </ContextMenu>
                       );
                     })}
                     <th className="px-2 py-1.5 text-center text-xs font-medium text-foreground sticky right-0 bg-secondary z-20">Ações</th>
