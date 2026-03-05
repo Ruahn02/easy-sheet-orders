@@ -250,6 +250,7 @@ export function useProdutos() {
       entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
       entidadeId: p.entidade_id, // manter para compatibilidade
       ordem: p.ordem ?? undefined,
+      corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
     })));
 
