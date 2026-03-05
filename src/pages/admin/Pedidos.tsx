@@ -1050,6 +1050,7 @@ export default function Pedidos() {
                                   // Destaque laranja para produtos não separados
                                   qty > 0 && !separado && "bg-orange-200 dark:bg-orange-900/30"
                                 )}
+                                style={!pedido.corLinha && !(qty > 0 && !separado) && produto.corCodigo ? { backgroundColor: produto.corCodigo } : undefined}
                                 onClick={() => {
                                   setFocusedCell({ row: rowIndex, col: colIndex });
                                   handleToggleSeparacao(pedido.id, produto.id, qty);
