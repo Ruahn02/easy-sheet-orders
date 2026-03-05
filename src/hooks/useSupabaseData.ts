@@ -367,6 +367,7 @@ export function useProdutos() {
   };
 
   return { produtos, loading, fetchProdutos, addProduto, updateProduto, deleteProduto, reorderProdutos, updateProdutoCor };
+}
 
 // ============= PEDIDOS =============
 export function usePedidos() {
