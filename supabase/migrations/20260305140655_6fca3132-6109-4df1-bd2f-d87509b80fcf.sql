@@ -1,0 +1,1 @@
+ALTER TABLE public.produtos ADD COLUMN cor_codigo text DEFAULT NULL;
