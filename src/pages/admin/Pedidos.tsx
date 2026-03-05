@@ -59,7 +59,7 @@ const CORES_DISPONIVEIS = [
 export default function Pedidos() {
   const { pedidos, loading, updatePedidoStatus, updatePedidoCor } = usePedidos();
   const { lojas } = useLojas();
-  const { produtos } = useProdutos();
+  const { produtos, updateProdutoCor } = useProdutos();
   const { entidades } = useEntidades();
   const { toast } = useToast();
   const { fetchSeparacoesMultiplos, toggleSeparacao, isSeparado } = useSeparacao();
