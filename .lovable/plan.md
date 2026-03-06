@@ -1,14 +1,34 @@
 
 
-## Pintar Apenas o Header do Código (Não a Coluna Inteira)
+## Corrigir "Nenhum produto para reordenar"
 
-### Mudança
+### Problema
 
-Remover a aplicação de `backgroundColor` nas células de dados (`td`) da coluna do produto, mantendo a cor apenas no `th` (header do código).
+O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
 
-### Arquivo: `src/pages/admin/Pedidos.tsx`
+### Correcao
 
-**Linha ~1059**: Remover a condição que aplica `produto.corCodigo` como backgroundColor no `td`. O style condicional que verifica `produto.corCodigo` será removido, deixando a cor apenas no quadradinho do header.
+**Arquivo:** `src/components/admin/ReorderProducts.tsx`
 
-A linha 871 (header `th`) permanece inalterada — continua pintando o código.
+Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
 
+```typescript
+// Remover handleOpenChange e usar useEffect
+useEffect(() => {
+  if (open) {
+    setItems([...produtos]);
+  }
+}, [open, produtos]);
+```
+
+E no Dialog, voltar a usar `onOpenChange` diretamente:
+
+```typescript
+<Dialog open={open} onOpenChange={onOpenChange}>
+```
+
+### Impacto
+
+- Corrige o bug sem alterar nenhuma outra logica
+- Apenas 1 arquivo modificado
+- Nenhuma mudanca no banco ou em outros componentes
