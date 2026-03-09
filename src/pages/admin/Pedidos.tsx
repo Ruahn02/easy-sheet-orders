@@ -80,6 +80,9 @@ export default function Pedidos() {
   const [pedidoParaNaoAtender, setPedidoParaNaoAtender] = useState<string | null>(null);
   const [motivoNaoAtendido, setMotivoNaoAtendido] = useState<string>('');
   const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
+  const [motivoFilter, setMotivoFilter] = useState<string>('all');
+  const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
+  const [funcaoColaboradorFilter, setFuncaoColaboradorFilter] = useState('');
   
   // Estado para navegação estilo planilha
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
