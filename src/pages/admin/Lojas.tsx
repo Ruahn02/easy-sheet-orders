@@ -46,6 +46,7 @@ export default function Lojas() {
     status: 'ativo' as 'ativo' | 'inativo',
     ordem: '' as string
   });
+  const [selectedEntidadeIds, setSelectedEntidadeIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Confirmação
