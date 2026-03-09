@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario } from '@/types';
+import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade } from '@/types';
 
 // ============= ENTIDADES =============
 export function useEntidades() {

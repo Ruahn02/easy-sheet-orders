@@ -763,6 +763,41 @@ export default function Pedidos() {
                 />
               </PopoverContent>
             </Popover>
+
+            {/* Filtros de controle - só aparecem para entidades do tipo controle */}
+            {isControle && (
+              <>
+                <Select value={motivoFilter} onValueChange={setMotivoFilter}>
+                  <SelectTrigger className="bg-card h-8 w-36 text-sm">
+                    <SelectValue placeholder="Motivo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">Todos motivos</SelectItem>
+                    {MOTIVOS_SOLICITACAO.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="relative">
+                  <Input
+                    placeholder="Colaborador..."
+                    value={nomeColaboradorFilter}
+                    onChange={(e) => setNomeColaboradorFilter(e.target.value)}
+                    className="h-8 w-32 text-sm"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Input
+                    placeholder="Cargo..."
+                    value={funcaoColaboradorFilter}
+                    onChange={(e) => setFuncaoColaboradorFilter(e.target.value)}
+                    className="h-8 w-28 text-sm"
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
         </div>
