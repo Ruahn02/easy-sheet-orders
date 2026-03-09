@@ -1,18 +1,25 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, AlertCircle, ArrowLeft, Loader2, LogOut } from 'lucide-react';
-import { useEntidades, useProdutos, usePedidos, useLojas } from '@/hooks/useSupabaseData';
+import { useEntidades, useProdutos, usePedidos, useLojas, useLojaEntidades } from '@/hooks/useSupabaseData';
 import { ProductSearch } from '@/components/order/ProductSearch';
 import { ProductCard } from '@/components/order/ProductCard';
 import { OrderFooter } from '@/components/order/OrderFooter';
 import { StoreSelect } from '@/components/order/StoreSelect';
 import { useToast } from '@/hooks/use-toast';
-import { PedidoItem } from '@/types';
+import { PedidoItem, MOTIVOS_SOLICITACAO } from '@/types';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAcesso } from '@/store/useLojaAuth';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,8 +37,20 @@ const FormularioPedido = () => {
   const { produtos, loading: loadingProdutos } = useProdutos();
   const { lojas, loading: loadingLojas } = useLojas();
   const { addPedido } = usePedidos();
+  const { getEntidadesPermitidas } = useLojaEntidades();
   const { toast } = useToast();
   const { logout, setUltimaLojaId } = useAcesso();
+
+  // Filtrar lojas que têm permissão para esta entidade
+  const lojasPermitidas = useMemo(() => {
+    if (!entidadeId) return lojas;
+    return lojas.filter(loja => {
+      const permissoes = getEntidadesPermitidas(loja.id);
+      // Se não tem permissões configuradas, pode acessar tudo
+      if (permissoes.length === 0) return true;
+      return permissoes.includes(entidadeId);
+    });
+  }, [lojas, entidadeId, getEntidadesPermitidas]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -295,7 +314,7 @@ const FormularioPedido = () => {
 
       {/* Seleção de Loja */}
       <StoreSelect 
-        lojas={lojas} 
+        lojas={lojasPermitidas} 
         selectedId={selectedLojaId} 
         onSelect={setSelectedLojaId} 
       />
@@ -337,7 +356,16 @@ const FormularioPedido = () => {
             </div>
             <div className="sm:col-span-2">
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Motivo da Solicitação *</label>
-              <Textarea value={motivoSolicitacao} onChange={(e) => setMotivoSolicitacao(e.target.value)} placeholder="Justificativa do pedido" rows={2} />
+              <Select value={motivoSolicitacao} onValueChange={setMotivoSolicitacao}>
+                <SelectTrigger className="bg-card">
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {MOTIVOS_SOLICITACAO.map((motivo) => (
+                    <SelectItem key={motivo} value={motivo}>{motivo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

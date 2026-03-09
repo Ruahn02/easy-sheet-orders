@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario } from '@/types';
+import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade } from '@/types';
 
 // ============= ENTIDADES =============
 export function useEntidades() {
@@ -764,4 +764,56 @@ export function useSeparacao() {
     toggleSeparacao, 
     isSeparado 
   };
+}
+
+// ============= LOJA ENTIDADES (PERMISSÕES) =============
+export function useLojaEntidades() {
+  const [lojaEntidades, setLojaEntidades] = useState<LojaEntidade[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchLojaEntidades = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('loja_entidades')
+      .select('*');
+
+    if (!error && data) {
+      setLojaEntidades(data.map((le: any) => ({
+        id: le.id,
+        lojaId: le.loja_id,
+        entidadeId: le.entidade_id,
+        criadoEm: new Date(le.criado_em),
+      })));
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchLojaEntidades();
+  }, [fetchLojaEntidades]);
+
+  const setPermissoes = async (lojaId: string, entidadeIds: string[]) => {
+    // Deletar permissões atuais
+    await supabase.from('loja_entidades').delete().eq('loja_id', lojaId);
+
+    // Inserir novas permissões
+    if (entidadeIds.length > 0) {
+      const inserts = entidadeIds.map(entidadeId => ({
+        loja_id: lojaId,
+        entidade_id: entidadeId,
+      }));
+      await supabase.from('loja_entidades').insert(inserts);
+    }
+
+    await fetchLojaEntidades();
+    return true;
+  };
+
+  // Retorna entidades permitidas para uma loja (vazio = todas)
+  const getEntidadesPermitidas = (lojaId: string): string[] => {
+    return lojaEntidades
+      .filter(le => le.lojaId === lojaId)
+      .map(le => le.entidadeId);
+  };
+
+  return { lojaEntidades, loading, fetchLojaEntidades, setPermissoes, getEntidadesPermitidas };
 }

@@ -39,6 +39,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MOTIVOS_SOLICITACAO } from '@/types';
 
 const CORES_DISPONIVEIS = [
   { value: undefined, label: 'Sem cor' },
@@ -79,6 +80,9 @@ export default function Pedidos() {
   const [pedidoParaNaoAtender, setPedidoParaNaoAtender] = useState<string | null>(null);
   const [motivoNaoAtendido, setMotivoNaoAtendido] = useState<string>('');
   const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
+  const [motivoFilter, setMotivoFilter] = useState<string>('all');
+  const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
+  const [funcaoColaboradorFilter, setFuncaoColaboradorFilter] = useState('');
   
   // Estado para navegação estilo planilha
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
@@ -135,9 +139,20 @@ export default function Pedidos() {
         if (!hasMatchingProduct) return false;
       }
 
+      // Filtros de controle
+      if (motivoFilter !== 'all' && pedido.motivoSolicitacao !== motivoFilter) return false;
+      if (nomeColaboradorFilter.trim()) {
+        const q = nomeColaboradorFilter.toLowerCase();
+        if (!pedido.nomeColaborador?.toLowerCase().includes(q)) return false;
+      }
+      if (funcaoColaboradorFilter.trim()) {
+        const q = funcaoColaboradorFilter.toLowerCase();
+        if (!pedido.funcaoColaborador?.toLowerCase().includes(q)) return false;
+      }
+
       return true;
     });
-  }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos]);
+  }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos, motivoFilter, nomeColaboradorFilter, funcaoColaboradorFilter]);
 
   // Produtos da entidade selecionada (usando relacionamento N:N) + produtos históricos dos pedidos
   const produtosDaEntidade = useMemo(() => {
@@ -748,6 +763,41 @@ export default function Pedidos() {
                 />
               </PopoverContent>
             </Popover>
+
+            {/* Filtros de controle - só aparecem para entidades do tipo controle */}
+            {isControle && (
+              <>
+                <Select value={motivoFilter} onValueChange={setMotivoFilter}>
+                  <SelectTrigger className="bg-card h-8 w-36 text-sm">
+                    <SelectValue placeholder="Motivo" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover z-50">
+                    <SelectItem value="all">Todos motivos</SelectItem>
+                    {MOTIVOS_SOLICITACAO.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <div className="relative">
+                  <Input
+                    placeholder="Colaborador..."
+                    value={nomeColaboradorFilter}
+                    onChange={(e) => setNomeColaboradorFilter(e.target.value)}
+                    className="h-8 w-32 text-sm"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Input
+                    placeholder="Cargo..."
+                    value={funcaoColaboradorFilter}
+                    onChange={(e) => setFuncaoColaboradorFilter(e.target.value)}
+                    className="h-8 w-28 text-sm"
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
         </div>

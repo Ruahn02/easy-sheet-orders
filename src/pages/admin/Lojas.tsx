@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Store, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useLojas } from '@/hooks/useSupabaseData';
+import { useLojas, useEntidades, useLojaEntidades } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -31,9 +31,12 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loja } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Lojas() {
   const { lojas, loading, addLoja, updateLoja, deleteLoja } = useLojas();
+  const { entidades } = useEntidades();
+  const { lojaEntidades, setPermissoes, getEntidadesPermitidas } = useLojaEntidades();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,6 +46,7 @@ export default function Lojas() {
     status: 'ativo' as 'ativo' | 'inativo',
     ordem: '' as string
   });
+  const [selectedEntidadeIds, setSelectedEntidadeIds] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
   // Confirmação
@@ -56,6 +60,8 @@ export default function Lojas() {
         status: loja.status,
         ordem: loja.ordem?.toString() || ''
       });
+      const permissoes = getEntidadesPermitidas(loja.id);
+      setSelectedEntidadeIds(permissoes);
     } else {
       setEditingLoja(null);
       setFormData({ 
@@ -63,6 +69,7 @@ export default function Lojas() {
         status: 'ativo',
         ordem: ''
       });
+      setSelectedEntidadeIds([]);
     }
     setIsModalOpen(true);
   };
@@ -83,11 +90,13 @@ export default function Lojas() {
         ordem: ordemValue 
       });
       if (success) {
+        await setPermissoes(editingLoja.id, selectedEntidadeIds);
         toast({ title: 'Loja atualizada!' });
       }
     } else {
       const result = await addLoja(formData.nome, formData.status, ordemValue);
       if (result) {
+        await setPermissoes(result.id, selectedEntidadeIds);
         toast({ title: 'Loja criada!' });
       }
     }
@@ -237,6 +246,31 @@ export default function Lojas() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Menor número = aparece primeiro. Vazio = final da lista.
                 </p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Tipos de Pedido Permitidos
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Se nenhum for selecionado, a loja terá acesso a todos os tipos.
+                </p>
+                <div className="space-y-2 border rounded-md p-3 bg-background">
+                  {entidades.map((ent) => (
+                    <label key={ent.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedEntidadeIds.includes(ent.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedEntidadeIds(prev =>
+                            checked
+                              ? [...prev, ent.id]
+                              : prev.filter(id => id !== ent.id)
+                          );
+                        }}
+                      />
+                      <span className="text-sm text-foreground">{ent.nome}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
             <DialogFooter>

@@ -1,66 +1,34 @@
 
 
-## Plano: Motivo como Select, Filtros de Controle e Permissões de Entidade por Loja
+## Corrigir "Nenhum produto para reordenar"
 
-### 3 funcionalidades solicitadas:
+### Problema
 
----
+O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
 
-### 1. Motivo da Solicitação: Select com opções predefinidas
+### Correcao
 
-**Atual:** campo de texto livre (Textarea).
-**Novo:** Select/dropdown com as opções:
-- Funcionário novo
-- Desgaste
-- Quebra
-- Perda/Extravio
-- Promoção
+**Arquivo:** `src/components/admin/ReorderProducts.tsx`
 
-**Arquivos:**
-- `src/pages/FormularioPedido.tsx` -- trocar Textarea por Select nas linhas 338-341
-- `src/pages/admin/Pedidos.tsx` -- adicionar filtro por motivo (novo Select nos filtros, filtrar `pedido.motivoSolicitacao`). Esse filtro só aparece quando a entidade selecionada é do tipo "controle"
+Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
 
----
-
-### 2. Filtros por Nome do Funcionário e Cargo na tela Pedidos
-
-Adicionar dois campos de texto (Input) nos filtros da tela admin Pedidos, visíveis apenas quando a entidade é tipo "controle":
-- **Filtro por Nome do Colaborador** -- filtra `pedido.nomeColaborador` com busca parcial (contains)
-- **Filtro por Cargo/Função** -- filtra `pedido.funcaoColaborador` com busca parcial
-
-**Arquivo:** `src/pages/admin/Pedidos.tsx` -- adicionar estados + inputs + lógica no `filteredPedidos`
-
----
-
-### 3. Permissão de Entidades por Loja
-
-Controlar quais entidades cada loja pode solicitar pedidos.
-
-**Banco de dados -- nova tabela:**
-```sql
-CREATE TABLE loja_entidades (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  loja_id uuid NOT NULL REFERENCES lojas(id) ON DELETE CASCADE,
-  entidade_id uuid NOT NULL REFERENCES entidades(id) ON DELETE CASCADE,
-  criado_em timestamptz NOT NULL DEFAULT now(),
-  UNIQUE(loja_id, entidade_id)
-);
+```typescript
+// Remover handleOpenChange e usar useEffect
+useEffect(() => {
+  if (open) {
+    setItems([...produtos]);
+  }
+}, [open, produtos]);
 ```
-Com RLS pública (mesmo padrão do projeto). Se a loja não tiver nenhum registro em `loja_entidades`, ela pode acessar TODAS as entidades (comportamento padrão, sem quebrar nada existente).
 
-**Arquivos a modificar:**
+E no Dialog, voltar a usar `onOpenChange` diretamente:
 
-| Arquivo | Mudança |
-|---------|---------|
-| `src/hooks/useSupabaseData.ts` | Novo hook `useLojaEntidades()` para CRUD na tabela `loja_entidades` |
-| `src/types/index.ts` | Adicionar interface `LojaEntidade` |
-| `src/pages/admin/Lojas.tsx` | No modal de edição, adicionar checkboxes com as entidades disponíveis para selecionar quais a loja pode acessar |
-| `src/pages/FormularioPedido.tsx` | Filtrar entidades disponíveis com base nas permissões da loja selecionada (ou mostrar todas se sem restrição) |
-| `src/pages/Index.tsx` | Se necessário, filtrar entidades visíveis baseado na loja logada |
+```typescript
+<Dialog open={open} onOpenChange={onOpenChange}>
+```
 
-### Resumo de impacto
+### Impacto
 
-- 1 migração SQL (tabela `loja_entidades`)
-- Modificar 4-5 arquivos TypeScript
-- Sem breaking changes (lojas sem permissões explícitas = acesso total)
-
+- Corrige o bug sem alterar nenhuma outra logica
+- Apenas 1 arquivo modificado
+- Nenhuma mudanca no banco ou em outros componentes

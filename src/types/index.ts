@@ -73,3 +73,18 @@ export interface SeparacaoItem {
   separado: boolean;
   dataRegistro: Date;
 }
+
+export interface LojaEntidade {
+  id: string;
+  lojaId: string;
+  entidadeId: string;
+  criadoEm: Date;
+}
+
+export const MOTIVOS_SOLICITACAO = [
+  'Funcionário novo',
+  'Desgaste',
+  'Quebra',
+  'Perda/Extravio',
+  'Promoção',
+] as const;
