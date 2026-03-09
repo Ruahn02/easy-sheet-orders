@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, AlertCircle, ArrowLeft, Loader2, LogOut } from 'lucide-react';
-import { useEntidades, useProdutos, usePedidos, useLojas } from '@/hooks/useSupabaseData';
+import { useEntidades, useProdutos, usePedidos, useLojas, useLojaEntidades } from '@/hooks/useSupabaseData';
 import { ProductSearch } from '@/components/order/ProductSearch';
 import { ProductCard } from '@/components/order/ProductCard';
 import { OrderFooter } from '@/components/order/OrderFooter';
