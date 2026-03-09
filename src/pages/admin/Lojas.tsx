@@ -60,6 +60,8 @@ export default function Lojas() {
         status: loja.status,
         ordem: loja.ordem?.toString() || ''
       });
+      const permissoes = getEntidadesPermitidas(loja.id);
+      setSelectedEntidadeIds(permissoes);
     } else {
       setEditingLoja(null);
       setFormData({ 
@@ -67,6 +69,7 @@ export default function Lojas() {
         status: 'ativo',
         ordem: ''
       });
+      setSelectedEntidadeIds([]);
     }
     setIsModalOpen(true);
   };
