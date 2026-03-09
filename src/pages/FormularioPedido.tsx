@@ -344,7 +344,16 @@ const FormularioPedido = () => {
             </div>
             <div className="sm:col-span-2">
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Motivo da Solicitação *</label>
-              <Textarea value={motivoSolicitacao} onChange={(e) => setMotivoSolicitacao(e.target.value)} placeholder="Justificativa do pedido" rows={2} />
+              <Select value={motivoSolicitacao} onValueChange={setMotivoSolicitacao}>
+                <SelectTrigger className="bg-card">
+                  <SelectValue placeholder="Selecione o motivo..." />
+                </SelectTrigger>
+                <SelectContent className="bg-popover z-50">
+                  {MOTIVOS_SOLICITACAO.map((motivo) => (
+                    <SelectItem key={motivo} value={motivo}>{motivo}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

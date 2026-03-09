@@ -139,9 +139,20 @@ export default function Pedidos() {
         if (!hasMatchingProduct) return false;
       }
 
+      // Filtros de controle
+      if (motivoFilter !== 'all' && pedido.motivoSolicitacao !== motivoFilter) return false;
+      if (nomeColaboradorFilter.trim()) {
+        const q = nomeColaboradorFilter.toLowerCase();
+        if (!pedido.nomeColaborador?.toLowerCase().includes(q)) return false;
+      }
+      if (funcaoColaboradorFilter.trim()) {
+        const q = funcaoColaboradorFilter.toLowerCase();
+        if (!pedido.funcaoColaborador?.toLowerCase().includes(q)) return false;
+      }
+
       return true;
     });
-  }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos]);
+  }, [pedidos, selectedLojaId, selectedEntidadeId, statusFilter, startDate, endDate, searchQuery, produtos, motivoFilter, nomeColaboradorFilter, funcaoColaboradorFilter]);
 
   // Produtos da entidade selecionada (usando relacionamento N:N) + produtos históricos dos pedidos
   const produtosDaEntidade = useMemo(() => {
