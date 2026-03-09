@@ -101,6 +101,42 @@ export type Database = {
           },
         ]
       }
+      loja_entidades: {
+        Row: {
+          criado_em: string
+          entidade_id: string
+          id: string
+          loja_id: string
+        }
+        Insert: {
+          criado_em?: string
+          entidade_id: string
+          id?: string
+          loja_id: string
+        }
+        Update: {
+          criado_em?: string
+          entidade_id?: string
+          id?: string
+          loja_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loja_entidades_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loja_entidades_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lojas: {
         Row: {
           ativo: boolean
