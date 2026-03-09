@@ -39,6 +39,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { MOTIVOS_SOLICITACAO } from '@/types';
 
 const CORES_DISPONIVEIS = [
   { value: undefined, label: 'Sem cor' },
