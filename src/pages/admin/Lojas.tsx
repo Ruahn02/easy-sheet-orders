@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loja } from '@/types';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Lojas() {
   const { lojas, loading, addLoja, updateLoja, deleteLoja } = useLojas();
