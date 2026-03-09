@@ -90,11 +90,13 @@ export default function Lojas() {
         ordem: ordemValue 
       });
       if (success) {
+        await setPermissoes(editingLoja.id, selectedEntidadeIds);
         toast({ title: 'Loja atualizada!' });
       }
     } else {
       const result = await addLoja(formData.nome, formData.status, ordemValue);
       if (result) {
+        await setPermissoes(result.id, selectedEntidadeIds);
         toast({ title: 'Loja criada!' });
       }
     }
