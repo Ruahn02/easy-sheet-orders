@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Store, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useLojas } from '@/hooks/useSupabaseData';
+import { useLojas, useEntidades, useLojaEntidades } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
