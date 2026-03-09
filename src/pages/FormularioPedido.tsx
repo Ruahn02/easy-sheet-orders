@@ -314,7 +314,7 @@ const FormularioPedido = () => {
 
       {/* Seleção de Loja */}
       <StoreSelect 
-        lojas={lojas} 
+        lojas={lojasPermitidas} 
         selectedId={selectedLojaId} 
         onSelect={setSelectedLojaId} 
       />
