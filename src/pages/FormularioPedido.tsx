@@ -37,8 +37,20 @@ const FormularioPedido = () => {
   const { produtos, loading: loadingProdutos } = useProdutos();
   const { lojas, loading: loadingLojas } = useLojas();
   const { addPedido } = usePedidos();
+  const { getEntidadesPermitidas } = useLojaEntidades();
   const { toast } = useToast();
   const { logout, setUltimaLojaId } = useAcesso();
+
+  // Filtrar lojas que têm permissão para esta entidade
+  const lojasPermitidas = useMemo(() => {
+    if (!entidadeId) return lojas;
+    return lojas.filter(loja => {
+      const permissoes = getEntidadesPermitidas(loja.id);
+      // Se não tem permissões configuradas, pode acessar tudo
+      if (permissoes.length === 0) return true;
+      return permissoes.includes(entidadeId);
+    });
+  }, [lojas, entidadeId, getEntidadesPermitidas]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
