@@ -35,6 +35,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 
 export default function Lojas() {
   const { lojas, loading, addLoja, updateLoja, deleteLoja } = useLojas();
+  const { entidades } = useEntidades();
+  const { lojaEntidades, setPermissoes, getEntidadesPermitidas } = useLojaEntidades();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
