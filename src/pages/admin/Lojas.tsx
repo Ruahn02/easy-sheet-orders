@@ -247,6 +247,31 @@ export default function Lojas() {
                   Menor número = aparece primeiro. Vazio = final da lista.
                 </p>
               </div>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Tipos de Pedido Permitidos
+                </label>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Se nenhum for selecionado, a loja terá acesso a todos os tipos.
+                </p>
+                <div className="space-y-2 border rounded-md p-3 bg-background">
+                  {entidades.map((ent) => (
+                    <label key={ent.id} className="flex items-center gap-2 cursor-pointer">
+                      <Checkbox
+                        checked={selectedEntidadeIds.includes(ent.id)}
+                        onCheckedChange={(checked) => {
+                          setSelectedEntidadeIds(prev =>
+                            checked
+                              ? [...prev, ent.id]
+                              : prev.filter(id => id !== ent.id)
+                          );
+                        }}
+                      />
+                      <span className="text-sm text-foreground">{ent.nome}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
