@@ -128,7 +128,7 @@ export default function Dashboard() {
       pedidosFeitos,
       pedidosNaoAtendidos,
     };
-  }, [pedidos, pedidosFiltrados, produtos, entidadeFiltro, produtoFiltro]);
+  }, [pedidos, pedidosFiltrados, produtos, entidadesFiltro, produtoFiltro]);
 
   // Métricas detalhadas do produto selecionado
   const metricasProduto = useMemo(() => {
