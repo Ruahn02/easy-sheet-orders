@@ -84,7 +84,7 @@ export default function Produtos() {
     }
     
     return lista;
-  }, [produtos, entidadeFiltro, busca]);
+  }, [produtos, entidadesFiltro, busca]);
 
   // Handlers de imagem
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
