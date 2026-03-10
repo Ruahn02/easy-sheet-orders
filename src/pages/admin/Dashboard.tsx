@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
   const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
   const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
+  const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
   const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
   const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
