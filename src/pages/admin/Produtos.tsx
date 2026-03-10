@@ -59,7 +59,7 @@ export default function Produtos() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Filtros
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
+  const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [busca, setBusca] = useState('');
 
   // Confirmações
