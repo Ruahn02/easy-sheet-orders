@@ -557,7 +557,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-foreground">{stats.produtosAtivos}</p>
                   <p className="text-xs text-muted-foreground">
                     Produtos Ativos
-                    {entidadeFiltro !== 'todas' && <span className="text-primary"> (entidade)</span>}
+                    {entidadesFiltro.length > 0 && <span className="text-primary"> (entidade)</span>}
                   </p>
                 </div>
               </div>
