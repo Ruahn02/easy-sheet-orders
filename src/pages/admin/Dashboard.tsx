@@ -89,7 +89,7 @@ export default function Dashboard() {
 
       return true;
     });
-  }, [pedidos, dataInicio, dataFim, lojaFiltro, produtoFiltro, entidadeFiltro]);
+  }, [pedidos, dataInicio, dataFim, lojaFiltro, produtoFiltro, entidadesFiltro]);
 
   // Estatísticas baseadas nos filtros
   const stats = useMemo(() => {
