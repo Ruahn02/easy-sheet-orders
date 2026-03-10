@@ -227,8 +227,8 @@ export default function Dashboard() {
   const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadesFiltro.length > 0;
 
   // Produtos filtrados por entidade para o select - usando N:N
-  const produtosFiltradosParaSelect = entidadeFiltro !== 'todas' 
-    ? produtos.filter(p => p.entidadeIds.includes(entidadeFiltro))
+  const produtosFiltradosParaSelect = entidadesFiltro.length > 0
+    ? produtos.filter(p => p.entidadeIds.some(id => entidadesFiltro.includes(id)))
     : produtos;
 
   if (isLoading) {
