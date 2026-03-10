@@ -224,7 +224,7 @@ export default function Dashboard() {
     setEntidadesFiltro([]);
   };
 
-  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadeFiltro !== 'todas';
+  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadesFiltro.length > 0;
 
   // Produtos filtrados por entidade para o select - usando N:N
   const produtosFiltradosParaSelect = entidadeFiltro !== 'todas' 
