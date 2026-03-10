@@ -286,19 +286,15 @@ export default function Dashboard() {
               {/* Filtro Entidade */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Entidade</label>
-                <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as entidades</SelectItem>
-                    {entidades.map((ent) => (
-                      <SelectItem key={ent.id} value={ent.id}>
-                        {ent.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelectFilter
+                  options={entidades.map(ent => ({ value: ent.id, label: ent.nome }))}
+                  selected={entidadesFiltro}
+                  onSelectionChange={setEntidadesFiltro}
+                  placeholder="Selecionar entidades..."
+                  allLabel="Todas as entidades"
+                  searchPlaceholder="Buscar entidade..."
+                  emptyMessage="Nenhuma entidade encontrada."
+                />
               </div>
 
               {/* Data Início */}
