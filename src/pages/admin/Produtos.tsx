@@ -71,8 +71,8 @@ export default function Produtos() {
   const produtosFiltrados = useMemo(() => {
     let lista = produtos;
     
-    if (entidadeFiltro && entidadeFiltro !== 'all') {
-      lista = lista.filter(p => p.entidadeIds.includes(entidadeFiltro));
+    if (entidadesFiltro.length > 0) {
+      lista = lista.filter(p => p.entidadeIds.some(id => entidadesFiltro.includes(id)));
     }
     
     if (busca.trim()) {
