@@ -21,7 +21,7 @@ type PeriodoPreset = 'hoje' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'm
 interface ProdutosAnalyticsProps {
   pedidos: Pedido[];
   produtos: Produto[];
-  entidadeFiltro: string;
+  entidadeFiltro: string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
