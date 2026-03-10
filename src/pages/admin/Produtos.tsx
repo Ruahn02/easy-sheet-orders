@@ -277,7 +277,7 @@ export default function Produtos() {
             <p className="text-muted-foreground">Gerencie os produtos do catálogo</p>
           </div>
           <div className="flex gap-2">
-            {entidadeFiltro && entidadeFiltro !== 'all' && (
+            {entidadesFiltro.length === 1 && (
               <Button variant="outline" onClick={() => setIsReorderOpen(true)}>
                 <ArrowUpDown className="h-4 w-4 mr-2" />
                 Reordenar Catálogo
