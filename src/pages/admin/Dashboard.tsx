@@ -251,10 +251,10 @@ export default function Dashboard() {
             <p className="text-muted-foreground">Visão geral do sistema</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {entidadeFiltro !== 'todas' && (
+            {entidadesFiltro.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-2 w-fit">
                 <Filter className="h-3 w-3" />
-                Contexto: {entidades.find(e => e.id === entidadeFiltro)?.nome}
+                Contexto: {entidadesFiltro.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean).join(', ')}
               </Badge>
             )}
             <Button
