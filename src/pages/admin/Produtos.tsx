@@ -6,6 +6,7 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
 import {
   Dialog,
   DialogContent,
@@ -59,7 +60,7 @@ export default function Produtos() {
   const [isUploading, setIsUploading] = useState(false);
 
   // Filtros
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
+  const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [busca, setBusca] = useState('');
 
   // Confirmações
@@ -71,8 +72,8 @@ export default function Produtos() {
   const produtosFiltrados = useMemo(() => {
     let lista = produtos;
     
-    if (entidadeFiltro && entidadeFiltro !== 'all') {
-      lista = lista.filter(p => p.entidadeIds.includes(entidadeFiltro));
+    if (entidadesFiltro.length > 0) {
+      lista = lista.filter(p => p.entidadeIds.some(id => entidadesFiltro.includes(id)));
     }
     
     if (busca.trim()) {
@@ -84,7 +85,7 @@ export default function Produtos() {
     }
     
     return lista;
-  }, [produtos, entidadeFiltro, busca]);
+  }, [produtos, entidadesFiltro, busca]);
 
   // Handlers de imagem
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,7 +137,7 @@ export default function Produtos() {
         qtdMaxima: 100,
         fotoUrl: '',
         status: 'ativo',
-        entidadeIds: entidadeFiltro && entidadeFiltro !== 'all' ? [entidadeFiltro] : (entidades.length > 0 ? [entidades[0].id] : []),
+        entidadeIds: entidadesFiltro.length > 0 ? [...entidadesFiltro] : (entidades.length > 0 ? [entidades[0].id] : []),
         ordem: '',
       });
       setImagePreview(null);
@@ -277,7 +278,7 @@ export default function Produtos() {
             <p className="text-muted-foreground">Gerencie os produtos do catálogo</p>
           </div>
           <div className="flex gap-2">
-            {entidadeFiltro && entidadeFiltro !== 'all' && (
+            {entidadesFiltro.length === 1 && (
               <Button variant="outline" onClick={() => setIsReorderOpen(true)}>
                 <ArrowUpDown className="h-4 w-4 mr-2" />
                 Reordenar Catálogo
@@ -294,19 +295,16 @@ export default function Produtos() {
         <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg bg-secondary/30 border border-border">
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground mb-1 block">Filtrar por Entidade</label>
-            <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
-              <SelectTrigger className="bg-background">
-                <SelectValue placeholder="Todas as entidades" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todas as entidades</SelectItem>
-                {entidades.map((ent) => (
-                  <SelectItem key={ent.id} value={ent.id}>
-                    {ent.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={entidades.map(ent => ({ value: ent.id, label: ent.nome }))}
+              selected={entidadesFiltro}
+              onSelectionChange={setEntidadesFiltro}
+              placeholder="Selecionar entidades..."
+              allLabel="Todas as entidades"
+              searchPlaceholder="Buscar entidade..."
+              emptyMessage="Nenhuma entidade encontrada."
+              className="bg-background"
+            />
           </div>
           <div className="flex-1">
             <label className="text-sm font-medium text-foreground mb-1 block">Buscar</label>

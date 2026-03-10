@@ -9,6 +9,7 @@ import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupa
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +30,7 @@ export default function Dashboard() {
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
   const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
   const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('todas');
+  const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
   const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
   const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
@@ -62,7 +63,7 @@ export default function Dashboard() {
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((pedido) => {
       // Filtro por entidade
-      if (entidadeFiltro !== 'todas' && pedido.entidadeId !== entidadeFiltro) return false;
+      if (entidadesFiltro.length > 0 && !entidadesFiltro.includes(pedido.entidadeId)) return false;
 
       // Filtro por data
       const dataPedido = new Date(pedido.data);
@@ -88,15 +89,15 @@ export default function Dashboard() {
 
       return true;
     });
-  }, [pedidos, dataInicio, dataFim, lojaFiltro, produtoFiltro, entidadeFiltro]);
+  }, [pedidos, dataInicio, dataFim, lojaFiltro, produtoFiltro, entidadesFiltro]);
 
   // Estatísticas baseadas nos filtros
   const stats = useMemo(() => {
     const lojasQuePediram = new Set(pedidosFiltrados.map((p) => p.lojaId));
     
     // Produtos filtrados por entidade - usando N:N
-    const produtosDaEntidade = entidadeFiltro !== 'todas' 
-      ? produtos.filter((p) => p.entidadeIds.includes(entidadeFiltro))
+    const produtosDaEntidade = entidadesFiltro.length > 0
+      ? produtos.filter((p) => p.entidadeIds.some(id => entidadesFiltro.includes(id)))
       : produtos;
     
     const produtosAtivos = produtosDaEntidade.filter((p) => p.status === 'ativo');
@@ -127,7 +128,7 @@ export default function Dashboard() {
       pedidosFeitos,
       pedidosNaoAtendidos,
     };
-  }, [pedidos, pedidosFiltrados, produtos, entidadeFiltro, produtoFiltro]);
+  }, [pedidos, pedidosFiltrados, produtos, entidadesFiltro, produtoFiltro]);
 
   // Métricas detalhadas do produto selecionado
   const metricasProduto = useMemo(() => {
@@ -220,14 +221,14 @@ export default function Dashboard() {
     setDataFim(undefined);
     setLojaFiltro('todas');
     setProdutoFiltro('todos');
-    setEntidadeFiltro('todas');
+    setEntidadesFiltro([]);
   };
 
-  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadeFiltro !== 'todas';
+  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadesFiltro.length > 0;
 
   // Produtos filtrados por entidade para o select - usando N:N
-  const produtosFiltradosParaSelect = entidadeFiltro !== 'todas' 
-    ? produtos.filter(p => p.entidadeIds.includes(entidadeFiltro))
+  const produtosFiltradosParaSelect = entidadesFiltro.length > 0
+    ? produtos.filter(p => p.entidadeIds.some(id => entidadesFiltro.includes(id)))
     : produtos;
 
   if (isLoading) {
@@ -250,10 +251,10 @@ export default function Dashboard() {
             <p className="text-muted-foreground">Visão geral do sistema</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {entidadeFiltro !== 'todas' && (
+            {entidadesFiltro.length > 0 && (
               <Badge variant="secondary" className="flex items-center gap-2 w-fit">
                 <Filter className="h-3 w-3" />
-                Contexto: {entidades.find(e => e.id === entidadeFiltro)?.nome}
+                Contexto: {entidadesFiltro.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean).join(', ')}
               </Badge>
             )}
             <Button
@@ -285,19 +286,15 @@ export default function Dashboard() {
               {/* Filtro Entidade */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Entidade</label>
-                <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Todas" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as entidades</SelectItem>
-                    {entidades.map((ent) => (
-                      <SelectItem key={ent.id} value={ent.id}>
-                        {ent.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <MultiSelectFilter
+                  options={entidades.map(ent => ({ value: ent.id, label: ent.nome }))}
+                  selected={entidadesFiltro}
+                  onSelectionChange={setEntidadesFiltro}
+                  placeholder="Selecionar entidades..."
+                  allLabel="Todas as entidades"
+                  searchPlaceholder="Buscar entidade..."
+                  emptyMessage="Nenhuma entidade encontrada."
+                />
               </div>
 
               {/* Data Início */}
@@ -560,7 +557,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-foreground">{stats.produtosAtivos}</p>
                   <p className="text-xs text-muted-foreground">
                     Produtos Ativos
-                    {entidadeFiltro !== 'todas' && <span className="text-primary"> (entidade)</span>}
+                    {entidadesFiltro.length > 0 && <span className="text-primary"> (entidade)</span>}
                   </p>
                 </div>
               </div>
@@ -577,7 +574,7 @@ export default function Dashboard() {
                   <p className="text-2xl font-bold text-foreground">{stats.produtosInativos}</p>
                   <p className="text-xs text-muted-foreground">
                     Produtos Inativos
-                    {entidadeFiltro !== 'todas' && <span className="text-primary"> (entidade)</span>}
+                    {entidadesFiltro.length > 0 && <span className="text-primary"> (entidade)</span>}
                   </p>
                 </div>
               </div>
@@ -791,7 +788,7 @@ export default function Dashboard() {
         <ProdutosAnalytics
           pedidos={pedidos}
           produtos={produtos}
-          entidadeFiltro={entidadeFiltro}
+          entidadeFiltro={entidadesFiltro}
           open={showProdutosAnalytics}
           onOpenChange={setShowProdutosAnalytics}
         />

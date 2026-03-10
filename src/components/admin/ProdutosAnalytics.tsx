@@ -21,7 +21,7 @@ type PeriodoPreset = 'hoje' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'm
 interface ProdutosAnalyticsProps {
   pedidos: Pedido[];
   produtos: Produto[];
-  entidadeFiltro: string;
+  entidadeFiltro: string[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -77,7 +77,7 @@ export function ProdutosAnalytics({
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((pedido) => {
       // Filtro por entidade
-      if (entidadeFiltro !== 'todas' && pedido.entidadeId !== entidadeFiltro) return false;
+      if (entidadeFiltro.length > 0 && !entidadeFiltro.includes(pedido.entidadeId)) return false;
 
       // Filtro por data
       const dataPedido = new Date(pedido.data);
@@ -99,8 +99,8 @@ export function ProdutosAnalytics({
     });
 
     // Filtrar produtos pela entidade se necessário - usando N:N
-    const produtosDaEntidade = entidadeFiltro !== 'todas'
-      ? produtos.filter((p) => p.entidadeIds.includes(entidadeFiltro))
+    const produtosDaEntidade = entidadeFiltro.length > 0
+      ? produtos.filter((p) => p.entidadeIds.some(id => entidadeFiltro.includes(id)))
       : produtos;
 
     return Object.entries(contagem)
