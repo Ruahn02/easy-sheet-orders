@@ -77,7 +77,7 @@ export function ProdutosAnalytics({
   const pedidosFiltrados = useMemo(() => {
     return pedidos.filter((pedido) => {
       // Filtro por entidade
-      if (entidadeFiltro !== 'todas' && pedido.entidadeId !== entidadeFiltro) return false;
+      if (entidadeFiltro.length > 0 && !entidadeFiltro.includes(pedido.entidadeId)) return false;
 
       // Filtro por data
       const dataPedido = new Date(pedido.data);
