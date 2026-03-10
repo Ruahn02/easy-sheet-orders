@@ -96,8 +96,8 @@ export default function Dashboard() {
     const lojasQuePediram = new Set(pedidosFiltrados.map((p) => p.lojaId));
     
     // Produtos filtrados por entidade - usando N:N
-    const produtosDaEntidade = entidadeFiltro !== 'todas' 
-      ? produtos.filter((p) => p.entidadeIds.includes(entidadeFiltro))
+    const produtosDaEntidade = entidadesFiltro.length > 0
+      ? produtos.filter((p) => p.entidadeIds.some(id => entidadesFiltro.includes(id)))
       : produtos;
     
     const produtosAtivos = produtosDaEntidade.filter((p) => p.status === 'ativo');
