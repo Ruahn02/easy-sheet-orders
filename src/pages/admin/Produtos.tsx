@@ -136,7 +136,7 @@ export default function Produtos() {
         qtdMaxima: 100,
         fotoUrl: '',
         status: 'ativo',
-        entidadeIds: entidadeFiltro && entidadeFiltro !== 'all' ? [entidadeFiltro] : (entidades.length > 0 ? [entidades[0].id] : []),
+        entidadeIds: entidadesFiltro.length > 0 ? [...entidadesFiltro] : (entidades.length > 0 ? [entidades[0].id] : []),
         ordem: '',
       });
       setImagePreview(null);
