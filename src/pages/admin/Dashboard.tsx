@@ -221,7 +221,7 @@ export default function Dashboard() {
     setDataFim(undefined);
     setLojaFiltro('todas');
     setProdutoFiltro('todos');
-    setEntidadeFiltro('todas');
+    setEntidadesFiltro([]);
   };
 
   const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadeFiltro !== 'todas';
