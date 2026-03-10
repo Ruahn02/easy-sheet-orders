@@ -788,7 +788,7 @@ export default function Dashboard() {
         <ProdutosAnalytics
           pedidos={pedidos}
           produtos={produtos}
-          entidadeFiltro={entidadeFiltro}
+          entidadeFiltro={entidadesFiltro}
           open={showProdutosAnalytics}
           onOpenChange={setShowProdutosAnalytics}
         />

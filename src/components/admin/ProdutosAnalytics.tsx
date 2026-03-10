@@ -99,8 +99,8 @@ export function ProdutosAnalytics({
     });
 
     // Filtrar produtos pela entidade se necessário - usando N:N
-    const produtosDaEntidade = entidadeFiltro !== 'todas'
-      ? produtos.filter((p) => p.entidadeIds.includes(entidadeFiltro))
+    const produtosDaEntidade = entidadeFiltro.length > 0
+      ? produtos.filter((p) => p.entidadeIds.some(id => entidadeFiltro.includes(id)))
       : produtos;
 
     return Object.entries(contagem)
