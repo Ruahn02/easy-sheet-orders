@@ -6,6 +6,7 @@ import { useImageUpload } from '@/hooks/useImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
 import {
   Dialog,
   DialogContent,
