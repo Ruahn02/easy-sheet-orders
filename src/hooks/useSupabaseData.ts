@@ -518,7 +518,24 @@ export function usePedidos() {
       return null; // Retorna null para indicar falha completa
     }
 
-    await fetchPedidos();
+    // Atualização otimista: adicionar localmente sem re-fetch
+    const novoPedido: Pedido = {
+      id: pedidoData.id,
+      lojaId: pedido.lojaId,
+      entidadeId: pedido.entidadeId,
+      observacoes: pedido.observacoes,
+      data: new Date(pedidoData.data),
+      status: 'pendente',
+      corLinha: undefined,
+      itens: pedido.itens,
+      nomeSolicitante: pedido.nomeSolicitante,
+      emailSolicitante: pedido.emailSolicitante,
+      nomeColaborador: pedido.nomeColaborador,
+      funcaoColaborador: pedido.funcaoColaborador,
+      matriculaFuncionario: pedido.matriculaFuncionario,
+      motivoSolicitacao: pedido.motivoSolicitacao,
+    };
+    setPedidos(prev => [novoPedido, ...prev]);
     return pedidoData;
   };
 
@@ -532,7 +549,8 @@ export function usePedidos() {
       .eq('id', id);
     
     if (!error) {
-      await fetchPedidos();
+      // Atualização otimista
+      setPedidos(prev => prev.map(p => p.id === id ? { ...p, status: status as Pedido['status'], ...(observacoes !== undefined ? { observacoes } : {}) } : p));
       return true;
     }
     return false;
@@ -545,7 +563,8 @@ export function usePedidos() {
       .eq('id', id);
     
     if (!error) {
-      await fetchPedidos();
+      // Atualização otimista
+      setPedidos(prev => prev.map(p => p.id === id ? { ...p, corLinha: cor } : p));
       return true;
     }
     return false;
