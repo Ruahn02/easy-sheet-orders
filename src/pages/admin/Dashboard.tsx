@@ -213,12 +213,12 @@ export default function Dashboard() {
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
-    setLojaFiltro('todas');
-    setProdutoFiltro('todos');
+    setLojaFiltro([]);
+    setProdutoFiltro([]);
     setEntidadesFiltro([]);
   };
 
-  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadesFiltro.length > 0;
+  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro.length > 0 || produtoFiltro.length > 0 || entidadesFiltro.length > 0;
 
   // Produtos filtrados por entidade para o select - usando N:N
   const produtosFiltradosParaSelect = entidadesFiltro.length > 0
