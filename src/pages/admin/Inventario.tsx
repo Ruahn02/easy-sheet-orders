@@ -70,10 +70,9 @@ export default function Inventario() {
   const { inventario, loading: loadingInventario, conferirProduto } = useInventario();
 
   // Filtros
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
-  const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
-  const [statusFiltro, setStatusFiltro] = useState<string>('todos');
-  const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
+  const [entidadeFiltro, setEntidadeFiltro] = useState<string[]>([]);
+  const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
+  const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
 
   // Modal de conferência
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
