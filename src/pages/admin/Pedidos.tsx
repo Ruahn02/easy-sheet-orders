@@ -725,17 +725,16 @@ export default function Pedidos() {
             {/* Filtros de controle - só aparecem para entidades do tipo controle */}
             {isControle && (
               <>
-                <Select value={motivoFilter} onValueChange={setMotivoFilter}>
-                  <SelectTrigger className="bg-card h-8 w-36 text-sm">
-                    <SelectValue placeholder="Motivo" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="all">Todos motivos</SelectItem>
-                    {MOTIVOS_SOLICITACAO.map((m) => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <MultiSelectFilter
+              options={MOTIVOS_SOLICITACAO.map(m => ({ value: m, label: m }))}
+              selected={motivoFilter}
+              onSelectionChange={setMotivoFilter}
+              placeholder="Motivo"
+              allLabel="Todos motivos"
+              searchPlaceholder="Buscar motivo..."
+              emptyMessage="Nenhum motivo encontrado."
+              className="bg-card h-8 w-36 text-sm"
+            />
 
                 <div className="relative">
                   <Input
