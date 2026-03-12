@@ -187,8 +187,7 @@ export default function Dashboard() {
     const contagem: Record<string, { pedidos: number; itens: number }> = {};
 
     pedidosFiltrados.forEach((pedido) => {
-      // Se filtrando por loja, mostrar apenas essa
-      if (lojaFiltro !== 'todas' && pedido.lojaId !== lojaFiltro) return;
+      if (lojaFiltro.length > 0 && !lojaFiltro.includes(pedido.lojaId)) return;
 
       if (!contagem[pedido.lojaId]) {
         contagem[pedido.lojaId] = { pedidos: 0, itens: 0 };
