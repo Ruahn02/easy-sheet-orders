@@ -1,34 +1,53 @@
 
 
-## Corrigir "Nenhum produto para reordenar"
+## Plano: Filtros Multi-Select com Checkbox em Todas as Telas
 
-### Problema
+### O que muda
 
-O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
+Trocar os filtros de seleção única (Select/Combobox) por **multi-select com checkbox** (quadrado na frente de cada opção) nas seguintes telas e campos:
 
-### Correcao
+| Tela | Filtro | Atual | Novo |
+|------|--------|-------|------|
+| **Inventário** | Entidade | Select único | MultiSelectFilter (checkbox) |
+| **Inventário** | Produto | Combobox único | MultiSelectFilter (checkbox) com busca |
+| **Inventário** | Status | Select único | MultiSelectFilter (checkbox) |
+| **Dashboard** | Loja | Combobox único | MultiSelectFilter (checkbox) com busca |
+| **Dashboard** | Produto | Combobox único | MultiSelectFilter (checkbox) com busca |
+| **Pedidos** | Loja | Combobox único | MultiSelectFilter (checkbox) com busca |
+| **Pedidos** | Status | Select único | MultiSelectFilter (checkbox) |
+| **Pedidos** | Motivo | Select único | MultiSelectFilter (checkbox) |
 
-**Arquivo:** `src/components/admin/ReorderProducts.tsx`
+**NÃO muda:** Pedidos > Entidade (obrigatório ser único pois define as colunas da planilha).
 
-Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
+### Componente `MultiSelectFilter`
 
-```typescript
-// Remover handleOpenChange e usar useEffect
-useEffect(() => {
-  if (open) {
-    setItems([...produtos]);
-  }
-}, [open, produtos]);
-```
+O componente já existe em `src/components/ui/multi-select-filter.tsx` e já usa checkmarks (✓). Vou trocar o ícone `Check` por um **checkbox visual** (quadrado preenchido/vazio) para ficar mais claro que é multi-select.
 
-E no Dialog, voltar a usar `onOpenChange` diretamente:
+### Mudanças por arquivo
 
-```typescript
-<Dialog open={open} onOpenChange={onOpenChange}>
-```
+**1. `src/components/ui/multi-select-filter.tsx`**
+- Substituir o ícone `Check` por um checkbox visual (quadrado com/sem preenchimento) usando o componente `Checkbox` do Radix
 
-### Impacto
+**2. `src/pages/admin/Inventario.tsx`**
+- `entidadeFiltro`: de `string` para `string[]`, usar MultiSelectFilter
+- `produtoFiltro`: de `string` para `string[]`, usar MultiSelectFilter
+- `statusFiltro`: de `string` para `string[]`, usar MultiSelectFilter
+- Ajustar lógica de filtragem: `.includes()` → `.some()`
+- Quando múltiplas entidades selecionadas, mostrar produtos de todas elas
+- Exportação e conferência: funciona normalmente (confere por produto individual)
 
-- Corrige o bug sem alterar nenhuma outra logica
-- Apenas 1 arquivo modificado
-- Nenhuma mudanca no banco ou em outros componentes
+**3. `src/pages/admin/Dashboard.tsx`**
+- `lojaFiltro`: de `string` para `string[]`, usar MultiSelectFilter
+- `produtoFiltro`: de `string` para `string[]`, usar MultiSelectFilter
+- Ajustar filtragem e métricas
+
+**4. `src/pages/admin/Pedidos.tsx`**
+- `selectedLojaId`: de `string` para `string[]`, usar MultiSelectFilter
+- `statusFilter`: de `string` para `string[]`, usar MultiSelectFilter
+- `motivoFilter`: de `string` para `string[]`, usar MultiSelectFilter
+- Ajustar filtragem dos pedidos
+
+### Lógica de filtragem
+
+Padrão para todos: array vazio `[]` = "Todos" (sem filtro). Array com valores = filtrar por `.includes()`.
+
