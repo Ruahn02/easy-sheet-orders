@@ -159,7 +159,7 @@ export default function Inventario() {
 
   // Confirmar conferência (salva no banco)
   const confirmarConferencia = async () => {
-    if (!produtoSelecionado || !entidadeFiltro) return;
+    if (!produtoSelecionado || !entidadeFiltroId) return;
 
     const quantidade = parseInt(quantidadeConferida);
 
