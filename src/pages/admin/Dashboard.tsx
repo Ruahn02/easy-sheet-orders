@@ -350,123 +350,29 @@ export default function Dashboard() {
               {/* Filtro Loja */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Loja / Setor</label>
-                <Popover open={lojaPopoverOpen} onOpenChange={setLojaPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={lojaPopoverOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      {lojaFiltro === 'todas'
-                        ? 'Todas as lojas'
-                        : lojas.find(l => l.id === lojaFiltro)?.nome || 'Selecionar...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
-                    <Command filter={(value, search) => {
-                      if (value === 'todas') {
-                        return 'todas as lojas'.includes(search.toLowerCase()) ? 1 : 0;
-                      }
-                      const loja = lojas.find(l => l.id === value);
-                      if (!loja) return 0;
-                      return loja.nome.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                    }}>
-                      <CommandInput placeholder="Buscar loja..." />
-                      <CommandList>
-                        <CommandEmpty>Nenhuma loja encontrada.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="todas"
-                            onSelect={() => {
-                              setLojaFiltro('todas');
-                              setLojaPopoverOpen(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", lojaFiltro === 'todas' ? "opacity-100" : "opacity-0")} />
-                            Todas as lojas
-                          </CommandItem>
-                          {lojas.map((loja) => (
-                            <CommandItem
-                              key={loja.id}
-                              value={loja.id}
-                              onSelect={() => {
-                                setLojaFiltro(loja.id);
-                                setLojaPopoverOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", lojaFiltro === loja.id ? "opacity-100" : "opacity-0")} />
-                              {loja.nome}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <MultiSelectFilter
+                  options={lojas.map(l => ({ value: l.id, label: l.nome }))}
+                  selected={lojaFiltro}
+                  onSelectionChange={setLojaFiltro}
+                  placeholder="Selecionar lojas..."
+                  allLabel="Todas as lojas"
+                  searchPlaceholder="Buscar loja..."
+                  emptyMessage="Nenhuma loja encontrada."
+                />
               </div>
 
-              {/* Filtro Produto com busca */}
+              {/* Filtro Produto */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Produto</label>
-                <Popover open={produtoPopoverOpen} onOpenChange={setProdutoPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={produtoPopoverOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      {produtoFiltro === 'todos'
-                        ? 'Todos os produtos'
-                        : produtosFiltradosParaSelect.find(p => p.id === produtoFiltro)?.nome || 'Selecionar...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
-                    <Command filter={(value, search) => {
-                      if (value === 'todos') {
-                        return 'todos os produtos'.includes(search.toLowerCase()) ? 1 : 0;
-                      }
-                      const produto = produtosFiltradosParaSelect.find(p => p.id === value);
-                      if (!produto) return 0;
-                      const searchLower = search.toLowerCase();
-                      return (produto.nome.toLowerCase().includes(searchLower) || produto.codigo.toLowerCase().includes(searchLower)) ? 1 : 0;
-                    }}>
-                      <CommandInput placeholder="Buscar por nome ou código..." />
-                      <CommandList>
-                        <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="todos"
-                            onSelect={() => {
-                              setProdutoFiltro('todos');
-                              setProdutoPopoverOpen(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", produtoFiltro === 'todos' ? "opacity-100" : "opacity-0")} />
-                            Todos os produtos
-                          </CommandItem>
-                          {produtosFiltradosParaSelect.map((produto) => (
-                            <CommandItem
-                              key={produto.id}
-                              value={produto.id}
-                              onSelect={() => {
-                                setProdutoFiltro(produto.id);
-                                setProdutoPopoverOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", produtoFiltro === produto.id ? "opacity-100" : "opacity-0")} />
-                              <span className="flex-1">{produto.nome}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{produto.codigo}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <MultiSelectFilter
+                  options={produtosFiltradosParaSelect.map(p => ({ value: p.id, label: `${p.nome} (${p.codigo})` }))}
+                  selected={produtoFiltro}
+                  onSelectionChange={setProdutoFiltro}
+                  placeholder="Selecionar produtos..."
+                  allLabel="Todos os produtos"
+                  searchPlaceholder="Buscar por nome ou código..."
+                  emptyMessage="Nenhum produto encontrado."
+                />
               </div>
             </div>
 
