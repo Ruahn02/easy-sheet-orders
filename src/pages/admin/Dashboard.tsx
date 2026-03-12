@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Check, ChevronsUpDown, Wrench, XCircle } from 'lucide-react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle } from 'lucide-react';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
