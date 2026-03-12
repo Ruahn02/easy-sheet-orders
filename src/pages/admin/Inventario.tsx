@@ -186,7 +186,7 @@ export default function Inventario() {
 
   // Exportar CSV
   const exportarCSV = () => {
-    const entidadeNome = entidades.find(e => e.id === entidadeFiltro)?.nome || 'Inventario';
+    const entidadeNome = entidadeFiltro.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean).join('_') || 'Inventario';
     const dataExport = format(new Date(), 'dd-MM-yyyy_HH-mm');
     
     const header = ['Código', 'Nome', 'Qtd Estoque', 'Status', 'Última Conferência'];
