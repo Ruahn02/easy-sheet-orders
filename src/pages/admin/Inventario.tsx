@@ -127,8 +127,12 @@ export default function Inventario() {
     setUnidadeSelecionada(registro?.unidadeMedida ?? 'un');
   };
 
-  // Para conferência, usar a primeira entidade selecionada
-  const entidadeFiltroId = entidadeFiltro.length > 0 ? entidadeFiltro[0] : '';
+  // Para conferência, usar a entidade do filtro ou a entidade do próprio produto
+  const getEntidadeParaConferencia = (produto: Produto) => {
+    if (entidadeFiltro.length > 0) return entidadeFiltro[0];
+    // Sem filtro: usar a primeira entidade do produto
+    return produto.entidadeIds?.[0] || produto.entidadeId || '';
+  };
 
   // Pré-confirmar conferência (valida e abre confirmação)
   const preConfirmarConferencia = () => {
@@ -143,8 +147,9 @@ export default function Inventario() {
   // Confirmar conferência (salva no banco)
   const confirmarConferencia = async () => {
     if (!produtoSelecionado) return;
-    if (!entidadeFiltroId) {
-      toast.error('Selecione uma entidade no filtro antes de conferir');
+    const entidadeId = getEntidadeParaConferencia(produtoSelecionado);
+    if (!entidadeId) {
+      toast.error('Não foi possível determinar a entidade do produto');
       setMostrarConfirmacao(false);
       return;
     }
@@ -152,7 +157,7 @@ export default function Inventario() {
     const quantidade = parseInt(quantidadeConferida);
 
     setSalvando(true);
-    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltroId, quantidade, unidadeSelecionada);
+    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeId, quantidade, unidadeSelecionada);
     setSalvando(false);
 
     if (sucesso) {
