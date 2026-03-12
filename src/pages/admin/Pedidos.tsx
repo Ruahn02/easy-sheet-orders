@@ -2,7 +2,8 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, ChevronsUpDown, X, FileText, XCircle } from 'lucide-react';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, X, FileText, XCircle } from 'lucide-react';
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -71,16 +72,15 @@ export default function Pedidos() {
   const { fetchSeparacoesMultiplos, toggleSeparacao, isSeparado } = useSeparacao();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLojaId, setSelectedLojaId] = useState<string>('all');
+  const [selectedLojaId, setSelectedLojaId] = useState<string[]>([]);
   const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
   const [pedidoParaNaoAtender, setPedidoParaNaoAtender] = useState<string | null>(null);
   const [motivoNaoAtendido, setMotivoNaoAtendido] = useState<string>('');
-  const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
-  const [motivoFilter, setMotivoFilter] = useState<string>('all');
+  const [motivoFilter, setMotivoFilter] = useState<string[]>([]);
   const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
   const [funcaoColaboradorFilter, setFuncaoColaboradorFilter] = useState('');
   
@@ -101,14 +101,10 @@ export default function Pedidos() {
       if (pedido.entidadeId !== selectedEntidadeId) return false;
 
       // Filtro por status
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'pendente' && pedido.status !== 'pendente') return false;
-        if (statusFilter === 'feito' && pedido.status !== 'feito') return false;
-        if (statusFilter === 'nao_atendido' && pedido.status !== 'nao_atendido') return false;
-      }
+      if (statusFilter.length > 0 && !statusFilter.includes(pedido.status)) return false;
 
       // Filter by store
-      if (selectedLojaId !== 'all' && pedido.lojaId !== selectedLojaId) return false;
+      if (selectedLojaId.length > 0 && !selectedLojaId.includes(pedido.lojaId)) return false;
 
       // Filter by date range
       if (startDate) {
@@ -140,7 +136,7 @@ export default function Pedidos() {
       }
 
       // Filtros de controle
-      if (motivoFilter !== 'all' && pedido.motivoSolicitacao !== motivoFilter) return false;
+      if (motivoFilter.length > 0 && (!pedido.motivoSolicitacao || !motivoFilter.includes(pedido.motivoSolicitacao))) return false;
       if (nomeColaboradorFilter.trim()) {
         const q = nomeColaboradorFilter.toLowerCase();
         if (!pedido.nomeColaborador?.toLowerCase().includes(q)) return false;
@@ -665,73 +661,31 @@ export default function Pedidos() {
               />
             </div>
 
-            <Popover open={lojaPopoverOpen} onOpenChange={setLojaPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={lojaPopoverOpen}
-                  className="bg-card h-8 w-40 justify-between text-sm font-normal"
-                >
-                  {selectedLojaId === 'all'
-                    ? 'Todas as lojas'
-                    : lojas.find(l => l.id === selectedLojaId)?.nome || 'Selecionar...'}
-                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[250px] p-0" align="start">
-                <Command filter={(value, search) => {
-                  if (value === 'all') {
-                    return 'todas as lojas'.includes(search.toLowerCase()) ? 1 : 0;
-                  }
-                  const loja = lojas.find(l => l.id === value);
-                  if (!loja) return 0;
-                  return loja.nome.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                }}>
-                  <CommandInput placeholder="Buscar loja..." className="h-8" />
-                  <CommandList>
-                    <CommandEmpty>Nenhuma loja encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="all"
-                        onSelect={() => {
-                          setSelectedLojaId('all');
-                          setLojaPopoverOpen(false);
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", selectedLojaId === 'all' ? "opacity-100" : "opacity-0")} />
-                        Todas as lojas
-                      </CommandItem>
-                      {lojas.map((loja) => (
-                        <CommandItem
-                          key={loja.id}
-                          value={loja.id}
-                          onSelect={() => {
-                            setSelectedLojaId(loja.id);
-                            setLojaPopoverOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", selectedLojaId === loja.id ? "opacity-100" : "opacity-0")} />
-                          {loja.nome}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <MultiSelectFilter
+              options={lojas.map(l => ({ value: l.id, label: l.nome }))}
+              selected={selectedLojaId}
+              onSelectionChange={setSelectedLojaId}
+              placeholder="Lojas..."
+              allLabel="Todas as lojas"
+              searchPlaceholder="Buscar loja..."
+              emptyMessage="Nenhuma loja encontrada."
+              className="bg-card h-8 w-40 text-sm"
+            />
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-card h-8 w-28 text-sm">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pendente">Pendentes</SelectItem>
-                <SelectItem value="feito">Feitos</SelectItem>
-                <SelectItem value="nao_atendido">Não Atendidos</SelectItem>
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={[
+                { value: 'pendente', label: 'Pendentes' },
+                { value: 'feito', label: 'Feitos' },
+                { value: 'nao_atendido', label: 'Não Atendidos' },
+              ]}
+              selected={statusFilter}
+              onSelectionChange={setStatusFilter}
+              placeholder="Status"
+              allLabel="Todos"
+              searchPlaceholder="Buscar status..."
+              emptyMessage="Nenhum status encontrado."
+              className="bg-card h-8 w-28 text-sm"
+            />
 
             <Popover>
               <PopoverTrigger asChild>
@@ -772,17 +726,16 @@ export default function Pedidos() {
             {/* Filtros de controle - só aparecem para entidades do tipo controle */}
             {isControle && (
               <>
-                <Select value={motivoFilter} onValueChange={setMotivoFilter}>
-                  <SelectTrigger className="bg-card h-8 w-36 text-sm">
-                    <SelectValue placeholder="Motivo" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="all">Todos motivos</SelectItem>
-                    {MOTIVOS_SOLICITACAO.map((m) => (
-                      <SelectItem key={m} value={m}>{m}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <MultiSelectFilter
+              options={MOTIVOS_SOLICITACAO.map(m => ({ value: m, label: m }))}
+              selected={motivoFilter}
+              onSelectionChange={setMotivoFilter}
+              placeholder="Motivo"
+              allLabel="Todos motivos"
+              searchPlaceholder="Buscar motivo..."
+              emptyMessage="Nenhum motivo encontrado."
+              className="bg-card h-8 w-36 text-sm"
+            />
 
                 <div className="relative">
                   <Input

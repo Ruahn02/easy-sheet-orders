@@ -4,13 +4,7 @@ import { useEntidades, useProdutos, useInventario } from '@/hooks/useSupabaseDat
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
 import {
   Table,
   TableBody,
@@ -38,25 +32,19 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClipboardCheck, Check, ChevronsUpDown, Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { ClipboardCheck, Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -69,10 +57,9 @@ export default function Inventario() {
   const { inventario, loading: loadingInventario, conferirProduto } = useInventario();
 
   // Filtros
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string>('');
-  const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
-  const [statusFiltro, setStatusFiltro] = useState<string>('todos');
-  const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
+  const [entidadeFiltro, setEntidadeFiltro] = useState<string[]>([]);
+  const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
+  const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
 
   // Modal de conferência
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
@@ -94,15 +81,15 @@ export default function Inventario() {
 
   // Seleciona primeira entidade automaticamente
   useMemo(() => {
-    if (entidades.length > 0 && !entidadeFiltro) {
-      setEntidadeFiltro(entidades[0].id);
+    if (entidades.length > 0 && entidadeFiltro.length === 0) {
+      setEntidadeFiltro([entidades[0].id]);
     }
   }, [entidades, entidadeFiltro]);
 
   // Produtos filtrados por entidade - usando N:N
   const produtosDaEntidade = useMemo(() => {
-    if (!entidadeFiltro) return [];
-    return produtos.filter(p => p.entidadeIds.includes(entidadeFiltro));
+    if (entidadeFiltro.length === 0) return [];
+    return produtos.filter(p => p.entidadeIds.some(id => entidadeFiltro.includes(id)));
   }, [produtos, entidadeFiltro]);
 
   // Lista final com status de inventário
@@ -124,15 +111,13 @@ export default function Inventario() {
     let lista = listaInventario;
 
     // Filtro por produto
-    if (produtoFiltro !== 'todos') {
-      lista = lista.filter(item => item.produto.id === produtoFiltro);
+    if (produtoFiltro.length > 0) {
+      lista = lista.filter(item => produtoFiltro.includes(item.produto.id));
     }
 
     // Filtro por status
-    if (statusFiltro === 'pendente') {
-      lista = lista.filter(item => item.status === 'pendente');
-    } else if (statusFiltro === 'conferido') {
-      lista = lista.filter(item => item.status === 'conferido');
+    if (statusFiltro.length > 0) {
+      lista = lista.filter(item => statusFiltro.includes(item.status));
     }
 
     return lista;
@@ -146,6 +131,9 @@ export default function Inventario() {
     setUnidadeSelecionada(registro?.unidadeMedida ?? 'un');
   };
 
+  // Para conferência, usar a primeira entidade selecionada
+  const entidadeFiltroId = entidadeFiltro.length > 0 ? entidadeFiltro[0] : '';
+
   // Pré-confirmar conferência (valida e abre confirmação)
   const preConfirmarConferencia = () => {
     const quantidade = parseInt(quantidadeConferida);
@@ -158,12 +146,12 @@ export default function Inventario() {
 
   // Confirmar conferência (salva no banco)
   const confirmarConferencia = async () => {
-    if (!produtoSelecionado || !entidadeFiltro) return;
+    if (!produtoSelecionado || !entidadeFiltroId) return;
 
     const quantidade = parseInt(quantidadeConferida);
 
     setSalvando(true);
-    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltro, quantidade, unidadeSelecionada);
+    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltroId, quantidade, unidadeSelecionada);
     setSalvando(false);
 
     if (sucesso) {
@@ -185,7 +173,7 @@ export default function Inventario() {
 
   // Exportar CSV
   const exportarCSV = () => {
-    const entidadeNome = entidades.find(e => e.id === entidadeFiltro)?.nome || 'Inventario';
+    const entidadeNome = entidadeFiltro.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean).join('_') || 'Inventario';
     const dataExport = format(new Date(), 'dd-MM-yyyy_HH-mm');
     
     const header = ['Código', 'Nome', 'Qtd Estoque', 'Status', 'Última Conferência'];
@@ -213,7 +201,7 @@ export default function Inventario() {
 
   // Exportar PDF
   const exportarPDF = () => {
-    const entidadeNome = entidades.find(e => e.id === entidadeFiltro)?.nome || 'Inventário';
+    const entidadeNome = entidadeFiltro.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean).join(', ') || 'Inventário';
     const dataExport = format(new Date(), "dd/MM/yyyy 'às' HH:mm");
     
     const html = `
@@ -334,92 +322,46 @@ export default function Inventario() {
           {/* Filtro por Entidade */}
           <div className="space-y-2 min-w-[200px]">
             <label className="text-sm font-medium text-foreground">Entidade</label>
-            <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a entidade" />
-              </SelectTrigger>
-              <SelectContent>
-                {entidades.map((entidade) => (
-                  <SelectItem key={entidade.id} value={entidade.id}>
-                    {entidade.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={entidades.map(e => ({ value: e.id, label: e.nome }))}
+              selected={entidadeFiltro}
+              onSelectionChange={setEntidadeFiltro}
+              placeholder="Selecione a entidade"
+              allLabel="Todas as entidades"
+              searchPlaceholder="Buscar entidade..."
+              emptyMessage="Nenhuma entidade encontrada."
+            />
           </div>
 
-          {/* Filtro por Produto (Combobox) */}
+          {/* Filtro por Produto */}
           <div className="space-y-2 min-w-[250px]">
             <label className="text-sm font-medium text-foreground">Produto</label>
-            <Popover open={produtoPopoverOpen} onOpenChange={setProdutoPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={produtoPopoverOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  {produtoFiltro === 'todos'
-                    ? 'Todos os produtos'
-                    : produtosDaEntidade.find(p => p.id === produtoFiltro)?.nome || 'Selecionar...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command filter={(value, search) => {
-                  const produto = produtosDaEntidade.find(p => p.id === value);
-                  if (!produto) return value === 'todos' && 'todos os produtos'.includes(search.toLowerCase()) ? 1 : 0;
-                  const searchLower = search.toLowerCase();
-                  return (produto.nome.toLowerCase().includes(searchLower) || produto.codigo.toLowerCase().includes(searchLower)) ? 1 : 0;
-                }}>
-                  <CommandInput placeholder="Buscar por nome ou código..." />
-                  <CommandList>
-                    <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="todos"
-                        onSelect={() => {
-                          setProdutoFiltro('todos');
-                          setProdutoPopoverOpen(false);
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", produtoFiltro === 'todos' ? "opacity-100" : "opacity-0")} />
-                        Todos os produtos
-                      </CommandItem>
-                      {produtosDaEntidade.map((produto) => (
-                        <CommandItem
-                          key={produto.id}
-                          value={produto.id}
-                          onSelect={() => {
-                            setProdutoFiltro(produto.id);
-                            setProdutoPopoverOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", produtoFiltro === produto.id ? "opacity-100" : "opacity-0")} />
-                          <span className="flex-1">{produto.nome}</span>
-                          <span className="text-xs text-muted-foreground ml-2">{produto.codigo}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <MultiSelectFilter
+              options={produtosDaEntidade.map(p => ({ value: p.id, label: `${p.nome} (${p.codigo})` }))}
+              selected={produtoFiltro}
+              onSelectionChange={setProdutoFiltro}
+              placeholder="Selecionar produtos..."
+              allLabel="Todos os produtos"
+              searchPlaceholder="Buscar por nome ou código..."
+              emptyMessage="Nenhum produto encontrado."
+            />
           </div>
 
           {/* Filtro por Status */}
           <div className="space-y-2 min-w-[150px]">
             <label className="text-sm font-medium text-foreground">Status</label>
-            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="pendente">Pendentes</SelectItem>
-                <SelectItem value="conferido">Conferidos</SelectItem>
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={[
+                { value: 'pendente', label: 'Pendentes' },
+                { value: 'conferido', label: 'Conferidos' },
+              ]}
+              selected={statusFiltro}
+              onSelectionChange={setStatusFiltro}
+              placeholder="Status"
+              allLabel="Todos"
+              searchPlaceholder="Buscar status..."
+              emptyMessage="Nenhum status encontrado."
+            />
           </div>
         </div>
 

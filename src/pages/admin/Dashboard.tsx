@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Check, ChevronsUpDown, Wrench, XCircle } from 'lucide-react';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle } from 'lucide-react';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -28,12 +27,10 @@ export default function Dashboard() {
   // Filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
-  const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
-  const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
+  const [lojaFiltro, setLojaFiltro] = useState<string[]>([]);
+  const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
   const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
-  const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
-  const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
@@ -79,11 +76,11 @@ export default function Dashboard() {
       }
 
       // Filtro por loja
-      if (lojaFiltro !== 'todas' && pedido.lojaId !== lojaFiltro) return false;
+      if (lojaFiltro.length > 0 && !lojaFiltro.includes(pedido.lojaId)) return false;
 
       // Filtro por produto
-      if (produtoFiltro !== 'todos') {
-        const temProduto = pedido.itens.some((item) => item.produtoId === produtoFiltro);
+      if (produtoFiltro.length > 0) {
+        const temProduto = pedido.itens.some((item) => produtoFiltro.includes(item.produtoId));
         if (!temProduto) return false;
       }
 
@@ -106,8 +103,7 @@ export default function Dashboard() {
     // Total de itens nos pedidos filtrados
     const totalItens = pedidosFiltrados.reduce((acc, pedido) => {
       return acc + pedido.itens.reduce((sum, item) => {
-        // Se tem filtro de produto, contar apenas esse
-        if (produtoFiltro !== 'todos' && item.produtoId !== produtoFiltro) return sum;
+        if (produtoFiltro.length > 0 && !produtoFiltro.includes(item.produtoId)) return sum;
         return sum + item.quantidade;
       }, 0);
     }, 0);
@@ -132,9 +128,9 @@ export default function Dashboard() {
 
   // Métricas detalhadas do produto selecionado
   const metricasProduto = useMemo(() => {
-    if (produtoFiltro === 'todos') return null;
+    if (produtoFiltro.length !== 1) return null;
 
-    const produto = produtos.find(p => p.id === produtoFiltro);
+    const produto = produtos.find(p => p.id === produtoFiltro[0]);
     if (!produto) return null;
 
     let totalQuantidade = 0;
@@ -143,7 +139,7 @@ export default function Dashboard() {
     let quantidadeConcluida = 0;
 
     pedidosFiltrados.forEach(pedido => {
-      const item = pedido.itens.find(i => i.produtoId === produtoFiltro);
+      const item = pedido.itens.find(i => i.produtoId === produtoFiltro[0]);
       if (item) {
         pedidosComProduto++;
         totalQuantidade += item.quantidade;
@@ -170,8 +166,7 @@ export default function Dashboard() {
 
     pedidosFiltrados.forEach((pedido) => {
       pedido.itens.forEach((item) => {
-        // Se filtrando por produto, mostrar apenas esse
-        if (produtoFiltro !== 'todos' && item.produtoId !== produtoFiltro) return;
+        if (produtoFiltro.length > 0 && !produtoFiltro.includes(item.produtoId)) return;
         contagem[item.produtoId] = (contagem[item.produtoId] || 0) + item.quantidade;
       });
     });
@@ -191,17 +186,15 @@ export default function Dashboard() {
     const contagem: Record<string, { pedidos: number; itens: number }> = {};
 
     pedidosFiltrados.forEach((pedido) => {
-      // Se filtrando por loja, mostrar apenas essa
-      if (lojaFiltro !== 'todas' && pedido.lojaId !== lojaFiltro) return;
+      if (lojaFiltro.length > 0 && !lojaFiltro.includes(pedido.lojaId)) return;
 
       if (!contagem[pedido.lojaId]) {
         contagem[pedido.lojaId] = { pedidos: 0, itens: 0 };
       }
       contagem[pedido.lojaId].pedidos += 1;
 
-      // Se filtrando por produto, contar apenas esse produto
       pedido.itens.forEach((item) => {
-        if (produtoFiltro !== 'todos' && item.produtoId !== produtoFiltro) return;
+        if (produtoFiltro.length > 0 && !produtoFiltro.includes(item.produtoId)) return;
         contagem[pedido.lojaId].itens += item.quantidade;
       });
     });
@@ -219,12 +212,12 @@ export default function Dashboard() {
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
-    setLojaFiltro('todas');
-    setProdutoFiltro('todos');
+    setLojaFiltro([]);
+    setProdutoFiltro([]);
     setEntidadesFiltro([]);
   };
 
-  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro !== 'todas' || produtoFiltro !== 'todos' || entidadesFiltro.length > 0;
+  const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro.length > 0 || produtoFiltro.length > 0 || entidadesFiltro.length > 0;
 
   // Produtos filtrados por entidade para o select - usando N:N
   const produtosFiltradosParaSelect = entidadesFiltro.length > 0
@@ -356,123 +349,29 @@ export default function Dashboard() {
               {/* Filtro Loja */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Loja / Setor</label>
-                <Popover open={lojaPopoverOpen} onOpenChange={setLojaPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={lojaPopoverOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      {lojaFiltro === 'todas'
-                        ? 'Todas as lojas'
-                        : lojas.find(l => l.id === lojaFiltro)?.nome || 'Selecionar...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
-                    <Command filter={(value, search) => {
-                      if (value === 'todas') {
-                        return 'todas as lojas'.includes(search.toLowerCase()) ? 1 : 0;
-                      }
-                      const loja = lojas.find(l => l.id === value);
-                      if (!loja) return 0;
-                      return loja.nome.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                    }}>
-                      <CommandInput placeholder="Buscar loja..." />
-                      <CommandList>
-                        <CommandEmpty>Nenhuma loja encontrada.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="todas"
-                            onSelect={() => {
-                              setLojaFiltro('todas');
-                              setLojaPopoverOpen(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", lojaFiltro === 'todas' ? "opacity-100" : "opacity-0")} />
-                            Todas as lojas
-                          </CommandItem>
-                          {lojas.map((loja) => (
-                            <CommandItem
-                              key={loja.id}
-                              value={loja.id}
-                              onSelect={() => {
-                                setLojaFiltro(loja.id);
-                                setLojaPopoverOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", lojaFiltro === loja.id ? "opacity-100" : "opacity-0")} />
-                              {loja.nome}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <MultiSelectFilter
+                  options={lojas.map(l => ({ value: l.id, label: l.nome }))}
+                  selected={lojaFiltro}
+                  onSelectionChange={setLojaFiltro}
+                  placeholder="Selecionar lojas..."
+                  allLabel="Todas as lojas"
+                  searchPlaceholder="Buscar loja..."
+                  emptyMessage="Nenhuma loja encontrada."
+                />
               </div>
 
-              {/* Filtro Produto com busca */}
+              {/* Filtro Produto */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-foreground">Produto</label>
-                <Popover open={produtoPopoverOpen} onOpenChange={setProdutoPopoverOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={produtoPopoverOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      {produtoFiltro === 'todos'
-                        ? 'Todos os produtos'
-                        : produtosFiltradosParaSelect.find(p => p.id === produtoFiltro)?.nome || 'Selecionar...'}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0" align="start">
-                    <Command filter={(value, search) => {
-                      if (value === 'todos') {
-                        return 'todos os produtos'.includes(search.toLowerCase()) ? 1 : 0;
-                      }
-                      const produto = produtosFiltradosParaSelect.find(p => p.id === value);
-                      if (!produto) return 0;
-                      const searchLower = search.toLowerCase();
-                      return (produto.nome.toLowerCase().includes(searchLower) || produto.codigo.toLowerCase().includes(searchLower)) ? 1 : 0;
-                    }}>
-                      <CommandInput placeholder="Buscar por nome ou código..." />
-                      <CommandList>
-                        <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          <CommandItem
-                            value="todos"
-                            onSelect={() => {
-                              setProdutoFiltro('todos');
-                              setProdutoPopoverOpen(false);
-                            }}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", produtoFiltro === 'todos' ? "opacity-100" : "opacity-0")} />
-                            Todos os produtos
-                          </CommandItem>
-                          {produtosFiltradosParaSelect.map((produto) => (
-                            <CommandItem
-                              key={produto.id}
-                              value={produto.id}
-                              onSelect={() => {
-                                setProdutoFiltro(produto.id);
-                                setProdutoPopoverOpen(false);
-                              }}
-                            >
-                              <Check className={cn("mr-2 h-4 w-4", produtoFiltro === produto.id ? "opacity-100" : "opacity-0")} />
-                              <span className="flex-1">{produto.nome}</span>
-                              <span className="text-xs text-muted-foreground ml-2">{produto.codigo}</span>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <MultiSelectFilter
+                  options={produtosFiltradosParaSelect.map(p => ({ value: p.id, label: `${p.nome} (${p.codigo})` }))}
+                  selected={produtoFiltro}
+                  onSelectionChange={setProdutoFiltro}
+                  placeholder="Selecionar produtos..."
+                  allLabel="Todos os produtos"
+                  searchPlaceholder="Buscar por nome ou código..."
+                  emptyMessage="Nenhum produto encontrado."
+                />
               </div>
             </div>
 
@@ -668,7 +567,7 @@ export default function Dashboard() {
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   Produtos Mais Pedidos
-                  {produtoFiltro !== 'todos' && (
+                  {produtoFiltro.length > 0 && (
                     <span className="text-xs font-normal text-muted-foreground ml-2">
                       (filtrado)
                     </span>
@@ -736,7 +635,7 @@ export default function Dashboard() {
               <CardTitle className="flex items-center gap-2 text-lg">
                 <BarChart3 className="h-5 w-5 text-accent" />
                 Consumo por Loja
-                {lojaFiltro !== 'todas' && (
+                {lojaFiltro.length > 0 && (
                   <span className="text-xs font-normal text-muted-foreground ml-2">
                     (filtrado)
                   </span>
