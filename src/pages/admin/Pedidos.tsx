@@ -298,38 +298,32 @@ export default function Pedidos() {
         e.preventDefault();
         const content = getCellContent(focusedCell.row, focusedCell.col);
         
-        // Função de fallback usando execCommand
-        const fallbackCopy = (text: string) => {
-          const textarea = document.createElement('textarea');
-          textarea.value = text;
-          textarea.style.position = 'fixed';
-          textarea.style.left = '-9999px';
-          textarea.style.top = '0';
-          document.body.appendChild(textarea);
-          textarea.focus();
-          textarea.select();
-          try {
-            document.execCommand('copy');
-            toast({ title: 'Copiado!', description: text.length > 50 ? text.slice(0, 50) + '...' : text });
-          } catch (err) {
-            toast({ title: 'Erro ao copiar', variant: 'destructive' });
-          }
-          document.body.removeChild(textarea);
+        const showSuccess = (text: string) => {
+          toast({ title: 'Copiado!', description: text.length > 50 ? text.slice(0, 50) + '...' : text });
         };
-        
-        // Tentar API moderna primeiro
-        if (navigator.clipboard && navigator.clipboard.writeText) {
+
+        const copyWithExecCommand = (): boolean => {
+          try {
+            const textarea = document.createElement('textarea');
+            textarea.value = content;
+            textarea.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            const ok = document.execCommand('copy');
+            document.body.removeChild(textarea);
+            return ok;
+          } catch { return false; }
+        };
+
+        if (copyWithExecCommand()) {
+          showSuccess(content);
+        } else if (navigator.clipboard?.writeText) {
           navigator.clipboard.writeText(content)
-            .then(() => {
-              toast({ title: 'Copiado!', description: content.length > 50 ? content.slice(0, 50) + '...' : content });
-            })
-            .catch(() => {
-              // Fallback para execCommand
-              fallbackCopy(content);
-            });
+            .then(() => showSuccess(content))
+            .catch(() => toast({ title: 'Erro ao copiar', description: 'Clique na página e tente novamente', variant: 'destructive' }));
         } else {
-          // Fallback para navegadores antigos
-          fallbackCopy(content);
+          toast({ title: 'Erro ao copiar', description: 'Clique na página e tente novamente', variant: 'destructive' });
         }
         return;
       }
