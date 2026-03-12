@@ -660,73 +660,31 @@ export default function Pedidos() {
               />
             </div>
 
-            <Popover open={lojaPopoverOpen} onOpenChange={setLojaPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={lojaPopoverOpen}
-                  className="bg-card h-8 w-40 justify-between text-sm font-normal"
-                >
-                  {selectedLojaId === 'all'
-                    ? 'Todas as lojas'
-                    : lojas.find(l => l.id === selectedLojaId)?.nome || 'Selecionar...'}
-                  <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[250px] p-0" align="start">
-                <Command filter={(value, search) => {
-                  if (value === 'all') {
-                    return 'todas as lojas'.includes(search.toLowerCase()) ? 1 : 0;
-                  }
-                  const loja = lojas.find(l => l.id === value);
-                  if (!loja) return 0;
-                  return loja.nome.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                }}>
-                  <CommandInput placeholder="Buscar loja..." className="h-8" />
-                  <CommandList>
-                    <CommandEmpty>Nenhuma loja encontrada.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="all"
-                        onSelect={() => {
-                          setSelectedLojaId('all');
-                          setLojaPopoverOpen(false);
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", selectedLojaId === 'all' ? "opacity-100" : "opacity-0")} />
-                        Todas as lojas
-                      </CommandItem>
-                      {lojas.map((loja) => (
-                        <CommandItem
-                          key={loja.id}
-                          value={loja.id}
-                          onSelect={() => {
-                            setSelectedLojaId(loja.id);
-                            setLojaPopoverOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", selectedLojaId === loja.id ? "opacity-100" : "opacity-0")} />
-                          {loja.nome}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <MultiSelectFilter
+              options={lojas.map(l => ({ value: l.id, label: l.nome }))}
+              selected={selectedLojaId}
+              onSelectionChange={setSelectedLojaId}
+              placeholder="Lojas..."
+              allLabel="Todas as lojas"
+              searchPlaceholder="Buscar loja..."
+              emptyMessage="Nenhuma loja encontrada."
+              className="bg-card h-8 w-40 text-sm"
+            />
 
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="bg-card h-8 w-28 text-sm">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-popover z-50">
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pendente">Pendentes</SelectItem>
-                <SelectItem value="feito">Feitos</SelectItem>
-                <SelectItem value="nao_atendido">Não Atendidos</SelectItem>
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={[
+                { value: 'pendente', label: 'Pendentes' },
+                { value: 'feito', label: 'Feitos' },
+                { value: 'nao_atendido', label: 'Não Atendidos' },
+              ]}
+              selected={statusFilter}
+              onSelectionChange={setStatusFilter}
+              placeholder="Status"
+              allLabel="Todos"
+              searchPlaceholder="Buscar status..."
+              emptyMessage="Nenhum status encontrado."
+              className="bg-card h-8 w-28 text-sm"
+            />
 
             <Popover>
               <PopoverTrigger asChild>
