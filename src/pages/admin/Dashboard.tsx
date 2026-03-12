@@ -28,12 +28,10 @@ export default function Dashboard() {
   // Filtros
   const [dataInicio, setDataInicio] = useState<Date | undefined>(undefined);
   const [dataFim, setDataFim] = useState<Date | undefined>(undefined);
-  const [lojaFiltro, setLojaFiltro] = useState<string>('todas');
-  const [produtoFiltro, setProdutoFiltro] = useState<string>('todos');
+  const [lojaFiltro, setLojaFiltro] = useState<string[]>([]);
+  const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
   const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
-  const [produtoPopoverOpen, setProdutoPopoverOpen] = useState(false);
-  const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
