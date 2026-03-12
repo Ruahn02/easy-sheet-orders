@@ -164,7 +164,7 @@ export default function Inventario() {
     const quantidade = parseInt(quantidadeConferida);
 
     setSalvando(true);
-    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltro, quantidade, unidadeSelecionada);
+    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltroId, quantidade, unidadeSelecionada);
     setSalvando(false);
 
     if (sucesso) {
