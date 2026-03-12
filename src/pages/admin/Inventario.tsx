@@ -144,6 +144,9 @@ export default function Inventario() {
     setUnidadeSelecionada(registro?.unidadeMedida ?? 'un');
   };
 
+  // Para conferência, usar a primeira entidade selecionada
+  const entidadeFiltroId = entidadeFiltro.length > 0 ? entidadeFiltro[0] : '';
+
   // Pré-confirmar conferência (valida e abre confirmação)
   const preConfirmarConferencia = () => {
     const quantidade = parseInt(quantidadeConferida);
