@@ -129,9 +129,9 @@ export default function Dashboard() {
 
   // Métricas detalhadas do produto selecionado
   const metricasProduto = useMemo(() => {
-    if (produtoFiltro === 'todos') return null;
+    if (produtoFiltro.length !== 1) return null;
 
-    const produto = produtos.find(p => p.id === produtoFiltro);
+    const produto = produtos.find(p => p.id === produtoFiltro[0]);
     if (!produto) return null;
 
     let totalQuantidade = 0;
