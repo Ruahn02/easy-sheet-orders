@@ -408,28 +408,33 @@ export function usePedidos() {
     // Extrair IDs dos pedidos que foram buscados
     const pedidoIds = pedidosData.map(p => p.id);
 
-    // Buscar itens em lotes de 1000 para contornar limite do PostgREST
+    // Buscar itens em chunks de 200 IDs para evitar estouro de URL do PostgREST
     let allItens: any[] = [];
-    let offset = 0;
-    const pageSize = 1000;
-    let hasMore = true;
+    const chunkSize = 200;
 
-    while (hasMore) {
-      const { data: batch, error } = await supabase
-        .from('pedido_itens')
-        .select('*')
-        .in('pedido_id', pedidoIds)
-        .order('id', { ascending: true })
-        .range(offset, offset + pageSize - 1);
+    for (let i = 0; i < pedidoIds.length; i += chunkSize) {
+      const chunk = pedidoIds.slice(i, i + chunkSize);
+      let offset = 0;
+      const pageSize = 1000;
+      let hasMore = true;
 
-      if (error) {
-        console.error('Erro ao buscar itens de pedidos:', error);
-        break;
+      while (hasMore) {
+        const { data: batch, error } = await supabase
+          .from('pedido_itens')
+          .select('*')
+          .in('pedido_id', chunk)
+          .order('id', { ascending: true })
+          .range(offset, offset + pageSize - 1);
+
+        if (error) {
+          console.error('Erro ao buscar itens de pedidos:', error);
+          break;
+        }
+
+        allItens = [...allItens, ...(batch || [])];
+        hasMore = (batch?.length || 0) === pageSize;
+        offset += pageSize;
       }
-
-      allItens = [...allItens, ...(batch || [])];
-      hasMore = (batch?.length || 0) === pageSize;
-      offset += pageSize;
     }
 
     const itensData = allItens;
