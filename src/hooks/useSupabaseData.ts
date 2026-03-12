@@ -671,6 +671,120 @@ export function useInventario() {
   return { inventario, loading, fetchInventario, conferirProduto };
 }
 
+// ============= ESTOQUE ESTIMADO =============
+export function useEstoqueEstimado(
+  inventarioList: Inventario[],
+  entidadeIds: string[]
+) {
+  const [estimativas, setEstimativas] = useState<Map<string, { saidas: number; estimado: number }>>(new Map());
+  const [loading, setLoading] = useState(false);
+
+  const calcular = useCallback(async () => {
+    // Só calcula se tiver itens conferidos e entidade selecionada
+    const conferidos = inventarioList.filter(i => i.status === 'conferido' && i.quantidade !== null);
+    if (conferidos.length === 0 || entidadeIds.length === 0) {
+      setEstimativas(new Map());
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const novasEstimativas = new Map<string, { saidas: number; estimado: number }>();
+
+      // Buscar todos os pedidos das entidades selecionadas
+      // Precisamos buscar pedidos após a data de conferência mais antiga para cobrir tudo
+      const dataMinima = conferidos.reduce((min, i) => {
+        return i.dataConferencia < min ? i.dataConferencia : min;
+      }, conferidos[0].dataConferencia);
+
+      let allPedidos: any[] = [];
+      let offset = 0;
+      const pageSize = 1000;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: batch, error } = await supabase
+          .from('pedidos')
+          .select('id, data, entidade_id')
+          .in('entidade_id', entidadeIds)
+          .gt('data', dataMinima.toISOString())
+          .range(offset, offset + pageSize - 1);
+
+        if (error) break;
+        allPedidos = [...allPedidos, ...(batch || [])];
+        hasMore = (batch?.length || 0) === pageSize;
+        offset += pageSize;
+      }
+
+      if (allPedidos.length === 0) {
+        setEstimativas(new Map());
+        setLoading(false);
+        return;
+      }
+
+      // Buscar todos os itens desses pedidos
+      const pedidoIds = allPedidos.map(p => p.id);
+      let allItens: any[] = [];
+      const chunkSize = 200;
+
+      for (let i = 0; i < pedidoIds.length; i += chunkSize) {
+        const chunk = pedidoIds.slice(i, i + chunkSize);
+        let iOffset = 0;
+        let iHasMore = true;
+
+        while (iHasMore) {
+          const { data: batch, error } = await supabase
+            .from('pedido_itens')
+            .select('pedido_id, produto_id, quantidade')
+            .in('pedido_id', chunk)
+            .range(iOffset, iOffset + pageSize - 1);
+
+          if (error) break;
+          allItens = [...allItens, ...(batch || [])];
+          iHasMore = (batch?.length || 0) === pageSize;
+          iOffset += pageSize;
+        }
+      }
+
+      // Criar mapa pedido_id -> data para lookup rápido
+      const pedidoDataMap = new Map<string, Date>();
+      allPedidos.forEach(p => pedidoDataMap.set(p.id, new Date(p.data)));
+
+      // Para cada item de inventário conferido, somar saídas após sua data_conferencia
+      for (const inv of conferidos) {
+        let totalSaidas = 0;
+
+        for (const item of allItens) {
+          if (item.produto_id !== inv.produtoId) continue;
+          const dataPedido = pedidoDataMap.get(item.pedido_id);
+          if (dataPedido && dataPedido > inv.dataConferencia) {
+            totalSaidas += item.quantidade;
+          }
+        }
+
+        if (totalSaidas > 0) {
+          novasEstimativas.set(inv.produtoId, {
+            saidas: totalSaidas,
+            estimado: inv.quantidade - totalSaidas,
+          });
+        }
+      }
+
+      setEstimativas(novasEstimativas);
+    } catch (err) {
+      console.error('Erro ao calcular estoque estimado:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [inventarioList, entidadeIds]);
+
+  useEffect(() => {
+    calcular();
+  }, [calcular]);
+
+  return { estimativas, loading };
+}
+
 // Hook para controle visual de separação de produtos
 export function useSeparacao() {
   const [separacoes, setSeparacoes] = useState<Map<string, boolean>>(new Map());
