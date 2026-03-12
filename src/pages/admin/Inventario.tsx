@@ -147,8 +147,9 @@ export default function Inventario() {
   // Confirmar conferência (salva no banco)
   const confirmarConferencia = async () => {
     if (!produtoSelecionado) return;
-    if (!entidadeFiltroId) {
-      toast.error('Selecione uma entidade no filtro antes de conferir');
+    const entidadeId = getEntidadeParaConferencia(produtoSelecionado);
+    if (!entidadeId) {
+      toast.error('Não foi possível determinar a entidade do produto');
       setMostrarConfirmacao(false);
       return;
     }
@@ -156,7 +157,7 @@ export default function Inventario() {
     const quantidade = parseInt(quantidadeConferida);
 
     setSalvando(true);
-    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeFiltroId, quantidade, unidadeSelecionada);
+    const sucesso = await conferirProduto(produtoSelecionado.id, entidadeId, quantidade, unidadeSelecionada);
     setSalvando(false);
 
     if (sucesso) {
