@@ -104,8 +104,7 @@ export default function Dashboard() {
     // Total de itens nos pedidos filtrados
     const totalItens = pedidosFiltrados.reduce((acc, pedido) => {
       return acc + pedido.itens.reduce((sum, item) => {
-        // Se tem filtro de produto, contar apenas esse
-        if (produtoFiltro !== 'todos' && item.produtoId !== produtoFiltro) return sum;
+        if (produtoFiltro.length > 0 && !produtoFiltro.includes(item.produtoId)) return sum;
         return sum + item.quantidade;
       }, 0);
     }, 0);
