@@ -57,7 +57,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ClipboardCheck, Check, ChevronsUpDown, Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { ClipboardCheck, Loader2, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
