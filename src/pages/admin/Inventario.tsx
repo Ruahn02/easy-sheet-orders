@@ -142,7 +142,12 @@ export default function Inventario() {
 
   // Confirmar conferência (salva no banco)
   const confirmarConferencia = async () => {
-    if (!produtoSelecionado || !entidadeFiltroId) return;
+    if (!produtoSelecionado) return;
+    if (!entidadeFiltroId) {
+      toast.error('Selecione uma entidade no filtro antes de conferir');
+      setMostrarConfirmacao(false);
+      return;
+    }
 
     const quantidade = parseInt(quantidadeConferida);
 
