@@ -127,8 +127,12 @@ export default function Inventario() {
     setUnidadeSelecionada(registro?.unidadeMedida ?? 'un');
   };
 
-  // Para conferência, usar a primeira entidade selecionada
-  const entidadeFiltroId = entidadeFiltro.length > 0 ? entidadeFiltro[0] : '';
+  // Para conferência, usar a entidade do filtro ou a entidade do próprio produto
+  const getEntidadeParaConferencia = (produto: Produto) => {
+    if (entidadeFiltro.length > 0) return entidadeFiltro[0];
+    // Sem filtro: usar a primeira entidade do produto
+    return produto.entidadeIds?.[0] || produto.entidadeId || '';
+  };
 
   // Pré-confirmar conferência (valida e abre confirmação)
   const preConfirmarConferencia = () => {
