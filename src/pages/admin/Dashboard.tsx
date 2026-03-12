@@ -77,11 +77,11 @@ export default function Dashboard() {
       }
 
       // Filtro por loja
-      if (lojaFiltro !== 'todas' && pedido.lojaId !== lojaFiltro) return false;
+      if (lojaFiltro.length > 0 && !lojaFiltro.includes(pedido.lojaId)) return false;
 
       // Filtro por produto
-      if (produtoFiltro !== 'todos') {
-        const temProduto = pedido.itens.some((item) => item.produtoId === produtoFiltro);
+      if (produtoFiltro.length > 0) {
+        const temProduto = pedido.itens.some((item) => produtoFiltro.includes(item.produtoId));
         if (!temProduto) return false;
       }
 
