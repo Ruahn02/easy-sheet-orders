@@ -97,11 +97,10 @@ export function MultiSelectFilter({
             <CommandEmpty>{emptyMessage}</CommandEmpty>
             <CommandGroup>
               <CommandItem value="__all__" onSelect={selectAll}>
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    isAllSelected ? "opacity-100" : "opacity-0"
-                  )}
+                <Checkbox
+                  checked={isAllSelected}
+                  className="mr-2 h-4 w-4 pointer-events-none"
+                  tabIndex={-1}
                 />
                 {allLabel}
               </CommandItem>
@@ -111,13 +110,10 @@ export function MultiSelectFilter({
                   value={option.value}
                   onSelect={() => toggleOption(option.value)}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      selected.includes(option.value)
-                        ? "opacity-100"
-                        : "opacity-0"
-                    )}
+                  <Checkbox
+                    checked={selected.includes(option.value)}
+                    className="mr-2 h-4 w-4 pointer-events-none"
+                    tabIndex={-1}
                   />
                   {option.label}
                 </CommandItem>
