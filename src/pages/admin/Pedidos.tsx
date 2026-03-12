@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Search, Calendar, Download, Palette, AlertCircle, Loader2, X, FileText, XCircle } from 'lucide-react';
+import { Search, Calendar, Download, Check, Palette, AlertCircle, Loader2, X, FileText, XCircle } from 'lucide-react';
 import { MultiSelectFilter } from '@/components/ui/multi-select-filter';
 import {
   AlertDialog,
