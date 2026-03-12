@@ -94,15 +94,15 @@ export default function Inventario() {
 
   // Seleciona primeira entidade automaticamente
   useMemo(() => {
-    if (entidades.length > 0 && !entidadeFiltro) {
-      setEntidadeFiltro(entidades[0].id);
+    if (entidades.length > 0 && entidadeFiltro.length === 0) {
+      setEntidadeFiltro([entidades[0].id]);
     }
   }, [entidades, entidadeFiltro]);
 
   // Produtos filtrados por entidade - usando N:N
   const produtosDaEntidade = useMemo(() => {
-    if (!entidadeFiltro) return [];
-    return produtos.filter(p => p.entidadeIds.includes(entidadeFiltro));
+    if (entidadeFiltro.length === 0) return [];
+    return produtos.filter(p => p.entidadeIds.some(id => entidadeFiltro.includes(id)));
   }, [produtos, entidadeFiltro]);
 
   // Lista final com status de inventário
