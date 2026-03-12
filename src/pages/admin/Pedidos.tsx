@@ -81,7 +81,6 @@ export default function Pedidos() {
   const [motivoNaoAtendido, setMotivoNaoAtendido] = useState<string>('');
   const [motivoFilter, setMotivoFilter] = useState<string[]>([]);
   const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
-  const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
   const [funcaoColaboradorFilter, setFuncaoColaboradorFilter] = useState('');
   
   // Estado para navegação estilo planilha
