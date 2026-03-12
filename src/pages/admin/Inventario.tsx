@@ -55,6 +55,7 @@ export default function Inventario() {
   const { entidades, loading: loadingEntidades } = useEntidades();
   const { produtos, loading: loadingProdutos } = useProdutos();
   const { inventario, loading: loadingInventario, conferirProduto } = useInventario();
+  const { estimativas, loading: loadingEstimativas } = useEstoqueEstimado(inventario, entidadeFiltro);
 
   // Filtros
   const [entidadeFiltro, setEntidadeFiltro] = useState<string[]>([]);
