@@ -390,7 +390,25 @@ export default function Inventario() {
                     <TableCell className="font-mono text-sm">{item.produto.codigo}</TableCell>
                     <TableCell className="font-medium">{item.produto.nome}</TableCell>
                     <TableCell className="text-center">
-                      {item.quantidade !== null ? `${item.quantidade} ${item.unidadeMedida}` : '-'}
+                      <div>
+                        <span className="font-semibold">
+                          {item.quantidade !== null ? `${item.quantidade} ${item.unidadeMedida}` : '-'}
+                        </span>
+                        {(() => {
+                          const est = estimativas.get(item.produto.id);
+                          if (!est) return null;
+                          const isNegativo = est.estimado < 0;
+                          return (
+                            <div className={cn(
+                              "text-xs mt-0.5",
+                              isNegativo ? "text-destructive" : "text-muted-foreground"
+                            )}>
+                              Est. ~{est.estimado} {item.unidadeMedida}
+                              <span className="text-muted-foreground/70 ml-1">({est.saidas} saídas)</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
                     </TableCell>
                     <TableCell className="text-center">
                       {item.status === 'conferido' ? (
