@@ -136,7 +136,7 @@ export default function Pedidos() {
       }
 
       // Filtros de controle
-      if (motivoFilter !== 'all' && pedido.motivoSolicitacao !== motivoFilter) return false;
+      if (motivoFilter.length > 0 && (!pedido.motivoSolicitacao || !motivoFilter.includes(pedido.motivoSolicitacao))) return false;
       if (nomeColaboradorFilter.trim()) {
         const q = nomeColaboradorFilter.toLowerCase();
         if (!pedido.nomeColaborador?.toLowerCase().includes(q)) return false;
