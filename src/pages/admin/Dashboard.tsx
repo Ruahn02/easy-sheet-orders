@@ -194,9 +194,8 @@ export default function Dashboard() {
       }
       contagem[pedido.lojaId].pedidos += 1;
 
-      // Se filtrando por produto, contar apenas esse produto
       pedido.itens.forEach((item) => {
-        if (produtoFiltro !== 'todos' && item.produtoId !== produtoFiltro) return;
+        if (produtoFiltro.length > 0 && !produtoFiltro.includes(item.produtoId)) return;
         contagem[pedido.lojaId].itens += item.quantidade;
       });
     });
