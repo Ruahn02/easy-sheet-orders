@@ -187,13 +187,18 @@ export default function Pedidos() {
     );
   }, [produtosDaEntidade, selectedEntidadeId]);
 
-  // Carregar separações quando os pedidos filtrados mudam
+  // Carregar separações quando os IDs dos pedidos filtrados mudam (estabilizado)
+  const filteredPedidoIdsKey = useMemo(() => 
+    filteredPedidos.map(p => p.id).sort().join(','), 
+    [filteredPedidos]
+  );
+  
   useEffect(() => {
     if (filteredPedidos.length > 0) {
       const pedidoIds = filteredPedidos.map(p => p.id);
       fetchSeparacoesMultiplos(pedidoIds);
     }
-  }, [filteredPedidos]);
+  }, [filteredPedidoIdsKey]);
 
   const handleMarcarFeito = async (pedidoId: string) => {
     const success = await updatePedidoStatus(pedidoId, 'feito');
