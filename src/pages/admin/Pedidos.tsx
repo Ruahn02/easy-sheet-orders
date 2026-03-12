@@ -71,16 +71,16 @@ export default function Pedidos() {
   const { fetchSeparacoesMultiplos, toggleSeparacao, isSeparado } = useSeparacao();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLojaId, setSelectedLojaId] = useState<string>('all');
+  const [selectedLojaId, setSelectedLojaId] = useState<string[]>([]);
   const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
   const [pedidoParaNaoAtender, setPedidoParaNaoAtender] = useState<string | null>(null);
   const [motivoNaoAtendido, setMotivoNaoAtendido] = useState<string>('');
-  const [lojaPopoverOpen, setLojaPopoverOpen] = useState(false);
-  const [motivoFilter, setMotivoFilter] = useState<string>('all');
+  const [motivoFilter, setMotivoFilter] = useState<string[]>([]);
+  const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
   const [nomeColaboradorFilter, setNomeColaboradorFilter] = useState('');
   const [funcaoColaboradorFilter, setFuncaoColaboradorFilter] = useState('');
   
