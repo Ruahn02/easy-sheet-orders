@@ -568,7 +568,7 @@ export default function Dashboard() {
                 <CardTitle className="flex items-center gap-2 text-lg">
                   <TrendingUp className="h-5 w-5 text-primary" />
                   Produtos Mais Pedidos
-                  {produtoFiltro !== 'todos' && (
+                  {produtoFiltro.length > 0 && (
                     <span className="text-xs font-normal text-muted-foreground ml-2">
                       (filtrado)
                     </span>
