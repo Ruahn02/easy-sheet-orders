@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useEntidades, useProdutos, useInventario } from '@/hooks/useSupabaseData';
+import { useEntidades, useProdutos, useInventario, useEstoqueEstimado } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
