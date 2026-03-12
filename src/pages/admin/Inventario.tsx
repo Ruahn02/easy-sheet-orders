@@ -214,7 +214,7 @@ export default function Inventario() {
 
   // Exportar PDF
   const exportarPDF = () => {
-    const entidadeNome = entidades.find(e => e.id === entidadeFiltro)?.nome || 'Inventário';
+    const entidadeNome = entidadeFiltro.map(id => entidades.find(e => e.id === id)?.nome).filter(Boolean).join(', ') || 'Inventário';
     const dataExport = format(new Date(), "dd/MM/yyyy 'às' HH:mm");
     
     const html = `
