@@ -124,15 +124,13 @@ export default function Inventario() {
     let lista = listaInventario;
 
     // Filtro por produto
-    if (produtoFiltro !== 'todos') {
-      lista = lista.filter(item => item.produto.id === produtoFiltro);
+    if (produtoFiltro.length > 0) {
+      lista = lista.filter(item => produtoFiltro.includes(item.produto.id));
     }
 
     // Filtro por status
-    if (statusFiltro === 'pendente') {
-      lista = lista.filter(item => item.status === 'pendente');
-    } else if (statusFiltro === 'conferido') {
-      lista = lista.filter(item => item.status === 'conferido');
+    if (statusFiltro.length > 0) {
+      lista = lista.filter(item => statusFiltro.includes(item.status));
     }
 
     return lista;
