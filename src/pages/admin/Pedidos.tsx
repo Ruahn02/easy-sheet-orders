@@ -295,6 +295,11 @@ export default function Pedidos() {
 
       // Ctrl+C para copiar
       if ((e.ctrlKey || e.metaKey) && e.key === 'c' && focusedCell) {
+        // Se o usuário selecionou texto manualmente (ex: duplo clique), deixar o navegador copiar normalmente
+        const selection = window.getSelection();
+        if (selection && selection.toString().trim().length > 0) {
+          return;
+        }
         e.preventDefault();
         const content = getCellContent(focusedCell.row, focusedCell.col);
         
