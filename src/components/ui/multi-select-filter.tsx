@@ -48,7 +48,9 @@ export function MultiSelectFilter({
 
   const isAllSelected = selected.length === 0;
 
-  const toggleOption = (value: string) => {
+  const toggleOption = (value: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    e?.preventDefault();
     if (selected.includes(value)) {
       onSelectionChange(selected.filter((v) => v !== value));
     } else {
@@ -56,8 +58,14 @@ export function MultiSelectFilter({
     }
   };
 
+  const selectSingle = (value: string) => {
+    onSelectionChange([value]);
+    setOpen(false);
+  };
+
   const selectAll = () => {
     onSelectionChange([]);
+    setOpen(false);
   };
 
   const displayText = () => {
