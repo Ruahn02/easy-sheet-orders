@@ -167,8 +167,7 @@ export default function Dashboard() {
 
     pedidosFiltrados.forEach((pedido) => {
       pedido.itens.forEach((item) => {
-        // Se filtrando por produto, mostrar apenas esse
-        if (produtoFiltro !== 'todos' && item.produtoId !== produtoFiltro) return;
+        if (produtoFiltro.length > 0 && !produtoFiltro.includes(item.produtoId)) return;
         contagem[item.produtoId] = (contagem[item.produtoId] || 0) + item.quantidade;
       });
     });
