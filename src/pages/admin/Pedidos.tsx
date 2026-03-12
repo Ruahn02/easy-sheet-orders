@@ -101,14 +101,10 @@ export default function Pedidos() {
       if (pedido.entidadeId !== selectedEntidadeId) return false;
 
       // Filtro por status
-      if (statusFilter !== 'all') {
-        if (statusFilter === 'pendente' && pedido.status !== 'pendente') return false;
-        if (statusFilter === 'feito' && pedido.status !== 'feito') return false;
-        if (statusFilter === 'nao_atendido' && pedido.status !== 'nao_atendido') return false;
-      }
+      if (statusFilter.length > 0 && !statusFilter.includes(pedido.status)) return false;
 
       // Filter by store
-      if (selectedLojaId !== 'all' && pedido.lojaId !== selectedLojaId) return false;
+      if (selectedLojaId.length > 0 && !selectedLojaId.includes(pedido.lojaId)) return false;
 
       // Filter by date range
       if (startDate) {
