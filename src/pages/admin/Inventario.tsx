@@ -79,16 +79,9 @@ export default function Inventario() {
 
   const loading = loadingEntidades || loadingProdutos || loadingInventario;
 
-  // Seleciona primeira entidade automaticamente
-  useMemo(() => {
-    if (entidades.length > 0 && entidadeFiltro.length === 0) {
-      setEntidadeFiltro([entidades[0].id]);
-    }
-  }, [entidades, entidadeFiltro]);
-
-  // Produtos filtrados por entidade - usando N:N
+  // Produtos filtrados por entidade - usando N:N (mostra todos quando nenhuma entidade selecionada)
   const produtosDaEntidade = useMemo(() => {
-    if (entidadeFiltro.length === 0) return [];
+    if (entidadeFiltro.length === 0) return produtos;
     return produtos.filter(p => p.entidadeIds.some(id => entidadeFiltro.includes(id)));
   }, [produtos, entidadeFiltro]);
 
