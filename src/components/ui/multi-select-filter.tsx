@@ -116,14 +116,22 @@ export function MultiSelectFilter({
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={() => toggleOption(option.value)}
+                  onSelect={() => selectSingle(option.value)}
+                  className="flex items-center gap-0 p-0"
                 >
-                  <Checkbox
-                    checked={selected.includes(option.value)}
-                    className="mr-2 h-4 w-4 pointer-events-none"
-                    tabIndex={-1}
-                  />
-                  {option.label}
+                  <div
+                    className="flex items-center justify-center px-2 py-1.5 cursor-pointer"
+                    onClick={(e) => toggleOption(option.value, e)}
+                  >
+                    <Checkbox
+                      checked={selected.includes(option.value)}
+                      className="h-4 w-4 pointer-events-none"
+                      tabIndex={-1}
+                    />
+                  </div>
+                  <span className="flex-1 py-1.5 pr-2 cursor-pointer">
+                    {option.label}
+                  </span>
                 </CommandItem>
               ))}
             </CommandGroup>
