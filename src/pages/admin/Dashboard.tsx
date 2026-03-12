@@ -140,7 +140,7 @@ export default function Dashboard() {
     let quantidadeConcluida = 0;
 
     pedidosFiltrados.forEach(pedido => {
-      const item = pedido.itens.find(i => i.produtoId === produtoFiltro);
+      const item = pedido.itens.find(i => i.produtoId === produtoFiltro[0]);
       if (item) {
         pedidosComProduto++;
         totalQuantidade += item.quantidade;
