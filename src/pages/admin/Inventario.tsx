@@ -142,7 +142,12 @@ export default function Inventario() {
 
   // Confirmar conferência (salva no banco)
   const confirmarConferencia = async () => {
-    if (!produtoSelecionado || !entidadeFiltroId) return;
+    if (!produtoSelecionado) return;
+    if (!entidadeFiltroId) {
+      toast.error('Selecione uma entidade no filtro antes de conferir');
+      setMostrarConfirmacao(false);
+      return;
+    }
 
     const quantidade = parseInt(quantidadeConferida);
 
@@ -512,10 +517,10 @@ export default function Inventario() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={salvando}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmarConferencia} disabled={salvando}>
+            <Button onClick={confirmarConferencia} disabled={salvando}>
               {salvando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Confirmar
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

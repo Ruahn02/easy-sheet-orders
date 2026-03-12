@@ -1,40 +1,34 @@
 
 
-## Diagnóstico: Confirmação de inventário não salva
+## Corrigir "Nenhum produto para reordenar"
 
-### Causa raiz
+### Problema
 
-Existem **dois problemas**:
+O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
 
-**1. `entidadeFiltroId` vazio (causa principal)**
-Linha 131: `const entidadeFiltroId = entidadeFiltro.length > 0 ? entidadeFiltro[0] : '';`
+### Correcao
 
-Se nenhuma entidade está selecionada no filtro, `entidadeFiltroId` é `''` (falsy). Na linha 145 de `confirmarConferencia`:
+**Arquivo:** `src/components/admin/ReorderProducts.tsx`
+
+Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
+
 ```typescript
-if (!produtoSelecionado || !entidadeFiltroId) return; // retorna silenciosamente!
-```
-O usuário preenche tudo, clica confirmar, mas a função sai sem fazer nada e sem mostrar erro.
-
-**2. AlertDialogAction fecha antes do async completar**
-O componente `AlertDialogAction` do Radix fecha o dialog automaticamente ao clicar. Como `confirmarConferencia` é async, o dialog fecha antes da operação terminar, impedindo feedback visual (loader) e potencialmente causando problemas de estado.
-
-### Correções
-
-**Arquivo: `src/pages/admin/Inventario.tsx`**
-
-1. **Bloquear conferência sem entidade selecionada**: Desabilitar o botão "Conferir" na tabela e mostrar toast de aviso se `entidadeFiltro` estiver vazio. Adicionar validação em `confirmarConferencia` com toast de erro em vez de return silencioso.
-
-2. **Trocar `AlertDialogAction` por `Button` comum**: Para evitar o auto-close do Radix antes do async completar. Controlar o fechamento manualmente após a operação finalizar (como já é feito nas linhas 155-162).
-
-```text
-Antes:  <AlertDialogAction onClick={confirmarConferencia}>
-Depois: <Button onClick={confirmarConferencia}>Confirmar</Button>
+// Remover handleOpenChange e usar useEffect
+useEffect(() => {
+  if (open) {
+    setItems([...produtos]);
+  }
+}, [open, produtos]);
 ```
 
-3. **Adicionar toast de erro** quando `entidadeFiltroId` estiver vazio: `toast.error('Selecione uma entidade no filtro antes de conferir')`
+E no Dialog, voltar a usar `onOpenChange` diretamente:
+
+```typescript
+<Dialog open={open} onOpenChange={onOpenChange}>
+```
 
 ### Impacto
-- Apenas 1 arquivo modificado (`Inventario.tsx`)
-- Sem mudanças no banco de dados
-- Corrige o bug sem afetar outras funcionalidades
 
+- Corrige o bug sem alterar nenhuma outra logica
+- Apenas 1 arquivo modificado
+- Nenhuma mudanca no banco ou em outros componentes
