@@ -1,41 +1,34 @@
 
 
-## Plano: Comportamento Duplo no MultiSelectFilter
+## Corrigir "Nenhum produto para reordenar"
 
-### O que muda
+### Problema
 
-No componente `MultiSelectFilter`, o clique terá dois comportamentos distintos:
+O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
 
-- **Clicar no checkbox (quadradinho)** → adiciona/remove da seleção múltipla (comportamento atual)
-- **Clicar no nome/texto do item** → seleciona **somente** aquele item (seleção única, substitui tudo) e fecha o popover
+### Correcao
 
-### Mudanças
+**Arquivo:** `src/components/admin/ReorderProducts.tsx`
 
-**Arquivo: `src/components/ui/multi-select-filter.tsx`**
+Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
 
-1. Remover `pointer-events-none` do Checkbox para torná-lo clicável independentemente
-2. Separar o layout de cada `CommandItem` em duas áreas clicáveis:
-   - **Checkbox**: ao clicar, chama `toggleOption(value)` (multi-select, mantém popover aberto)
-   - **Label/texto**: ao clicar, chama `selectSingle(value)` que faz `onSelectionChange([value])` e fecha o popover
-3. O `onSelect` do `CommandItem` (ativado por teclado/Enter) continuará como seleção única
-4. Nova função `selectSingle`:
-   ```typescript
-   const selectSingle = (value: string) => {
-     onSelectionChange([value]);
-     setOpen(false);
-   };
-   ```
-
-### Estrutura do item
-
-```text
-┌─────────────────────────────┐
-│ [☐]  Nome do Produto        │
-│  ↑         ↑                │
-│ toggle   selectSingle       │
-│ (multi)  (single + fecha)   │
-└─────────────────────────────┘
+```typescript
+// Remover handleOpenChange e usar useEffect
+useEffect(() => {
+  if (open) {
+    setItems([...produtos]);
+  }
+}, [open, produtos]);
 ```
 
-O item "Todos" mantém o comportamento atual (limpa a seleção).
+E no Dialog, voltar a usar `onOpenChange` diretamente:
 
+```typescript
+<Dialog open={open} onOpenChange={onOpenChange}>
+```
+
+### Impacto
+
+- Corrige o bug sem alterar nenhuma outra logica
+- Apenas 1 arquivo modificado
+- Nenhuma mudanca no banco ou em outros componentes
