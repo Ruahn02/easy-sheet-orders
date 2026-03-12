@@ -322,92 +322,46 @@ export default function Inventario() {
           {/* Filtro por Entidade */}
           <div className="space-y-2 min-w-[200px]">
             <label className="text-sm font-medium text-foreground">Entidade</label>
-            <Select value={entidadeFiltro} onValueChange={setEntidadeFiltro}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a entidade" />
-              </SelectTrigger>
-              <SelectContent>
-                {entidades.map((entidade) => (
-                  <SelectItem key={entidade.id} value={entidade.id}>
-                    {entidade.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={entidades.map(e => ({ value: e.id, label: e.nome }))}
+              selected={entidadeFiltro}
+              onSelectionChange={setEntidadeFiltro}
+              placeholder="Selecione a entidade"
+              allLabel="Todas as entidades"
+              searchPlaceholder="Buscar entidade..."
+              emptyMessage="Nenhuma entidade encontrada."
+            />
           </div>
 
-          {/* Filtro por Produto (Combobox) */}
+          {/* Filtro por Produto */}
           <div className="space-y-2 min-w-[250px]">
             <label className="text-sm font-medium text-foreground">Produto</label>
-            <Popover open={produtoPopoverOpen} onOpenChange={setProdutoPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={produtoPopoverOpen}
-                  className="w-full justify-between font-normal"
-                >
-                  {produtoFiltro === 'todos'
-                    ? 'Todos os produtos'
-                    : produtosDaEntidade.find(p => p.id === produtoFiltro)?.nome || 'Selecionar...'}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[300px] p-0" align="start">
-                <Command filter={(value, search) => {
-                  const produto = produtosDaEntidade.find(p => p.id === value);
-                  if (!produto) return value === 'todos' && 'todos os produtos'.includes(search.toLowerCase()) ? 1 : 0;
-                  const searchLower = search.toLowerCase();
-                  return (produto.nome.toLowerCase().includes(searchLower) || produto.codigo.toLowerCase().includes(searchLower)) ? 1 : 0;
-                }}>
-                  <CommandInput placeholder="Buscar por nome ou código..." />
-                  <CommandList>
-                    <CommandEmpty>Nenhum produto encontrado.</CommandEmpty>
-                    <CommandGroup>
-                      <CommandItem
-                        value="todos"
-                        onSelect={() => {
-                          setProdutoFiltro('todos');
-                          setProdutoPopoverOpen(false);
-                        }}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", produtoFiltro === 'todos' ? "opacity-100" : "opacity-0")} />
-                        Todos os produtos
-                      </CommandItem>
-                      {produtosDaEntidade.map((produto) => (
-                        <CommandItem
-                          key={produto.id}
-                          value={produto.id}
-                          onSelect={() => {
-                            setProdutoFiltro(produto.id);
-                            setProdutoPopoverOpen(false);
-                          }}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", produtoFiltro === produto.id ? "opacity-100" : "opacity-0")} />
-                          <span className="flex-1">{produto.nome}</span>
-                          <span className="text-xs text-muted-foreground ml-2">{produto.codigo}</span>
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <MultiSelectFilter
+              options={produtosDaEntidade.map(p => ({ value: p.id, label: `${p.nome} (${p.codigo})` }))}
+              selected={produtoFiltro}
+              onSelectionChange={setProdutoFiltro}
+              placeholder="Selecionar produtos..."
+              allLabel="Todos os produtos"
+              searchPlaceholder="Buscar por nome ou código..."
+              emptyMessage="Nenhum produto encontrado."
+            />
           </div>
 
           {/* Filtro por Status */}
           <div className="space-y-2 min-w-[150px]">
             <label className="text-sm font-medium text-foreground">Status</label>
-            <Select value={statusFiltro} onValueChange={setStatusFiltro}>
-              <SelectTrigger>
-                <SelectValue placeholder="Todos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="pendente">Pendentes</SelectItem>
-                <SelectItem value="conferido">Conferidos</SelectItem>
-              </SelectContent>
-            </Select>
+            <MultiSelectFilter
+              options={[
+                { value: 'pendente', label: 'Pendentes' },
+                { value: 'conferido', label: 'Conferidos' },
+              ]}
+              selected={statusFiltro}
+              onSelectionChange={setStatusFiltro}
+              placeholder="Status"
+              allLabel="Todos"
+              searchPlaceholder="Buscar status..."
+              emptyMessage="Nenhum status encontrado."
+            />
           </div>
         </div>
 
