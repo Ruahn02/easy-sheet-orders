@@ -323,6 +323,31 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Atalhos de período */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-foreground mb-2 block">Período rápido</label>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ['hoje', 'Hoje'],
+                  ['esta_semana', 'Esta Semana'],
+                  ['semana_passada', 'Sem. Passada'],
+                  ['este_mes', 'Este Mês'],
+                  ['mes_passado', 'Mês Passado'],
+                  ['trimestre', 'Trimestre'],
+                  ['semestre', 'Semestre'],
+                  ['ano', 'Ano'],
+                ] as [string, string][]).map(([key, label]) => (
+                  <Button
+                    key={key}
+                    variant={periodoPresetDashboard === key ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => aplicarPresetPeriodo(key)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Filtro Entidade */}
               <div className="space-y-2">
