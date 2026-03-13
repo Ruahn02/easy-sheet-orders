@@ -212,12 +212,57 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [pedidosFiltrados, lojas, lojaFiltro, produtoFiltro]);
 
+  const aplicarPresetPeriodo = (preset: string) => {
+    const hoje = new Date();
+    setPeriodoPresetDashboard(preset);
+    switch (preset) {
+      case 'hoje':
+        setDataInicio(startOfDay(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'esta_semana':
+        setDataInicio(startOfWeek(hoje, { weekStartsOn: 1 }));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'semana_passada': {
+        const inicioSemanaPassada = startOfWeek(subDays(hoje, 7), { weekStartsOn: 1 });
+        const fimSemanaPassada = endOfDay(subDays(startOfWeek(hoje, { weekStartsOn: 1 }), 1));
+        setDataInicio(inicioSemanaPassada);
+        setDataFim(fimSemanaPassada);
+        break;
+      }
+      case 'este_mes':
+        setDataInicio(startOfMonth(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'mes_passado': {
+        const mesPassado = subMonths(hoje, 1);
+        setDataInicio(startOfMonth(mesPassado));
+        setDataFim(endOfDay(subDays(startOfMonth(hoje), 1)));
+        break;
+      }
+      case 'trimestre':
+        setDataInicio(startOfQuarter(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'semestre':
+        setDataInicio(startOfDay(subMonths(hoje, 6)));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'ano':
+        setDataInicio(startOfYear(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+    }
+  };
+
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
     setLojaFiltro([]);
     setProdutoFiltro([]);
     setEntidadesFiltro([]);
+    setPeriodoPresetDashboard('');
   };
 
   const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro.length > 0 || produtoFiltro.length > 0 || entidadesFiltro.length > 0;
