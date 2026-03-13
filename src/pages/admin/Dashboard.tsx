@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle } from 'lucide-react';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
-import { format } from 'date-fns';
+import { LojasAnalytics } from '@/components/admin/LojasAnalytics';
+import { format, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subDays, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
