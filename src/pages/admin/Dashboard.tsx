@@ -32,6 +32,8 @@ export default function Dashboard() {
   const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
   const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
+  const [showLojasAnalytics, setShowLojasAnalytics] = useState(false);
+  const [periodoPresetDashboard, setPeriodoPresetDashboard] = useState<string>('');
   const [isToggling, setIsToggling] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
