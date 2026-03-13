@@ -253,12 +253,23 @@ export function ProdutosAnalytics({
           )}
         </div>
 
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar produto por nome ou código..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
         {/* Resumo */}
         <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
             <List className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {produtosConsolidados.length} produtos encontrados
+              {produtosFiltradosBusca.length} produtos encontrados
             </span>
           </div>
           <Badge variant="outline" className="font-mono">
@@ -268,10 +279,10 @@ export function ProdutosAnalytics({
 
         {/* Lista de produtos */}
         <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {produtosConsolidados.length > 0 ? (
+          {produtosFiltradosBusca.length > 0 ? (
             <div className="space-y-2 pr-4">
-              {produtosConsolidados.map((item, index) => {
-                const maxQtd = produtosConsolidados[0]?.quantidade || 1;
+              {produtosFiltradosBusca.map((item, index) => {
+                const maxQtd = produtosFiltradosBusca[0]?.quantidade || 1;
                 const percentage = (item.quantidade / maxQtd) * 100;
 
                 return (

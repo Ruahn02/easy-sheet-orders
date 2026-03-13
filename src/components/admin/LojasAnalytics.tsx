@@ -242,12 +242,23 @@ export function LojasAnalytics({
           )}
         </div>
 
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar loja..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
         {/* Resumo */}
         <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
             <List className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {lojasConsolidadas.length} lojas encontradas
+              {lojasFiltradas.length} lojas encontradas
             </span>
           </div>
           <Badge variant="outline" className="font-mono">
@@ -257,10 +268,10 @@ export function LojasAnalytics({
 
         {/* Lista de lojas */}
         <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {lojasConsolidadas.length > 0 ? (
+          {lojasFiltradas.length > 0 ? (
             <div className="space-y-2 pr-4">
-              {lojasConsolidadas.map((item, index) => {
-                const maxItens = lojasConsolidadas[0]?.itens || 1;
+              {lojasFiltradas.map((item, index) => {
+                const maxItens = lojasFiltradas[0]?.itens || 1;
                 const percentage = (item.itens / maxItens) * 100;
 
                 return (
