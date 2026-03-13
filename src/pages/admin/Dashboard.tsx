@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle } from 'lucide-react';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
-import { format } from 'date-fns';
+import { LojasAnalytics } from '@/components/admin/LojasAnalytics';
+import { format, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subDays, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useLojas, useProdutos, usePedidos } from '@/hooks/useSupabaseData';
@@ -31,6 +32,8 @@ export default function Dashboard() {
   const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
   const [entidadesFiltro, setEntidadesFiltro] = useState<string[]>([]);
   const [showProdutosAnalytics, setShowProdutosAnalytics] = useState(false);
+  const [showLojasAnalytics, setShowLojasAnalytics] = useState(false);
+  const [periodoPresetDashboard, setPeriodoPresetDashboard] = useState<string>('');
   const [isToggling, setIsToggling] = useState(false);
 
   const isLoading = loadingPedidos || loadingLojas || loadingProdutos || loadingEntidades;
@@ -209,12 +212,57 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [pedidosFiltrados, lojas, lojaFiltro, produtoFiltro]);
 
+  const aplicarPresetPeriodo = (preset: string) => {
+    const hoje = new Date();
+    setPeriodoPresetDashboard(preset);
+    switch (preset) {
+      case 'hoje':
+        setDataInicio(startOfDay(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'esta_semana':
+        setDataInicio(startOfWeek(hoje, { weekStartsOn: 1 }));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'semana_passada': {
+        const inicioSemanaPassada = startOfWeek(subDays(hoje, 7), { weekStartsOn: 1 });
+        const fimSemanaPassada = endOfDay(subDays(startOfWeek(hoje, { weekStartsOn: 1 }), 1));
+        setDataInicio(inicioSemanaPassada);
+        setDataFim(fimSemanaPassada);
+        break;
+      }
+      case 'este_mes':
+        setDataInicio(startOfMonth(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'mes_passado': {
+        const mesPassado = subMonths(hoje, 1);
+        setDataInicio(startOfMonth(mesPassado));
+        setDataFim(endOfDay(subDays(startOfMonth(hoje), 1)));
+        break;
+      }
+      case 'trimestre':
+        setDataInicio(startOfQuarter(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'semestre':
+        setDataInicio(startOfDay(subMonths(hoje, 6)));
+        setDataFim(endOfDay(hoje));
+        break;
+      case 'ano':
+        setDataInicio(startOfYear(hoje));
+        setDataFim(endOfDay(hoje));
+        break;
+    }
+  };
+
   const limparFiltros = () => {
     setDataInicio(undefined);
     setDataFim(undefined);
     setLojaFiltro([]);
     setProdutoFiltro([]);
     setEntidadesFiltro([]);
+    setPeriodoPresetDashboard('');
   };
 
   const temFiltrosAtivos = dataInicio || dataFim || lojaFiltro.length > 0 || produtoFiltro.length > 0 || entidadesFiltro.length > 0;
@@ -275,6 +323,31 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            {/* Atalhos de período */}
+            <div className="mb-4">
+              <label className="text-sm font-medium text-foreground mb-2 block">Período rápido</label>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  ['hoje', 'Hoje'],
+                  ['esta_semana', 'Esta Semana'],
+                  ['semana_passada', 'Sem. Passada'],
+                  ['este_mes', 'Este Mês'],
+                  ['mes_passado', 'Mês Passado'],
+                  ['trimestre', 'Trimestre'],
+                  ['semestre', 'Semestre'],
+                  ['ano', 'Ano'],
+                ] as [string, string][]).map(([key, label]) => (
+                  <Button
+                    key={key}
+                    variant={periodoPresetDashboard === key ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => aplicarPresetPeriodo(key)}
+                  >
+                    {label}
+                  </Button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {/* Filtro Entidade */}
               <div className="space-y-2">
@@ -310,7 +383,7 @@ export default function Dashboard() {
                     <CalendarComponent
                       mode="single"
                       selected={dataInicio}
-                      onSelect={setDataInicio}
+                      onSelect={(d) => { setDataInicio(d); setPeriodoPresetDashboard(''); }}
                       locale={ptBR}
                       className="pointer-events-auto"
                     />
@@ -338,7 +411,7 @@ export default function Dashboard() {
                     <CalendarComponent
                       mode="single"
                       selected={dataFim}
-                      onSelect={setDataFim}
+                      onSelect={(d) => { setDataFim(d); setPeriodoPresetDashboard(''); }}
                       locale={ptBR}
                       className="pointer-events-auto"
                     />
@@ -631,16 +704,27 @@ export default function Dashboard() {
 
           {/* Orders by Store */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BarChart3 className="h-5 w-5 text-accent" />
-                Consumo por Loja
-                {lojaFiltro.length > 0 && (
-                  <span className="text-xs font-normal text-muted-foreground ml-2">
-                    (filtrado)
-                  </span>
-                )}
-              </CardTitle>
+           <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                  Consumo por Loja
+                  {lojaFiltro.length > 0 && (
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      (filtrado)
+                    </span>
+                  )}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowLojasAnalytics(true)}
+                  className="text-accent hover:text-accent"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Ver todos
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {pedidosPorLoja.length > 0 ? (
@@ -690,6 +774,15 @@ export default function Dashboard() {
           entidadeFiltro={entidadesFiltro}
           open={showProdutosAnalytics}
           onOpenChange={setShowProdutosAnalytics}
+        />
+        {/* Modal de Análise de Lojas */}
+        <LojasAnalytics
+          pedidos={pedidos}
+          lojas={lojas}
+          produtos={produtos}
+          entidadeFiltro={entidadesFiltro}
+          open={showLojasAnalytics}
+          onOpenChange={setShowLojasAnalytics}
         />
       </div>
     </AdminLayout>
