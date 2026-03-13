@@ -411,7 +411,7 @@ export default function Dashboard() {
                     <CalendarComponent
                       mode="single"
                       selected={dataFim}
-                      onSelect={setDataFim}
+                      onSelect={(d) => { setDataFim(d); setPeriodoPresetDashboard(''); }}
                       locale={ptBR}
                       className="pointer-events-auto"
                     />
