@@ -775,6 +775,15 @@ export default function Dashboard() {
           open={showProdutosAnalytics}
           onOpenChange={setShowProdutosAnalytics}
         />
+        {/* Modal de Análise de Lojas */}
+        <LojasAnalytics
+          pedidos={pedidos}
+          lojas={lojas}
+          produtos={produtos}
+          entidadeFiltro={entidadesFiltro}
+          open={showLojasAnalytics}
+          onOpenChange={setShowLojasAnalytics}
+        />
       </div>
     </AdminLayout>
   );
