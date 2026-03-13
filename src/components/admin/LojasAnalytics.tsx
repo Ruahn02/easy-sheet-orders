@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Store, Calendar, List, X } from 'lucide-react';
+import { Store, Calendar, List, X, Search } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
