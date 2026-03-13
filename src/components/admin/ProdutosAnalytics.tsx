@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import type { Pedido, Produto } from '@/types';
 
 type PeriodoPreset = 'hoje' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'trimestre' | 'semestre' | 'ano' | 'personalizado';
