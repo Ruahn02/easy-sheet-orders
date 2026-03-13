@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Package, Calendar, List, X } from 'lucide-react';
+import { Package, Calendar, List, X, Search } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths, subQuarters } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -14,6 +14,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import type { Pedido, Produto } from '@/types';
 
 type PeriodoPreset = 'hoje' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'trimestre' | 'semestre' | 'ano' | 'personalizado';
@@ -34,6 +35,7 @@ export function ProdutosAnalytics({
   onOpenChange,
 }: ProdutosAnalyticsProps) {
   const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>('este_mes');
+  const [busca, setBusca] = useState('');
   const [dataInicioLocal, setDataInicioLocal] = useState<Date | undefined>(undefined);
   const [dataFimLocal, setDataFimLocal] = useState<Date | undefined>(undefined);
 
@@ -111,6 +113,15 @@ export function ProdutosAnalytics({
       .filter((item): item is { produto: Produto; quantidade: number } => item !== null)
       .sort((a, b) => b.quantidade - a.quantidade);
   }, [pedidosFiltrados, produtos, entidadeFiltro]);
+
+  const produtosFiltradosBusca = useMemo(() => {
+    if (!busca.trim()) return produtosConsolidados;
+    const termo = busca.toLowerCase();
+    return produtosConsolidados.filter((item) =>
+      item.produto.nome.toLowerCase().includes(termo) ||
+      item.produto.codigo.toLowerCase().includes(termo)
+    );
+  }, [produtosConsolidados, busca]);
 
   const totalItensNoPeriodo = produtosConsolidados.reduce((acc, item) => acc + item.quantidade, 0);
 
@@ -242,12 +253,23 @@ export function ProdutosAnalytics({
           )}
         </div>
 
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar produto por nome ou código..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
         {/* Resumo */}
         <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
             <List className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {produtosConsolidados.length} produtos encontrados
+              {produtosFiltradosBusca.length} produtos encontrados
             </span>
           </div>
           <Badge variant="outline" className="font-mono">
@@ -257,10 +279,10 @@ export function ProdutosAnalytics({
 
         {/* Lista de produtos */}
         <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {produtosConsolidados.length > 0 ? (
+          {produtosFiltradosBusca.length > 0 ? (
             <div className="space-y-2 pr-4">
-              {produtosConsolidados.map((item, index) => {
-                const maxQtd = produtosConsolidados[0]?.quantidade || 1;
+              {produtosFiltradosBusca.map((item, index) => {
+                const maxQtd = produtosFiltradosBusca[0]?.quantidade || 1;
                 const percentage = (item.quantidade / maxQtd) * 100;
 
                 return (

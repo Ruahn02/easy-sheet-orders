@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Store, Calendar, List, X } from 'lucide-react';
+import { Store, Calendar, List, X, Search } from 'lucide-react';
 import { format, subDays, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { Input } from '@/components/ui/input';
 import type { Pedido, Produto, Loja } from '@/types';
 
 type PeriodoPreset = 'hoje' | 'esta_semana' | 'semana_passada' | 'este_mes' | 'mes_passado' | 'trimestre' | 'semestre' | 'ano' | 'personalizado';
@@ -35,6 +36,7 @@ export function LojasAnalytics({
   onOpenChange,
 }: LojasAnalyticsProps) {
   const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>('este_mes');
+  const [busca, setBusca] = useState('');
   const [dataInicioLocal, setDataInicioLocal] = useState<Date | undefined>(undefined);
   const [dataFimLocal, setDataFimLocal] = useState<Date | undefined>(undefined);
 
@@ -103,6 +105,12 @@ export function LojasAnalytics({
       .filter((item): item is { loja: Loja; pedidos: number; itens: number } => item !== null)
       .sort((a, b) => b.itens - a.itens);
   }, [pedidosFiltrados, lojas]);
+
+  const lojasFiltradas = useMemo(() => {
+    if (!busca.trim()) return lojasConsolidadas;
+    const termo = busca.toLowerCase();
+    return lojasConsolidadas.filter((item) => item.loja.nome.toLowerCase().includes(termo));
+  }, [lojasConsolidadas, busca]);
 
   const totalItensNoPeriodo = lojasConsolidadas.reduce((acc, item) => acc + item.itens, 0);
 
@@ -234,12 +242,23 @@ export function LojasAnalytics({
           )}
         </div>
 
+        {/* Busca */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar loja..."
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+            className="pl-9 h-9"
+          />
+        </div>
+
         {/* Resumo */}
         <div className="flex items-center justify-between py-3 px-4 bg-muted/50 rounded-lg">
           <div className="flex items-center gap-2">
             <List className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">
-              {lojasConsolidadas.length} lojas encontradas
+              {lojasFiltradas.length} lojas encontradas
             </span>
           </div>
           <Badge variant="outline" className="font-mono">
@@ -249,10 +268,10 @@ export function LojasAnalytics({
 
         {/* Lista de lojas */}
         <div className="flex-1 min-h-0 overflow-y-auto -mx-6 px-6" style={{ WebkitOverflowScrolling: 'touch' }}>
-          {lojasConsolidadas.length > 0 ? (
+          {lojasFiltradas.length > 0 ? (
             <div className="space-y-2 pr-4">
-              {lojasConsolidadas.map((item, index) => {
-                const maxItens = lojasConsolidadas[0]?.itens || 1;
+              {lojasFiltradas.map((item, index) => {
+                const maxItens = lojasFiltradas[0]?.itens || 1;
                 const percentage = (item.itens / maxItens) * 100;
 
                 return (
