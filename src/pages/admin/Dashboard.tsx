@@ -383,7 +383,7 @@ export default function Dashboard() {
                     <CalendarComponent
                       mode="single"
                       selected={dataInicio}
-                      onSelect={setDataInicio}
+                      onSelect={(d) => { setDataInicio(d); setPeriodoPresetDashboard(''); }}
                       locale={ptBR}
                       className="pointer-events-auto"
                     />
