@@ -114,6 +114,15 @@ export function ProdutosAnalytics({
       .sort((a, b) => b.quantidade - a.quantidade);
   }, [pedidosFiltrados, produtos, entidadeFiltro]);
 
+  const produtosFiltradosBusca = useMemo(() => {
+    if (!busca.trim()) return produtosConsolidados;
+    const termo = busca.toLowerCase();
+    return produtosConsolidados.filter((item) =>
+      item.produto.nome.toLowerCase().includes(termo) ||
+      item.produto.codigo.toLowerCase().includes(termo)
+    );
+  }, [produtosConsolidados, busca]);
+
   const totalItensNoPeriodo = produtosConsolidados.reduce((acc, item) => acc + item.quantidade, 0);
 
   const getPresetLabel = () => {

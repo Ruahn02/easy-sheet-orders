@@ -106,6 +106,12 @@ export function LojasAnalytics({
       .sort((a, b) => b.itens - a.itens);
   }, [pedidosFiltrados, lojas]);
 
+  const lojasFiltradas = useMemo(() => {
+    if (!busca.trim()) return lojasConsolidadas;
+    const termo = busca.toLowerCase();
+    return lojasConsolidadas.filter((item) => item.loja.nome.toLowerCase().includes(termo));
+  }, [lojasConsolidadas, busca]);
+
   const totalItensNoPeriodo = lojasConsolidadas.reduce((acc, item) => acc + item.itens, 0);
 
   const getPresetLabel = () => {
