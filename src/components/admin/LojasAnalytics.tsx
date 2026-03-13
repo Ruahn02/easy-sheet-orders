@@ -36,6 +36,7 @@ export function LojasAnalytics({
   onOpenChange,
 }: LojasAnalyticsProps) {
   const [periodoPreset, setPeriodoPreset] = useState<PeriodoPreset>('este_mes');
+  const [busca, setBusca] = useState('');
   const [dataInicioLocal, setDataInicioLocal] = useState<Date | undefined>(undefined);
   const [dataFimLocal, setDataFimLocal] = useState<Date | undefined>(undefined);
 
