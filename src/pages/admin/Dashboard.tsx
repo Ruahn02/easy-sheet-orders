@@ -704,16 +704,27 @@ export default function Dashboard() {
 
           {/* Orders by Store */}
           <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <BarChart3 className="h-5 w-5 text-accent" />
-                Consumo por Loja
-                {lojaFiltro.length > 0 && (
-                  <span className="text-xs font-normal text-muted-foreground ml-2">
-                    (filtrado)
-                  </span>
-                )}
-              </CardTitle>
+           <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BarChart3 className="h-5 w-5 text-accent" />
+                  Consumo por Loja
+                  {lojaFiltro.length > 0 && (
+                    <span className="text-xs font-normal text-muted-foreground ml-2">
+                      (filtrado)
+                    </span>
+                  )}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowLojasAnalytics(true)}
+                  className="text-accent hover:text-accent"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Ver todos
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
               {pedidosPorLoja.length > 0 ? (
