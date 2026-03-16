@@ -1,10 +1,10 @@
 import { Entidade, Loja, Produto, Pedido } from '@/types';
 
 export const mockEntidades: Entidade[] = [
-  { id: 'ent1', nome: 'Material de Escritório', aceitandoPedidos: true, tipoPedido: 'padrao', criadoEm: new Date('2024-01-01') },
-  { id: 'ent2', nome: 'Uso e Consumo', aceitandoPedidos: true, tipoPedido: 'padrao', criadoEm: new Date('2024-01-01') },
-  { id: 'ent3', nome: 'Copa e Cozinha', aceitandoPedidos: true, tipoPedido: 'padrao', criadoEm: new Date('2024-01-05') },
-  { id: 'ent4', nome: 'Manutenção', aceitandoPedidos: false, tipoPedido: 'controle', criadoEm: new Date('2024-01-10') },
+  { id: 'ent1', nome: 'Material de Escritório', aceitandoPedidos: true, tipoPedido: 'padrao', agendamentoAtivo: false, criadoEm: new Date('2024-01-01') },
+  { id: 'ent2', nome: 'Uso e Consumo', aceitandoPedidos: true, tipoPedido: 'padrao', agendamentoAtivo: false, criadoEm: new Date('2024-01-01') },
+  { id: 'ent3', nome: 'Copa e Cozinha', aceitandoPedidos: true, tipoPedido: 'padrao', agendamentoAtivo: false, criadoEm: new Date('2024-01-05') },
+  { id: 'ent4', nome: 'Manutenção', aceitandoPedidos: false, tipoPedido: 'controle', agendamentoAtivo: false, criadoEm: new Date('2024-01-10') },
 ];
 
 export const mockLojas: Loja[] = [
