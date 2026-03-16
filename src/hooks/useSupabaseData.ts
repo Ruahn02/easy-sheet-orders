@@ -48,11 +48,16 @@ export function useEntidades() {
     return null;
   };
 
-  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean; tipoPedido: 'padrao' | 'controle' }>) => {
+  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean; tipoPedido: 'padrao' | 'controle'; agendamentoAtivo: boolean; horarioAberturaDia: number | null; horarioAberturaHora: string | null; horarioFechamentoDia: number | null; horarioFechamentoHora: string | null }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.aceitandoPedidos !== undefined) dbUpdates.aceitando_pedidos = updates.aceitandoPedidos;
     if (updates.tipoPedido !== undefined) dbUpdates.tipo_pedido = updates.tipoPedido;
+    if (updates.agendamentoAtivo !== undefined) dbUpdates.agendamento_ativo = updates.agendamentoAtivo;
+    if (updates.horarioAberturaDia !== undefined) dbUpdates.horario_abertura_dia = updates.horarioAberturaDia;
+    if (updates.horarioAberturaHora !== undefined) dbUpdates.horario_abertura_hora = updates.horarioAberturaHora;
+    if (updates.horarioFechamentoDia !== undefined) dbUpdates.horario_fechamento_dia = updates.horarioFechamentoDia;
+    if (updates.horarioFechamentoHora !== undefined) dbUpdates.horario_fechamento_hora = updates.horarioFechamentoHora;
 
     const { error } = await supabase
       .from('entidades')

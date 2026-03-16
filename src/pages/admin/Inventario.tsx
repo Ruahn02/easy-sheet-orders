@@ -62,7 +62,8 @@ export default function Inventario() {
   const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
 
   // Estoque estimado (baseado em saídas dos pedidos após conferência)
-  const { estimativas } = useEstoqueEstimado(inventario, entidadeFiltro);
+  const idsParaEstoque = entidadeFiltro.length > 0 ? entidadeFiltro : entidades.map(e => e.id);
+  const { estimativas } = useEstoqueEstimado(inventario, idsParaEstoque);
 
   // Modal de conferência
   const [produtoSelecionado, setProdutoSelecionado] = useState<Produto | null>(null);
