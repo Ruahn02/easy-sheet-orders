@@ -19,6 +19,11 @@ export function useEntidades() {
         nome: e.nome,
         aceitandoPedidos: e.aceitando_pedidos,
         tipoPedido: ((e as any).tipo_pedido || 'padrao') as 'padrao' | 'controle',
+        agendamentoAtivo: (e as any).agendamento_ativo ?? false,
+        horarioAberturaDia: (e as any).horario_abertura_dia ?? undefined,
+        horarioAberturaHora: (e as any).horario_abertura_hora ?? undefined,
+        horarioFechamentoDia: (e as any).horario_fechamento_dia ?? undefined,
+        horarioFechamentoHora: (e as any).horario_fechamento_hora ?? undefined,
         criadoEm: new Date(e.criado_em),
       })));
     }
