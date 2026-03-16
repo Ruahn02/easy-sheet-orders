@@ -35,21 +35,36 @@ export type Database = {
       entidades: {
         Row: {
           aceitando_pedidos: boolean
+          agendamento_ativo: boolean
           criado_em: string
+          horario_abertura_dia: number | null
+          horario_abertura_hora: string | null
+          horario_fechamento_dia: number | null
+          horario_fechamento_hora: string | null
           id: string
           nome: string
           tipo_pedido: string
         }
         Insert: {
           aceitando_pedidos?: boolean
+          agendamento_ativo?: boolean
           criado_em?: string
+          horario_abertura_dia?: number | null
+          horario_abertura_hora?: string | null
+          horario_fechamento_dia?: number | null
+          horario_fechamento_hora?: string | null
           id?: string
           nome: string
           tipo_pedido?: string
         }
         Update: {
           aceitando_pedidos?: boolean
+          agendamento_ativo?: boolean
           criado_em?: string
+          horario_abertura_dia?: number | null
+          horario_abertura_hora?: string | null
+          horario_fechamento_dia?: number | null
+          horario_fechamento_hora?: string | null
           id?: string
           nome?: string
           tipo_pedido?: string
