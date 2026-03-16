@@ -3,6 +3,11 @@ export interface Entidade {
   nome: string;
   aceitandoPedidos: boolean; // Controla se o link está aberto para pedidos
   tipoPedido: 'padrao' | 'controle'; // Define se exige rastreabilidade
+  agendamentoAtivo: boolean;
+  horarioAberturaDia?: number; // 0=Dom, 1=Seg...6=Sáb
+  horarioAberturaHora?: string; // "HH:mm"
+  horarioFechamentoDia?: number;
+  horarioFechamentoHora?: string;
   criadoEm: Date;
 }
 

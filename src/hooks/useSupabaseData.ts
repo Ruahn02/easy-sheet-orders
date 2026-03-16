@@ -19,6 +19,11 @@ export function useEntidades() {
         nome: e.nome,
         aceitandoPedidos: e.aceitando_pedidos,
         tipoPedido: ((e as any).tipo_pedido || 'padrao') as 'padrao' | 'controle',
+        agendamentoAtivo: (e as any).agendamento_ativo ?? false,
+        horarioAberturaDia: (e as any).horario_abertura_dia ?? undefined,
+        horarioAberturaHora: (e as any).horario_abertura_hora ?? undefined,
+        horarioFechamentoDia: (e as any).horario_fechamento_dia ?? undefined,
+        horarioFechamentoHora: (e as any).horario_fechamento_hora ?? undefined,
         criadoEm: new Date(e.criado_em),
       })));
     }
@@ -43,11 +48,16 @@ export function useEntidades() {
     return null;
   };
 
-  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean; tipoPedido: 'padrao' | 'controle' }>) => {
+  const updateEntidade = async (id: string, updates: Partial<{ nome: string; aceitandoPedidos: boolean; tipoPedido: 'padrao' | 'controle'; agendamentoAtivo: boolean; horarioAberturaDia: number | null; horarioAberturaHora: string | null; horarioFechamentoDia: number | null; horarioFechamentoHora: string | null }>) => {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
     if (updates.aceitandoPedidos !== undefined) dbUpdates.aceitando_pedidos = updates.aceitandoPedidos;
     if (updates.tipoPedido !== undefined) dbUpdates.tipo_pedido = updates.tipoPedido;
+    if (updates.agendamentoAtivo !== undefined) dbUpdates.agendamento_ativo = updates.agendamentoAtivo;
+    if (updates.horarioAberturaDia !== undefined) dbUpdates.horario_abertura_dia = updates.horarioAberturaDia;
+    if (updates.horarioAberturaHora !== undefined) dbUpdates.horario_abertura_hora = updates.horarioAberturaHora;
+    if (updates.horarioFechamentoDia !== undefined) dbUpdates.horario_fechamento_dia = updates.horarioFechamentoDia;
+    if (updates.horarioFechamentoHora !== undefined) dbUpdates.horario_fechamento_hora = updates.horarioFechamentoHora;
 
     const { error } = await supabase
       .from('entidades')

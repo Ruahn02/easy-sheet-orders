@@ -224,6 +224,34 @@ const FormularioPedido = () => {
     }
   };
 
+  // Verificar se está dentro da janela de agendamento
+  const isForaDaJanela = useMemo(() => {
+    if (!entidade) return false;
+    if (!entidade.agendamentoAtivo) return false;
+    if (!entidade.aceitandoPedidos) return false;
+
+    const agora = new Date();
+    const diaAtual = agora.getDay();
+    const horaAtual = agora.getHours() * 60 + agora.getMinutes();
+
+    const diaAbre = entidade.horarioAberturaDia ?? 0;
+    const diaFecha = entidade.horarioFechamentoDia ?? 6;
+    const [hAbre, mAbre] = (entidade.horarioAberturaHora || '00:00').split(':').map(Number);
+    const [hFecha, mFecha] = (entidade.horarioFechamentoHora || '23:59').split(':').map(Number);
+    const minAbre = hAbre * 60 + mAbre;
+    const minFecha = hFecha * 60 + mFecha;
+
+    const agoraMin = diaAtual * 1440 + horaAtual;
+    const abreMin = diaAbre * 1440 + minAbre;
+    const fechaMin = diaFecha * 1440 + minFecha;
+
+    if (abreMin <= fechaMin) {
+      return agoraMin < abreMin || agoraMin >= fechaMin;
+    } else {
+      return agoraMin >= fechaMin && agoraMin < abreMin;
+    }
+  }, [entidade]);
+
   const isLoading = loadingEntidades || loadingProdutos || loadingLojas;
 
   if (isLoading) {
@@ -252,7 +280,8 @@ const FormularioPedido = () => {
     );
   }
 
-  if (!entidade.aceitandoPedidos) {
+  if (!entidade.aceitandoPedidos || isForaDaJanela) {
+    const DIAS_SEMANA_NOMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="text-center space-y-4 max-w-md">
@@ -261,6 +290,11 @@ const FormularioPedido = () => {
           <p className="text-muted-foreground">
             Os pedidos para <strong>"{entidade.nome}"</strong> estão fechados no momento.
           </p>
+          {entidade.agendamentoAtivo && entidade.horarioAberturaDia !== undefined && (
+            <p className="text-sm text-muted-foreground">
+              Próxima abertura: <strong>{DIAS_SEMANA_NOMES[entidade.horarioAberturaDia]} às {entidade.horarioAberturaHora}</strong>
+            </p>
+          )}
           <p className="text-muted-foreground">Aguarde a próxima abertura.</p>
           <Link to="/">
             <Button variant="outline" className="mt-4">

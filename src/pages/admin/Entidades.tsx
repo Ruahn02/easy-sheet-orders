@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key, Loader2, Clock } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useEntidades, useProdutos, usePedidos, useCodigoAdmin } from '@/hooks/useSupabaseData';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Entidade } from '@/types';
 
@@ -63,12 +65,29 @@ export default function Entidades() {
     nome: '',
     aceitandoPedidos: true,
     tipoPedido: 'padrao' as 'padrao' | 'controle',
+    agendamentoAtivo: false,
+    horarioAberturaDia: 1,
+    horarioAberturaHora: '08:00',
+    horarioFechamentoDia: 5,
+    horarioFechamentoHora: '18:00',
   });
   const [isSaving, setIsSaving] = useState(false);
 
   // Confirmações
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState<Entidade | null>(null);
+
+  const DIAS_SEMANA = [
+    { value: 0, label: 'Domingo' },
+    { value: 1, label: 'Segunda' },
+    { value: 2, label: 'Terça' },
+    { value: 3, label: 'Quarta' },
+    { value: 4, label: 'Quinta' },
+    { value: 5, label: 'Sexta' },
+    { value: 6, label: 'Sábado' },
+  ];
+
+  const getDiaNome = (dia?: number) => DIAS_SEMANA.find(d => d.value === dia)?.label || '—';
 
   const handleOpenModal = (entidade?: Entidade) => {
     if (entidade) {
@@ -77,10 +96,24 @@ export default function Entidades() {
         nome: entidade.nome,
         aceitandoPedidos: entidade.aceitandoPedidos,
         tipoPedido: entidade.tipoPedido,
+        agendamentoAtivo: entidade.agendamentoAtivo,
+        horarioAberturaDia: entidade.horarioAberturaDia ?? 1,
+        horarioAberturaHora: entidade.horarioAberturaHora ?? '08:00',
+        horarioFechamentoDia: entidade.horarioFechamentoDia ?? 5,
+        horarioFechamentoHora: entidade.horarioFechamentoHora ?? '18:00',
       });
     } else {
       setEditingEntidade(null);
-      setFormData({ nome: '', aceitandoPedidos: true, tipoPedido: 'padrao' });
+      setFormData({
+        nome: '',
+        aceitandoPedidos: true,
+        tipoPedido: 'padrao',
+        agendamentoAtivo: false,
+        horarioAberturaDia: 1,
+        horarioAberturaHora: '08:00',
+        horarioFechamentoDia: 5,
+        horarioFechamentoHora: '18:00',
+      });
     }
     setIsModalOpen(true);
   };
@@ -94,7 +127,13 @@ export default function Entidades() {
     setIsSaving(true);
 
     if (editingEntidade) {
-      const success = await updateEntidade(editingEntidade.id, formData);
+      const success = await updateEntidade(editingEntidade.id, {
+        ...formData,
+        horarioAberturaDia: formData.agendamentoAtivo ? formData.horarioAberturaDia : null,
+        horarioAberturaHora: formData.agendamentoAtivo ? formData.horarioAberturaHora : null,
+        horarioFechamentoDia: formData.agendamentoAtivo ? formData.horarioFechamentoDia : null,
+        horarioFechamentoHora: formData.agendamentoAtivo ? formData.horarioFechamentoHora : null,
+      });
       if (success) {
         toast({ title: 'Entidade atualizada!' });
       }
@@ -308,7 +347,16 @@ export default function Entidades() {
                 )}
               </button>
 
-              {/* Link público */}
+              {/* Info de Agendamento */}
+              {entidade.agendamentoAtivo && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3 flex-shrink-0" />
+                  <span>
+                    Abre: {getDiaNome(entidade.horarioAberturaDia)} {entidade.horarioAberturaHora || '—'} · Fecha: {getDiaNome(entidade.horarioFechamentoDia)} {entidade.horarioFechamentoHora || '—'}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 p-2 rounded-md bg-secondary text-xs">
                 <Link2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 <span className="truncate text-foreground">/pedido/{entidade.id}</span>
@@ -395,6 +443,74 @@ export default function Entidades() {
                     ? 'O formulário exigirá nome do solicitante, colaborador, matrícula e motivo.' 
                     : 'Formulário padrão, sem campos extras obrigatórios.'}
                 </p>
+              </div>
+
+              {/* Agendamento */}
+              <div className="space-y-3 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="agendamento" className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Agendamento automático
+                  </Label>
+                  <Switch
+                    id="agendamento"
+                    checked={formData.agendamentoAtivo}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, agendamentoAtivo: checked }))}
+                  />
+                </div>
+                {formData.agendamentoAtivo && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                      Define quando os pedidos abrem e fecham automaticamente na semana.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Abre — Dia</label>
+                        <Select
+                          value={String(formData.horarioAberturaDia)}
+                          onValueChange={(v) => setFormData((prev) => ({ ...prev, horarioAberturaDia: Number(v) }))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {DIAS_SEMANA.map(d => (
+                              <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Abre — Hora</label>
+                        <Input
+                          type="time"
+                          value={formData.horarioAberturaHora}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, horarioAberturaHora: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Fecha — Dia</label>
+                        <Select
+                          value={String(formData.horarioFechamentoDia)}
+                          onValueChange={(v) => setFormData((prev) => ({ ...prev, horarioFechamentoDia: Number(v) }))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {DIAS_SEMANA.map(d => (
+                              <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Fecha — Hora</label>
+                        <Input
+                          type="time"
+                          value={formData.horarioFechamentoHora}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, horarioFechamentoHora: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
