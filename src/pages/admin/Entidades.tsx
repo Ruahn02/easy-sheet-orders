@@ -127,7 +127,13 @@ export default function Entidades() {
     setIsSaving(true);
 
     if (editingEntidade) {
-      const success = await updateEntidade(editingEntidade.id, formData);
+      const success = await updateEntidade(editingEntidade.id, {
+        ...formData,
+        horarioAberturaDia: formData.agendamentoAtivo ? formData.horarioAberturaDia : null,
+        horarioAberturaHora: formData.agendamentoAtivo ? formData.horarioAberturaHora : null,
+        horarioFechamentoDia: formData.agendamentoAtivo ? formData.horarioFechamentoDia : null,
+        horarioFechamentoHora: formData.agendamentoAtivo ? formData.horarioFechamentoHora : null,
+      });
       if (success) {
         toast({ title: 'Entidade atualizada!' });
       }
