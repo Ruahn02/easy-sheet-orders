@@ -347,7 +347,16 @@ export default function Entidades() {
                 )}
               </button>
 
-              {/* Link público */}
+              {/* Info de Agendamento */}
+              {entidade.agendamentoAtivo && (
+                <div className="flex items-center gap-2 p-2 rounded-md bg-muted text-xs text-muted-foreground">
+                  <Clock className="h-3 w-3 flex-shrink-0" />
+                  <span>
+                    Abre: {getDiaNome(entidade.horarioAberturaDia)} {entidade.horarioAberturaHora || '—'} · Fecha: {getDiaNome(entidade.horarioFechamentoDia)} {entidade.horarioFechamentoHora || '—'}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center gap-2 p-2 rounded-md bg-secondary text-xs">
                 <Link2 className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                 <span className="truncate text-foreground">/pedido/{entidade.id}</span>
