@@ -444,6 +444,74 @@ export default function Entidades() {
                     : 'Formulário padrão, sem campos extras obrigatórios.'}
                 </p>
               </div>
+
+              {/* Agendamento */}
+              <div className="space-y-3 rounded-lg border border-border p-3">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="agendamento" className="text-sm font-medium flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Agendamento automático
+                  </Label>
+                  <Switch
+                    id="agendamento"
+                    checked={formData.agendamentoAtivo}
+                    onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, agendamentoAtivo: checked }))}
+                  />
+                </div>
+                {formData.agendamentoAtivo && (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground">
+                      Define quando os pedidos abrem e fecham automaticamente na semana.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Abre — Dia</label>
+                        <Select
+                          value={String(formData.horarioAberturaDia)}
+                          onValueChange={(v) => setFormData((prev) => ({ ...prev, horarioAberturaDia: Number(v) }))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {DIAS_SEMANA.map(d => (
+                              <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Abre — Hora</label>
+                        <Input
+                          type="time"
+                          value={formData.horarioAberturaHora}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, horarioAberturaHora: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Fecha — Dia</label>
+                        <Select
+                          value={String(formData.horarioFechamentoDia)}
+                          onValueChange={(v) => setFormData((prev) => ({ ...prev, horarioFechamentoDia: Number(v) }))}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {DIAS_SEMANA.map(d => (
+                              <SelectItem key={d.value} value={String(d.value)}>{d.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div>
+                        <label className="text-xs font-medium text-muted-foreground mb-1 block">Fecha — Hora</label>
+                        <Input
+                          type="time"
+                          value={formData.horarioFechamentoHora}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, horarioFechamentoHora: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsModalOpen(false)}>
