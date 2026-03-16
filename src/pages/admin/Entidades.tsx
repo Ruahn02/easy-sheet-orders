@@ -65,6 +65,11 @@ export default function Entidades() {
     nome: '',
     aceitandoPedidos: true,
     tipoPedido: 'padrao' as 'padrao' | 'controle',
+    agendamentoAtivo: false,
+    horarioAberturaDia: 1,
+    horarioAberturaHora: '08:00',
+    horarioFechamentoDia: 5,
+    horarioFechamentoHora: '18:00',
   });
   const [isSaving, setIsSaving] = useState(false);
 
