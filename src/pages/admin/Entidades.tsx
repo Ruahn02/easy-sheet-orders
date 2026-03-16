@@ -77,6 +77,18 @@ export default function Entidades() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [toggleConfirm, setToggleConfirm] = useState<Entidade | null>(null);
 
+  const DIAS_SEMANA = [
+    { value: 0, label: 'Domingo' },
+    { value: 1, label: 'Segunda' },
+    { value: 2, label: 'Terça' },
+    { value: 3, label: 'Quarta' },
+    { value: 4, label: 'Quinta' },
+    { value: 5, label: 'Sexta' },
+    { value: 6, label: 'Sábado' },
+  ];
+
+  const getDiaNome = (dia?: number) => DIAS_SEMANA.find(d => d.value === dia)?.label || '—';
+
   const handleOpenModal = (entidade?: Entidade) => {
     if (entidade) {
       setEditingEntidade(entidade);
@@ -84,10 +96,24 @@ export default function Entidades() {
         nome: entidade.nome,
         aceitandoPedidos: entidade.aceitandoPedidos,
         tipoPedido: entidade.tipoPedido,
+        agendamentoAtivo: entidade.agendamentoAtivo,
+        horarioAberturaDia: entidade.horarioAberturaDia ?? 1,
+        horarioAberturaHora: entidade.horarioAberturaHora ?? '08:00',
+        horarioFechamentoDia: entidade.horarioFechamentoDia ?? 5,
+        horarioFechamentoHora: entidade.horarioFechamentoHora ?? '18:00',
       });
     } else {
       setEditingEntidade(null);
-      setFormData({ nome: '', aceitandoPedidos: true, tipoPedido: 'padrao' });
+      setFormData({
+        nome: '',
+        aceitandoPedidos: true,
+        tipoPedido: 'padrao',
+        agendamentoAtivo: false,
+        horarioAberturaDia: 1,
+        horarioAberturaHora: '08:00',
+        horarioFechamentoDia: 5,
+        horarioFechamentoHora: '18:00',
+      });
     }
     setIsModalOpen(true);
   };
