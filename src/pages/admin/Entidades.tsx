@@ -179,17 +179,17 @@ export default function Entidades() {
   };
 
   const handleToggleOpen = async (entidade: Entidade) => {
-    const success = await updateEntidade(entidade.id, { aceitandoPedidos: true });
+    const success = await updateEntidade(entidade.id, { aceitandoPedidos: true, agendamentoAtivo: false });
     if (success) {
-      toast({ title: 'Pedidos abertos!' });
+      toast({ title: 'Pedidos abertos!', description: entidade.agendamentoAtivo ? 'Agendamento automático foi desativado.' : undefined });
     }
   };
 
   const handleToggleConfirm = async () => {
     if (toggleConfirm) {
-      const success = await updateEntidade(toggleConfirm.id, { aceitandoPedidos: false });
+      const success = await updateEntidade(toggleConfirm.id, { aceitandoPedidos: false, agendamentoAtivo: false });
       if (success) {
-        toast({ title: 'Pedidos fechados!' });
+        toast({ title: 'Pedidos fechados!', description: toggleConfirm.agendamentoAtivo ? 'Agendamento automático foi desativado.' : undefined });
       }
       setToggleConfirm(null);
     }
