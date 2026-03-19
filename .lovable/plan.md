@@ -1,34 +1,31 @@
 
 
-## Corrigir "Nenhum produto para reordenar"
+## Plano: Toggle manual deve desativar agendamento automaticamente
 
 ### Problema
+Quando o admin abre pedidos manualmente, o agendamento continua ativo e o formulário público bloqueia o acesso porque está fora da janela de horário programada. O toggle manual não tem efeito prático.
 
-O componente `ReorderProducts` inicializa `items` como array vazio e tenta sincronizar os produtos no callback `handleOpenChange`. Porem, quando o dialog abre via prop controlada (`open={true}`), o Radix Dialog nao dispara `onOpenChange(true)` -- so dispara ao fechar. Resultado: `items` permanece vazio e aparece "Nenhum produto para reordenar".
+### Solução
+Quando o admin clicar no toggle manual (abrir ou fechar), desativar automaticamente o agendamento (`agendamentoAtivo = false`). Isso garante que a decisão manual prevalece. O admin pode reativar o agendamento depois no modal de edição.
 
-### Correcao
+### Alterações
 
-**Arquivo:** `src/components/admin/ReorderProducts.tsx`
+**`src/pages/admin/Entidades.tsx`** (2 pontos):
 
-Trocar a logica de sincronizacao de `handleOpenChange` para um `useEffect` que observa `open` e `produtos`:
+1. `handleToggleOpen` — ao abrir manualmente, também setar `agendamentoAtivo: false`:
+   ```
+   updateEntidade(entidade.id, { aceitandoPedidos: true, agendamentoAtivo: false })
+   ```
 
-```typescript
-// Remover handleOpenChange e usar useEffect
-useEffect(() => {
-  if (open) {
-    setItems([...produtos]);
-  }
-}, [open, produtos]);
-```
+2. `handleToggleConfirm` — ao fechar manualmente, também setar `agendamentoAtivo: false`:
+   ```
+   updateEntidade(toggleConfirm.id, { aceitandoPedidos: false, agendamentoAtivo: false })
+   ```
 
-E no Dialog, voltar a usar `onOpenChange` diretamente:
+3. Adicionar um aviso no toast informando que o agendamento foi desativado (se estava ativo):
+   ```
+   toast({ title: 'Pedidos abertos!', description: 'Agendamento automático foi desativado.' })
+   ```
 
-```typescript
-<Dialog open={open} onOpenChange={onOpenChange}>
-```
+Nenhuma migração necessária. Nenhuma mudança no FormularioPedido.
 
-### Impacto
-
-- Corrige o bug sem alterar nenhuma outra logica
-- Apenas 1 arquivo modificado
-- Nenhuma mudanca no banco ou em outros componentes
