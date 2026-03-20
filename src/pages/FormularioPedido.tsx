@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useParams, Link } from 'react-router-dom';
 import { Settings, AlertCircle, ArrowLeft, Loader2, LogOut } from 'lucide-react';
 import { useEntidades, useProdutos, usePedidos, useLojas, useLojaEntidades } from '@/hooks/useSupabaseData';
@@ -52,6 +53,7 @@ const FormularioPedido = () => {
     });
   }, [lojas, entidadeId, getEntidadesPermitidas]);
 
+  const [limiteExibicao, setLimiteExibicao] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState('');
@@ -308,6 +310,7 @@ const FormularioPedido = () => {
   }
 
   return (
+    <ErrorBoundary fallbackTitle="Erro no formulário" fallbackDescription="O formulário encontrou um problema. Clique abaixo para tentar novamente.">
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="gradient-primary text-primary-foreground">
@@ -421,7 +424,7 @@ const FormularioPedido = () => {
       <ProductSearch value={searchQuery} onChange={setSearchQuery} />
 
       <div className="space-y-3 px-4 py-2">
-        {filteredProdutos.map((produto) => (
+        {filteredProdutos.slice(0, limiteExibicao).map((produto) => (
           <ProductCard
             key={produto.id}
             produto={produto}
@@ -429,6 +432,17 @@ const FormularioPedido = () => {
             onQuantityChange={handleQuantityChange}
           />
         ))}
+
+        {filteredProdutos.length > limiteExibicao && (
+          <div className="flex justify-center py-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setLimiteExibicao(prev => prev + 50)}
+            >
+              Mostrar mais produtos ({filteredProdutos.length - limiteExibicao} restantes)
+            </Button>
+          </div>
+        )}
 
         {filteredProdutos.length === 0 && produtosDaEntidade.length > 0 && (
           <div className="py-8 text-center text-muted-foreground">
@@ -509,6 +523,7 @@ const FormularioPedido = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </ErrorBoundary>
   );
 };
 
