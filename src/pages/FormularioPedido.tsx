@@ -53,6 +53,7 @@ const FormularioPedido = () => {
     });
   }, [lojas, entidadeId, getEntidadesPermitidas]);
 
+  const [limiteExibicao, setLimiteExibicao] = useState(50);
   const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [observacoes, setObservacoes] = useState('');
