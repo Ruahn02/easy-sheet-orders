@@ -523,6 +523,7 @@ const FormularioPedido = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </ErrorBoundary>
   );
 };
 
