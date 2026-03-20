@@ -310,6 +310,7 @@ const FormularioPedido = () => {
   }
 
   return (
+    <ErrorBoundary fallbackTitle="Erro no formulário" fallbackDescription="O formulário encontrou um problema. Clique abaixo para tentar novamente.">
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <div className="gradient-primary text-primary-foreground">
