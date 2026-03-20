@@ -1,60 +1,49 @@
 
 
-## Implementação: Error Boundary + StoreSelect Leve + Lazy-render
+## Plano: Polling de 5 segundos + Realtime como complemento
 
-Todas as mudanças são aditivas e não alteram nenhuma lógica existente de pedidos, banco, ou submissão.
+### Situação atual
+- Não existe nenhum realtime configurado no projeto
+- Cada hook (`useEntidades`, `useLojas`, `useProdutos`, `usePedidos`, etc.) faz fetch apenas uma vez no mount
+- Não há polling
 
-### 1. Criar `src/components/ErrorBoundary.tsx` (novo arquivo)
-- Componente React class com `getDerivedStateFromError` e `componentDidCatch`
-- Exibe tela de recuperação com botões "Tentar novamente" e "Recarregar página" em vez de tela branca
-- Props opcionais para customizar título e descrição do erro
+### Solução
+Adicionar um `setInterval` de 5 segundos nos hooks principais para re-buscar dados automaticamente, **sem alterar nada da lógica existente**. Também adicionar Supabase Realtime como complemento (dispara fetch imediato ao receber notificação de mudança).
 
-### 2. Simplificar `src/components/order/StoreSelect.tsx`
-- Substituir `Command` + `Popover` (pesado, causa crash em PCs lentos) por `Select` do Radix UI (já usado no projeto)
-- Manter mesma interface (`lojas`, `selectedId`, `onSelect`)
-- Resultado: componente muito mais leve, sem portal complexo
+### Alterações em `src/hooks/useSupabaseData.ts`
 
-**De:**
-```tsx
-<Popover><Command><CommandInput>...
-```
-**Para:**
-```tsx
-<Select value={selectedId} onValueChange={onSelect}>
-  <SelectTrigger>...</SelectTrigger>
-  <SelectContent>
-    {lojasAtivas.map(loja => <SelectItem .../>)}
-  </SelectContent>
-</Select>
-```
+**Para cada hook principal** (`useEntidades`, `useLojas`, `useProdutos`, `usePedidos`):
 
-### 3. Atualizar `src/pages/FormularioPedido.tsx`
-- Envolver o retorno principal com `<ErrorBoundary>`
-- Adicionar lazy-render: mostrar os primeiros 50 produtos inicialmente, com botão "Mostrar mais" para carregar +50
-- Isso reduz a carga inicial em computadores com pouca memória
+1. Adicionar um `useEffect` com `setInterval` de 5 segundos que chama a função `fetch` existente (silenciosamente, sem alterar `loading`)
+2. Adicionar um `useEffect` com Supabase Realtime que escuta mudanças na tabela correspondente e dispara o `fetch` ao receber evento
 
-```tsx
-const [limiteExibicao, setLimiteExibicao] = useState(50);
-const produtosVisiveis = filteredProdutos.slice(0, limiteExibicao);
+Exemplo para `useEntidades`:
+```typescript
+// Polling de 5 segundos
+useEffect(() => {
+  const interval = setInterval(fetchEntidades, 5000);
+  return () => clearInterval(interval);
+}, [fetchEntidades]);
 
-// No JSX:
-<ErrorBoundary>
-  ...
-  {produtosVisiveis.map(p => <ProductCard .../>)}
-  {filteredProdutos.length > limiteExibicao && (
-    <Button onClick={() => setLimiteExibicao(prev => prev + 50)}>
-      Mostrar mais produtos
-    </Button>
-  )}
-  ...
-</ErrorBoundary>
+// Realtime
+useEffect(() => {
+  const channel = supabase
+    .channel('entidades-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'entidades' }, () => {
+      fetchEntidades();
+    })
+    .subscribe();
+  return () => { supabase.removeChannel(channel); };
+}, [fetchEntidades]);
 ```
 
-### Arquivos alterados
-1. `src/components/ErrorBoundary.tsx` — novo
-2. `src/components/order/StoreSelect.tsx` — simplificar para Select nativo
-3. `src/pages/FormularioPedido.tsx` — envolver com ErrorBoundary + lazy-render
+Mesma abordagem para `useLojas` (tabela `lojas`), `useProdutos` (tabela `produtos` + `produto_entidades`), e `usePedidos` (tabela `pedidos` + `pedido_itens`).
+
+### Cuidado com performance
+- O `fetchEntidades`, `fetchLojas` são leves (poucas linhas)
+- O `fetchPedidos` é mais pesado (busca paginada) — para evitar sobrecarga, o polling dele só re-busca se a aba estiver visível (`document.hidden === false`)
+- Nenhuma mudança na lógica de submissão, optimistic updates, ou UI
 
 ### Risco
-**Zero risco para pedidos existentes.** Nenhuma mudança em banco, lógica de submissão, ou rotas. Apenas melhorias de UI para evitar crashes.
+**Mínimo.** Apenas adiciona intervals e listeners. Não muda nenhuma lógica existente. Se o realtime falhar, o polling garante atualização. Se o polling falhar, o realtime garante.
 
