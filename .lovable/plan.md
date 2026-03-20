@@ -1,31 +1,60 @@
 
 
-## Plano: Toggle manual deve desativar agendamento automaticamente
+## Implementação: Error Boundary + StoreSelect Leve + Lazy-render
 
-### Problema
-Quando o admin abre pedidos manualmente, o agendamento continua ativo e o formulário público bloqueia o acesso porque está fora da janela de horário programada. O toggle manual não tem efeito prático.
+Todas as mudanças são aditivas e não alteram nenhuma lógica existente de pedidos, banco, ou submissão.
 
-### Solução
-Quando o admin clicar no toggle manual (abrir ou fechar), desativar automaticamente o agendamento (`agendamentoAtivo = false`). Isso garante que a decisão manual prevalece. O admin pode reativar o agendamento depois no modal de edição.
+### 1. Criar `src/components/ErrorBoundary.tsx` (novo arquivo)
+- Componente React class com `getDerivedStateFromError` e `componentDidCatch`
+- Exibe tela de recuperação com botões "Tentar novamente" e "Recarregar página" em vez de tela branca
+- Props opcionais para customizar título e descrição do erro
 
-### Alterações
+### 2. Simplificar `src/components/order/StoreSelect.tsx`
+- Substituir `Command` + `Popover` (pesado, causa crash em PCs lentos) por `Select` do Radix UI (já usado no projeto)
+- Manter mesma interface (`lojas`, `selectedId`, `onSelect`)
+- Resultado: componente muito mais leve, sem portal complexo
 
-**`src/pages/admin/Entidades.tsx`** (2 pontos):
+**De:**
+```tsx
+<Popover><Command><CommandInput>...
+```
+**Para:**
+```tsx
+<Select value={selectedId} onValueChange={onSelect}>
+  <SelectTrigger>...</SelectTrigger>
+  <SelectContent>
+    {lojasAtivas.map(loja => <SelectItem .../>)}
+  </SelectContent>
+</Select>
+```
 
-1. `handleToggleOpen` — ao abrir manualmente, também setar `agendamentoAtivo: false`:
-   ```
-   updateEntidade(entidade.id, { aceitandoPedidos: true, agendamentoAtivo: false })
-   ```
+### 3. Atualizar `src/pages/FormularioPedido.tsx`
+- Envolver o retorno principal com `<ErrorBoundary>`
+- Adicionar lazy-render: mostrar os primeiros 50 produtos inicialmente, com botão "Mostrar mais" para carregar +50
+- Isso reduz a carga inicial em computadores com pouca memória
 
-2. `handleToggleConfirm` — ao fechar manualmente, também setar `agendamentoAtivo: false`:
-   ```
-   updateEntidade(toggleConfirm.id, { aceitandoPedidos: false, agendamentoAtivo: false })
-   ```
+```tsx
+const [limiteExibicao, setLimiteExibicao] = useState(50);
+const produtosVisiveis = filteredProdutos.slice(0, limiteExibicao);
 
-3. Adicionar um aviso no toast informando que o agendamento foi desativado (se estava ativo):
-   ```
-   toast({ title: 'Pedidos abertos!', description: 'Agendamento automático foi desativado.' })
-   ```
+// No JSX:
+<ErrorBoundary>
+  ...
+  {produtosVisiveis.map(p => <ProductCard .../>)}
+  {filteredProdutos.length > limiteExibicao && (
+    <Button onClick={() => setLimiteExibicao(prev => prev + 50)}>
+      Mostrar mais produtos
+    </Button>
+  )}
+  ...
+</ErrorBoundary>
+```
 
-Nenhuma migração necessária. Nenhuma mudança no FormularioPedido.
+### Arquivos alterados
+1. `src/components/ErrorBoundary.tsx` — novo
+2. `src/components/order/StoreSelect.tsx` — simplificar para Select nativo
+3. `src/pages/FormularioPedido.tsx` — envolver com ErrorBoundary + lazy-render
+
+### Risco
+**Zero risco para pedidos existentes.** Nenhuma mudança em banco, lógica de submissão, ou rotas. Apenas melhorias de UI para evitar crashes.
 
