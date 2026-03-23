@@ -41,11 +41,11 @@ export function useEntidades() {
       .channel('entidades-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entidades' }, () => {
         fetchEntidades();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchEntidades]);
 
