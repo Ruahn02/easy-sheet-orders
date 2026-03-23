@@ -116,13 +116,14 @@ export function useLojas() {
       .order('criado_em', { ascending: false });
 
     if (!error && data) {
-      setLojas(data.map(l => ({
+      const mapped = data.map(l => ({
         id: l.id,
         nome: l.nome,
         status: l.status as 'ativo' | 'inativo',
         ordem: l.ordem ?? undefined,
         criadoEm: new Date(l.criado_em),
-      })));
+      }));
+      setLojas(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
     }
     setLoading(false);
   }, []);
