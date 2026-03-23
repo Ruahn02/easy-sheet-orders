@@ -277,7 +277,7 @@ export function useProdutos() {
       entidadesPorProduto[rel.produto_id].push(rel.entidade_id);
     });
 
-    setProdutos(produtosData.map(p => ({
+    const mapped = produtosData.map(p => ({
       id: p.id,
       codigo: p.codigo,
       nome: p.nome,
@@ -289,7 +289,8 @@ export function useProdutos() {
       ordem: p.ordem ?? undefined,
       corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
-    })));
+    }));
+    setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
     setLoading(false);
   }, []);
