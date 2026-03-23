@@ -306,11 +306,11 @@ export function useProdutos() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'produto_entidades' }, () => {
         fetchProdutos();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchProdutos]);
 
