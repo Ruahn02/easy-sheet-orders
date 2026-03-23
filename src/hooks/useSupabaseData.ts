@@ -14,7 +14,7 @@ export function useEntidades() {
       .order('criado_em', { ascending: false });
 
     if (!error && data) {
-      setEntidades(data.map(e => ({
+      const mapped = data.map(e => ({
         id: e.id,
         nome: e.nome,
         aceitandoPedidos: e.aceitando_pedidos,
@@ -25,7 +25,8 @@ export function useEntidades() {
         horarioFechamentoDia: (e as any).horario_fechamento_dia ?? undefined,
         horarioFechamentoHora: (e as any).horario_fechamento_hora ?? undefined,
         criadoEm: new Date(e.criado_em),
-      })));
+      }));
+      setEntidades(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
     }
     setLoading(false);
   }, []);
