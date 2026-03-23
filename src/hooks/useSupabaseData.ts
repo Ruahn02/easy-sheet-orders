@@ -14,7 +14,7 @@ export function useEntidades() {
       .order('criado_em', { ascending: false });
 
     if (!error && data) {
-      setEntidades(data.map(e => ({
+      const mapped = data.map(e => ({
         id: e.id,
         nome: e.nome,
         aceitandoPedidos: e.aceitando_pedidos,
@@ -25,7 +25,8 @@ export function useEntidades() {
         horarioFechamentoDia: (e as any).horario_fechamento_dia ?? undefined,
         horarioFechamentoHora: (e as any).horario_fechamento_hora ?? undefined,
         criadoEm: new Date(e.criado_em),
-      })));
+      }));
+      setEntidades(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
     }
     setLoading(false);
   }, []);
@@ -115,13 +116,14 @@ export function useLojas() {
       .order('criado_em', { ascending: false });
 
     if (!error && data) {
-      setLojas(data.map(l => ({
+      const mapped = data.map(l => ({
         id: l.id,
         nome: l.nome,
         status: l.status as 'ativo' | 'inativo',
         ordem: l.ordem ?? undefined,
         criadoEm: new Date(l.criado_em),
-      })));
+      }));
+      setLojas(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
     }
     setLoading(false);
   }, []);
@@ -275,7 +277,7 @@ export function useProdutos() {
       entidadesPorProduto[rel.produto_id].push(rel.entidade_id);
     });
 
-    setProdutos(produtosData.map(p => ({
+    const mapped = produtosData.map(p => ({
       id: p.id,
       codigo: p.codigo,
       nome: p.nome,
@@ -287,7 +289,8 @@ export function useProdutos() {
       ordem: p.ordem ?? undefined,
       corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
-    })));
+    }));
+    setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
     setLoading(false);
   }, []);
@@ -510,7 +513,7 @@ export function usePedidos() {
       };
     });
 
-    setPedidos(pedidosFormatados);
+    setPedidos(prev => JSON.stringify(prev) === JSON.stringify(pedidosFormatados) ? prev : pedidosFormatados);
     setLoading(false);
   }, []);
 
