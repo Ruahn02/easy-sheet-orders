@@ -34,6 +34,21 @@ export function useEntidades() {
     fetchEntidades();
   }, [fetchEntidades]);
 
+  // Polling 5s + Realtime
+  useEffect(() => {
+    const interval = setInterval(fetchEntidades, 5000);
+    const channel = supabase
+      .channel('entidades-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'entidades' }, () => {
+        fetchEntidades();
+      })
+      .subscribe();
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchEntidades]);
+
   const addEntidade = async (nome: string, aceitandoPedidos: boolean, tipoPedido: 'padrao' | 'controle' = 'padrao') => {
     const { data, error } = await supabase
       .from('entidades')
@@ -115,8 +130,22 @@ export function useLojas() {
     fetchLojas();
   }, [fetchLojas]);
 
+  // Polling 5s + Realtime
+  useEffect(() => {
+    const interval = setInterval(fetchLojas, 5000);
+    const channel = supabase
+      .channel('lojas-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'lojas' }, () => {
+        fetchLojas();
+      })
+      .subscribe();
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchLojas]);
+
   const addLoja = async (nome: string, status: 'ativo' | 'inativo', ordem?: number) => {
-    // Gerar código de acesso único para satisfazer constraint do banco
     const codigoAcesso = `LOJA${Date.now().toString(36).toUpperCase()}`;
     
     const { data, error } = await supabase
@@ -223,7 +252,6 @@ export function useProdutos() {
   const [loading, setLoading] = useState(true);
 
   const fetchProdutos = useCallback(async () => {
-    // Buscar produtos
     const { data: produtosData, error: produtosError } = await supabase
       .from('produtos')
       .select('*')
@@ -235,12 +263,10 @@ export function useProdutos() {
       return;
     }
 
-    // Buscar relacionamentos N:N
     const { data: relData } = await supabase
       .from('produto_entidades')
       .select('produto_id, entidade_id');
 
-    // Agrupar entidades por produto
     const entidadesPorProduto: Record<string, string[]> = {};
     (relData || []).forEach((rel: { produto_id: string; entidade_id: string }) => {
       if (!entidadesPorProduto[rel.produto_id]) {
@@ -256,9 +282,8 @@ export function useProdutos() {
       qtdMaxima: p.qtd_maxima,
       fotoUrl: (p as any).imagem_url || undefined,
       status: p.status as 'ativo' | 'inativo',
-      // N:N: usar relacionamentos ou fallback para entidade_id original
       entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
-      entidadeId: p.entidade_id, // manter para compatibilidade
+      entidadeId: p.entidade_id,
       ordem: p.ordem ?? undefined,
       corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
@@ -271,8 +296,25 @@ export function useProdutos() {
     fetchProdutos();
   }, [fetchProdutos]);
 
+  // Polling 5s + Realtime
+  useEffect(() => {
+    const interval = setInterval(fetchProdutos, 5000);
+    const channel = supabase
+      .channel('produtos-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, () => {
+        fetchProdutos();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'produto_entidades' }, () => {
+        fetchProdutos();
+      })
+      .subscribe();
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchProdutos]);
+
   const addProduto = async (produto: { codigo: string; nome: string; qtdMaxima: number; status: 'ativo' | 'inativo'; entidadeIds: string[]; ordem?: number; fotoUrl?: string }) => {
-    // Inserir produto com primeira entidade como fallback
     const { data, error } = await supabase
       .from('produtos')
       .insert({
@@ -280,7 +322,7 @@ export function useProdutos() {
         nome: produto.nome,
         qtd_maxima: produto.qtdMaxima,
         status: produto.status,
-        entidade_id: produto.entidadeIds[0] || null, // fallback
+        entidade_id: produto.entidadeIds[0] || null,
         ordem: produto.ordem ?? null,
         imagem_url: produto.fotoUrl || null,
       } as any)
@@ -288,7 +330,6 @@ export function useProdutos() {
       .single();
     
     if (!error && data) {
-      // Inserir relacionamentos N:N
       if (produto.entidadeIds.length > 0) {
         const relInserts = produto.entidadeIds.map(entidadeId => ({
           produto_id: data.id,
@@ -310,7 +351,7 @@ export function useProdutos() {
     if (updates.qtdMaxima !== undefined) dbUpdates.qtd_maxima = updates.qtdMaxima;
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if (updates.entidadeIds !== undefined && updates.entidadeIds.length > 0) {
-      dbUpdates.entidade_id = updates.entidadeIds[0]; // fallback
+      dbUpdates.entidade_id = updates.entidadeIds[0];
     }
     if ('ordem' in updates) dbUpdates.ordem = updates.ordem ?? null;
     if ('fotoUrl' in updates) dbUpdates.imagem_url = updates.fotoUrl || null;
@@ -322,12 +363,9 @@ export function useProdutos() {
     
     if (error) return false;
 
-    // Atualizar relacionamentos N:N
     if (updates.entidadeIds !== undefined) {
-      // Deletar relacionamentos antigos
       await supabase.from('produto_entidades').delete().eq('produto_id', id);
       
-      // Inserir novos relacionamentos
       if (updates.entidadeIds.length > 0) {
         const relInserts = updates.entidadeIds.map(entidadeId => ({
           produto_id: id,
@@ -342,7 +380,6 @@ export function useProdutos() {
   };
 
   const deleteProduto = async (id: string) => {
-    // Relacionamentos são deletados automaticamente (ON DELETE CASCADE)
     const { error } = await supabase
       .from('produtos')
       .delete()
@@ -385,7 +422,6 @@ export function usePedidos() {
   const [loading, setLoading] = useState(true);
 
   const fetchPedidos = useCallback(async () => {
-    // Buscar pedidos em lotes para contornar limite de 1000 do PostgREST
     let allPedidos: any[] = [];
     let pedidoOffset = 0;
     const pedidoPageSize = 1000;
@@ -411,14 +447,13 @@ export function usePedidos() {
     const pedidosData = allPedidos;
 
     if (pedidosData.length === 0) {
+      setPedidos([]);
       setLoading(false);
       return;
     }
 
-    // Extrair IDs dos pedidos que foram buscados
     const pedidoIds = pedidosData.map(p => p.id);
 
-    // Buscar itens em chunks de 200 IDs para evitar estouro de URL do PostgREST
     let allItens: any[] = [];
     const chunkSize = 200;
 
@@ -483,8 +518,28 @@ export function usePedidos() {
     fetchPedidos();
   }, [fetchPedidos]);
 
+  // Polling 5s (só com aba visível) + Realtime
+  useEffect(() => {
+    const poll = () => {
+      if (!document.hidden) fetchPedidos();
+    };
+    const interval = setInterval(poll, 5000);
+    const channel = supabase
+      .channel('pedidos-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
+        fetchPedidos();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedido_itens' }, () => {
+        fetchPedidos();
+      })
+      .subscribe();
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchPedidos]);
+
   const addPedido = async (pedido: { lojaId: string; entidadeId: string; observacoes?: string; itens: PedidoItem[]; nomeSolicitante?: string; emailSolicitante?: string; nomeColaborador?: string; funcaoColaborador?: string; matriculaFuncionario?: string; motivoSolicitacao?: string }) => {
-    // Insert pedido
     const { data: pedidoData, error: pedidoError } = await supabase
       .from('pedidos')
       .insert({
@@ -507,7 +562,6 @@ export function usePedidos() {
       return null;
     }
 
-    // Insert itens
     const itensInsert = pedido.itens.map(item => ({
       pedido_id: pedidoData.id,
       produto_id: item.produtoId,
@@ -518,7 +572,6 @@ export function usePedidos() {
       .from('pedido_itens')
       .insert(itensInsert);
 
-    // Se falhar o insert dos itens, fazer rollback do pedido pai
     if (itensError) {
       console.error('Erro ao criar itens do pedido:', {
         pedidoId: pedidoData.id,
@@ -527,13 +580,11 @@ export function usePedidos() {
         itens: itensInsert
       });
       
-      // Rollback: deletar o pedido pai que ficou órfão
       await supabase.from('pedidos').delete().eq('id', pedidoData.id);
       
-      return null; // Retorna null para indicar falha completa
+      return null;
     }
 
-    // Atualização otimista: adicionar localmente sem re-fetch
     const novoPedido: Pedido = {
       id: pedidoData.id,
       lojaId: pedido.lojaId,
@@ -564,7 +615,6 @@ export function usePedidos() {
       .eq('id', id);
     
     if (!error) {
-      // Atualização otimista
       setPedidos(prev => prev.map(p => p.id === id ? { ...p, status: status as Pedido['status'], ...(observacoes !== undefined ? { observacoes } : {}) } : p));
       return true;
     }
@@ -578,7 +628,6 @@ export function usePedidos() {
       .eq('id', id);
     
     if (!error) {
-      // Atualização otimista
       setPedidos(prev => prev.map(p => p.id === id ? { ...p, corLinha: cor } : p));
       return true;
     }
@@ -655,7 +704,6 @@ export function useInventario() {
     fetchInventario();
   }, [fetchInventario]);
 
-  // UPSERT - Cria ou atualiza conferência
   const conferirProduto = async (produtoId: string, entidadeId: string, quantidade: number, unidadeMedida: string = 'un') => {
     const { error } = await supabase
       .from('inventario')
@@ -690,7 +738,6 @@ export function useEstoqueEstimado(
   const [loading, setLoading] = useState(false);
 
   const calcular = useCallback(async () => {
-    // Só calcula se tiver itens conferidos e entidade selecionada
     const conferidos = inventarioList.filter(i => i.status === 'conferido' && i.quantidade !== null);
     if (conferidos.length === 0 || entidadeIds.length === 0) {
       setEstimativas(new Map());
@@ -701,8 +748,6 @@ export function useEstoqueEstimado(
     try {
       const novasEstimativas = new Map<string, { saidas: number; estimado: number }>();
 
-      // Buscar todos os pedidos das entidades selecionadas
-      // Precisamos buscar pedidos após a data de conferência mais antiga para cobrir tudo
       const dataMinima = conferidos.reduce((min, i) => {
         return i.dataConferencia < min ? i.dataConferencia : min;
       }, conferidos[0].dataConferencia);
@@ -732,7 +777,6 @@ export function useEstoqueEstimado(
         return;
       }
 
-      // Buscar todos os itens desses pedidos
       const pedidoIds = allPedidos.map(p => p.id);
       let allItens: any[] = [];
       const chunkSize = 200;
@@ -756,11 +800,9 @@ export function useEstoqueEstimado(
         }
       }
 
-      // Criar mapa pedido_id -> data para lookup rápido
       const pedidoDataMap = new Map<string, Date>();
       allPedidos.forEach(p => pedidoDataMap.set(p.id, new Date(p.data)));
 
-      // Para cada item de inventário conferido, somar saídas após sua data_conferencia
       for (const inv of conferidos) {
         let totalSaidas = 0;
 
@@ -800,7 +842,6 @@ export function useSeparacao() {
   const [separacoes, setSeparacoes] = useState<Map<string, boolean>>(new Map());
   const [loading, setLoading] = useState(false);
 
-  // Buscar separações de um pedido específico
   const fetchSeparacoes = async (pedidoId: string) => {
     try {
       const { data, error } = await supabase
@@ -828,7 +869,6 @@ export function useSeparacao() {
     }
   };
 
-  // Buscar separações de múltiplos pedidos
   const fetchSeparacoesMultiplos = async (pedidoIds: string[]) => {
     if (pedidoIds.length === 0) return;
     setLoading(true);
@@ -852,14 +892,11 @@ export function useSeparacao() {
     }
   };
 
-  // Alternar estado de separação (upsert)
   const toggleSeparacao = async (pedidoId: string, produtoId: string) => {
     const key = `${pedidoId}_${produtoId}`;
     const currentValue = separacoes.get(key);
-    // Se não existe registro, assumimos separado=true, então ao clicar vai para false
     const novoValor = currentValue === undefined ? false : !currentValue;
 
-    // Atualização otimista
     setSeparacoes(prev => {
       const newMap = new Map(prev);
       newMap.set(key, novoValor);
@@ -881,7 +918,6 @@ export function useSeparacao() {
       if (error) throw error;
       return true;
     } catch (error) {
-      // Reverter em caso de erro
       setSeparacoes(prev => {
         const newMap = new Map(prev);
         if (currentValue === undefined) {
@@ -896,11 +932,9 @@ export function useSeparacao() {
     }
   };
 
-  // Verificar se um produto está separado
   const isSeparado = (pedidoId: string, produtoId: string): boolean => {
     const key = `${pedidoId}_${produtoId}`;
     const value = separacoes.get(key);
-    // Se não existe registro, assume separado=true (comportamento padrão)
     return value === undefined ? true : value;
   };
 
@@ -939,11 +973,24 @@ export function useLojaEntidades() {
     fetchLojaEntidades();
   }, [fetchLojaEntidades]);
 
+  // Polling 5s + Realtime
+  useEffect(() => {
+    const interval = setInterval(fetchLojaEntidades, 5000);
+    const channel = supabase
+      .channel('loja-entidades-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'loja_entidades' }, () => {
+        fetchLojaEntidades();
+      })
+      .subscribe();
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
+  }, [fetchLojaEntidades]);
+
   const setPermissoes = async (lojaId: string, entidadeIds: string[]) => {
-    // Deletar permissões atuais
     await supabase.from('loja_entidades').delete().eq('loja_id', lojaId);
 
-    // Inserir novas permissões
     if (entidadeIds.length > 0) {
       const inserts = entidadeIds.map(entidadeId => ({
         loja_id: lojaId,
@@ -956,7 +1003,6 @@ export function useLojaEntidades() {
     return true;
   };
 
-  // Retorna entidades permitidas para uma loja (vazio = todas)
   const getEntidadesPermitidas = (lojaId: string): string[] => {
     return lojaEntidades
       .filter(le => le.lojaId === lojaId)
