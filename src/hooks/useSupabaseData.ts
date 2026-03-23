@@ -41,11 +41,11 @@ export function useEntidades() {
       .channel('entidades-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entidades' }, () => {
         fetchEntidades();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchEntidades]);
 
@@ -137,11 +137,11 @@ export function useLojas() {
       .channel('lojas-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lojas' }, () => {
         fetchLojas();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchLojas]);
 
@@ -306,11 +306,11 @@ export function useProdutos() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'produto_entidades' }, () => {
         fetchProdutos();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchProdutos]);
 
@@ -531,11 +531,11 @@ export function usePedidos() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedido_itens' }, () => {
         fetchPedidos();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchPedidos]);
 
@@ -980,11 +980,11 @@ export function useLojaEntidades() {
       .channel('loja-entidades-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'loja_entidades' }, () => {
         fetchLojaEntidades();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchLojaEntidades]);
 
