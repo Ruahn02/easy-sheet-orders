@@ -531,11 +531,11 @@ export function usePedidos() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedido_itens' }, () => {
         fetchPedidos();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchPedidos]);
 
