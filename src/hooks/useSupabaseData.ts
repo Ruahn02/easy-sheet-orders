@@ -980,11 +980,11 @@ export function useLojaEntidades() {
       .channel('loja-entidades-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'loja_entidades' }, () => {
         fetchLojaEntidades();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchLojaEntidades]);
 
