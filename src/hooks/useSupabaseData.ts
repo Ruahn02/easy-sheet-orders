@@ -513,7 +513,7 @@ export function usePedidos() {
       };
     });
 
-    setPedidos(pedidosFormatados);
+    setPedidos(prev => JSON.stringify(prev) === JSON.stringify(pedidosFormatados) ? prev : pedidosFormatados);
     setLoading(false);
   }, []);
 
