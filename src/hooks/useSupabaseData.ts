@@ -137,11 +137,11 @@ export function useLojas() {
       .channel('lojas-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lojas' }, () => {
         fetchLojas();
-      })
-      .subscribe();
+      });
+    channel.subscribe();
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
+      try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchLojas]);
 
