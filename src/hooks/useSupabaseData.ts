@@ -979,6 +979,7 @@ export function useLojaEntidades() {
   const [loading, setLoading] = useState(true);
 
   const fetchLojaEntidades = useCallback(async () => {
+    if (supabaseRestricted) return;
     const { data, error } = await supabase
       .from('loja_entidades')
       .select('*');
