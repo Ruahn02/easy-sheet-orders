@@ -1,6 +1,20 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade } from '@/types';
+
+// Flag global: para todo polling se Supabase retornar 402 (quota excedida)
+let supabaseRestricted = false;
+
+function checkRestricted(error: any): boolean {
+  if (!error) return false;
+  const msg = error?.message || '';
+  if (msg.includes('restricted') || msg.includes('exceed') || error?.code === '402') {
+    supabaseRestricted = true;
+    console.warn('[Polling] Supabase restrito (402). Polling pausado até recarregar a página.');
+    return true;
+  }
+  return false;
+}
 
 // ============= ENTIDADES =============
 export function useEntidades() {
@@ -8,11 +22,13 @@ export function useEntidades() {
   const [loading, setLoading] = useState(true);
 
   const fetchEntidades = useCallback(async () => {
+    if (supabaseRestricted) return;
     const { data, error } = await supabase
       .from('entidades')
       .select('*')
       .order('criado_em', { ascending: false });
 
+    if (checkRestricted(error)) return;
     if (!error && data) {
       const mapped = data.map(e => ({
         id: e.id,
@@ -35,9 +51,9 @@ export function useEntidades() {
     fetchEntidades();
   }, [fetchEntidades]);
 
-  // Polling 5s + Realtime
+  // Polling 30s + Realtime
   useEffect(() => {
-    const interval = setInterval(fetchEntidades, 5000);
+    const interval = setInterval(fetchEntidades, 30000);
     const channel = supabase
       .channel('entidades-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'entidades' }, () => {
@@ -109,12 +125,14 @@ export function useLojas() {
   const [loading, setLoading] = useState(true);
 
   const fetchLojas = useCallback(async () => {
+    if (supabaseRestricted) return;
     const { data, error } = await supabase
       .from('lojas')
       .select('*')
       .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
+    if (checkRestricted(error)) return;
     if (!error && data) {
       const mapped = data.map(l => ({
         id: l.id,
@@ -132,9 +150,9 @@ export function useLojas() {
     fetchLojas();
   }, [fetchLojas]);
 
-  // Polling 5s + Realtime
+  // Polling 30s + Realtime
   useEffect(() => {
-    const interval = setInterval(fetchLojas, 5000);
+    const interval = setInterval(fetchLojas, 30000);
     const channel = supabase
       .channel('lojas-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'lojas' }, () => {
@@ -254,12 +272,14 @@ export function useProdutos() {
   const [loading, setLoading] = useState(true);
 
   const fetchProdutos = useCallback(async () => {
+    if (supabaseRestricted) return;
     const { data: produtosData, error: produtosError } = await supabase
       .from('produtos')
       .select('*')
       .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
+    if (checkRestricted(produtosError)) return;
     if (produtosError || !produtosData) {
       setLoading(false);
       return;
@@ -299,9 +319,9 @@ export function useProdutos() {
     fetchProdutos();
   }, [fetchProdutos]);
 
-  // Polling 5s + Realtime
+  // Polling 30s + Realtime
   useEffect(() => {
-    const interval = setInterval(fetchProdutos, 5000);
+    const interval = setInterval(fetchProdutos, 30000);
     const channel = supabase
       .channel('produtos-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'produtos' }, () => {
@@ -425,6 +445,7 @@ export function usePedidos() {
   const [loading, setLoading] = useState(true);
 
   const fetchPedidos = useCallback(async () => {
+    if (supabaseRestricted) return;
     let allPedidos: any[] = [];
     let pedidoOffset = 0;
     const pedidoPageSize = 1000;
@@ -438,6 +459,7 @@ export function usePedidos() {
         .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
 
       if (error) {
+        if (checkRestricted(error)) return;
         console.error('Erro ao buscar pedidos:', error);
         break;
       }
@@ -521,12 +543,12 @@ export function usePedidos() {
     fetchPedidos();
   }, [fetchPedidos]);
 
-  // Polling 5s (só com aba visível) + Realtime
+  // Polling 30s (só com aba visível) + Realtime
   useEffect(() => {
     const poll = () => {
       if (!document.hidden) fetchPedidos();
     };
-    const interval = setInterval(poll, 5000);
+    const interval = setInterval(poll, 30000);
     const channel = supabase
       .channel('pedidos-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
@@ -976,9 +998,9 @@ export function useLojaEntidades() {
     fetchLojaEntidades();
   }, [fetchLojaEntidades]);
 
-  // Polling 5s + Realtime
+  // Polling 30s + Realtime
   useEffect(() => {
-    const interval = setInterval(fetchLojaEntidades, 5000);
+    const interval = setInterval(fetchLojaEntidades, 30000);
     const channel = supabase
       .channel('loja-entidades-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'loja_entidades' }, () => {
