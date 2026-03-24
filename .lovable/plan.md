@@ -1,36 +1,29 @@
 
 
-## Plano: Eliminar re-renders desnecessários do polling
+## Plano: Aumentar polling de 5s para 30s + parar polling em erro 402
 
 ### Problema
-O polling a cada 5 segundos chama `setEntidades()`, `setLojas()`, `setProdutos()`, `setPedidos()` **mesmo quando os dados não mudaram**. Isso causa re-renders desnecessários a cada 5 segundos em todos os componentes, gerando o "delay" que você está sentindo.
+O polling a cada 5 segundos gerou excesso de requisicoes e estourou a cota de egress do Supabase (erro 402). Mesmo com o Supabase bloqueado, o polling continua disparando a cada 5 segundos, piorando a situacao.
 
-### Solução
-Adicionar uma comparação simples antes de chamar `setState`: só atualizar o estado se os dados realmente mudaram. Isso evita re-renders quando o polling retorna os mesmos dados.
+### Solucao (2 partes)
 
-### Alteração em `src/hooks/useSupabaseData.ts`
+**1. Aumentar intervalo de 5s para 30s**
+Em `src/hooks/useSupabaseData.ts`, trocar todos os `setInterval(..., 5000)` por `setInterval(..., 30000)` nos 5 hooks:
+- `useEntidades` (linha 40)
+- `useLojas` (linha 137)
+- `useProdutos` (linha 304)
+- `usePedidos` (linha 529)
+- `useLojaEntidades` (linha 981)
 
-Em cada função `fetch` (`fetchEntidades`, `fetchLojas`, `fetchProdutos`, `fetchPedidos`), trocar o `setState` direto por uma comparação:
-
-```typescript
-// De:
-setEntidades(mappedData);
-
-// Para:
-setEntidades(prev => {
-  const next = JSON.stringify(mappedData);
-  return JSON.stringify(prev) === next ? prev : mappedData;
-});
-```
-
-Mesma lógica para `setLojas`, `setProdutos` e `setPedidos`.
+**2. Parar polling quando receber erro 402**
+Adicionar verificacao nas funcoes fetch: se o Supabase retornar erro com "restricted" ou status 402, guardar um flag e parar de fazer novas requisicoes ate o usuario recarregar a pagina. Isso evita que o polling continue consumindo cota quando o Supabase ja esta bloqueado.
 
 ### Resultado
-- Polling continua a cada 5 segundos (mantém a segurança)
-- Realtime continua funcionando
-- Re-renders só acontecem quando dados realmente mudam
-- Zero delay na interface
+- 6x menos requisicoes (de 12/min para 2/min por hook)
+- Realtime continua funcionando como complemento
+- Se o Supabase bloquear, o polling para automaticamente
+- Seus dados estao seguros no banco, vao voltar quando a cota resetar
 
 ### Risco
-Nenhum. Apenas evita setState quando desnecessário.
+Nenhum. Apenas muda o intervalo e adiciona protecao contra erro 402.
 
