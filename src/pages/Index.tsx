@@ -33,6 +33,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <OfflineIndicator />
       {/* Header */}
       <header className="gradient-primary px-4 py-6 shadow-lg relative">
         <div className="absolute right-4 top-4">
