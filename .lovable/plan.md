@@ -1,57 +1,94 @@
 
 
-## Calculo de Consumo de Egress do Supabase
+## Plano: Sistema de Resiliência Offline com Fila de Pedidos
 
-### Dados reais do banco
+### Arquitetura
 
-| Tabela | Linhas | Tamanho JSON estimado |
-|--------|--------|-----------------------|
-| entidades | 6 | ~2 KB |
-| lojas | 68 | ~15 KB |
-| produtos | 252 | ~90 KB |
-| pedidos | 809 | ~280 KB |
-| pedido_itens | 10.859 | ~2.100 KB |
-| loja_entidades | 188 | ~38 KB |
-| **Total por ciclo** | | **~2,5 MB** |
+Criar 3 novos módulos no frontend, sem alterar o banco de dados:
 
-O **grande vilao** e a tabela `pedido_itens` (10.859 linhas) que sozinha representa ~85% do egress por ciclo. E ela e buscada inteira a cada polling do `usePedidos`.
+```text
+src/
+  lib/
+    offlineCache.ts      ← Cache de dados (localStorage)
+    offlineQueue.ts      ← Fila de pedidos pendentes (localStorage)
+    connectionMonitor.ts ← Monitor de conexão + reenvio automático
+  components/
+    OfflineIndicator.tsx  ← Banner de status de conexão
+```
 
-### Limite do Supabase Free Tier: **5 GB/mes**
+### 1. Cache Local de Dados (`src/lib/offlineCache.ts`)
 
-### Cenarios (por aba aberta)
+- Funções `saveToCache(key, data)` e `loadFromCache(key)` usando localStorage
+- Chaves: `cache_entidades`, `cache_lojas`, `cache_produtos`, `cache_loja_entidades`
+- Cada entrada inclui timestamp para saber quando foi atualizada
+- Nos hooks `useEntidades`, `useLojas`, `useProdutos`, `useLojaEntidades`:
+  - Após fetch com sucesso → salvar no cache
+  - Se fetch falhar (erro de rede ou 402) → carregar do cache e usar como fallback
+  - O `setLoading(false)` acontece mesmo usando cache
 
-| Intervalo | Ciclos/min | Egress/hora | Horas pra estourar 5GB |
-|-----------|-----------|-------------|------------------------|
-| **30s** | 2 | ~300 MB/h | **~16 horas** |
-| **1 min** | 1 | ~150 MB/h | **~33 horas** |
-| **5 min** | 0.2 | ~30 MB/h | **~167 horas (~7 dias)** |
+### 2. Fila de Pedidos Offline (`src/lib/offlineQueue.ts`)
 
-### Conclusao
+- Estrutura de cada pedido na fila:
+  ```typescript
+  interface PedidoOffline {
+    localId: string;        // UUID gerado no frontend (crypto.randomUUID)
+    pedidoData: { ... };    // Dados completos do pedido
+    status: 'pendente_envio' | 'enviando' | 'enviado' | 'erro';
+    criadoEm: string;       // ISO timestamp
+    tentativas: number;
+  }
+  ```
+- Funções: `addToQueue()`, `getQueue()`, `removeFromQueue()`, `updateQueueItem()`
+- Armazenamento em `localStorage` com chave `pedidos_offline_queue`
 
-- **30 segundos**: Estoura em menos de 1 dia de uso continuo. **Nao resolve.**
-- **1 minuto**: Estoura em ~1.5 dias. **Nao resolve.**
-- **5 minutos**: Aguenta ~7 dias de uso continuo. **Ainda pode estourar** se tiver multiplas abas ou varios usuarios.
+### 3. Modificação do `addPedido` em `useSupabaseData.ts`
 
-### A solucao real: nao buscar `pedido_itens` no polling
+- Antes de tentar enviar ao Supabase:
+  - Gerar `localId` via `crypto.randomUUID()`
+  - Salvar na fila offline com status `pendente_envio`
+- Tentar enviar normalmente
+- Se sucesso → remover da fila, retornar resultado
+- Se falha (rede ou 402) → manter na fila, retornar objeto local com flag `offline: true` para que o toast mostre "Pedido salvo localmente"
+- O `FormularioPedido.tsx` ajusta o toast baseado no resultado
 
-O problema nao e o intervalo — e buscar 10.859 linhas de `pedido_itens` a cada ciclo. A solucao correta e:
+### 4. Monitor de Conexão (`src/lib/connectionMonitor.ts`)
 
-1. **Remover o polling do hook `usePedidos`** e confiar apenas no **Realtime** (que ja esta configurado) para atualizacoes em tempo real — o Realtime nao consome egress significativo pois so envia os registros que mudaram.
+- Escutar eventos `online`/`offline` do navegador
+- Quando voltar online, tentar reenviar todos os pedidos da fila
+- Retry com backoff: 5s, 15s, 30s, 60s
+- Máximo de 5 tentativas automáticas por pedido
+- Hook `useConnectionMonitor()` para uso nos componentes
 
-2. **Manter polling apenas nos hooks leves** (entidades, lojas, produtos, loja_entidades) que juntos somam ~145 KB por ciclo — a cada 30s isso daria apenas ~7 MB/hora, totalmente seguro.
+### 5. Controle de Duplicidade
 
-3. **Alternativa**: no `usePedidos`, buscar apenas pedidos recentes (ultimos 7 dias) em vez de todos, reduzindo drasticamente o volume.
+- Adicionar coluna virtual: não. Usar abordagem client-side.
+- Antes de reenviar, verificar no localStorage se o `localId` já foi marcado como `enviado`
+- Após envio com sucesso, guardar o `localId` em `pedidos_enviados_ids` no localStorage por 7 dias
 
-### Plano de implementacao
+### 6. Componente de Feedback (`src/components/OfflineIndicator.tsx`)
 
-**Arquivo**: `src/hooks/useSupabaseData.ts`
+- Banner fixo no topo quando offline: "Sem conexão — pedidos serão salvos localmente"
+- Badge no `OrderFooter` quando há pedidos pendentes na fila: "X pedido(s) aguardando envio"
+- No `FormularioPedido`, toast diferenciado:
+  - Sucesso online: "Pedido enviado com sucesso!"
+  - Sucesso offline: "Pedido salvo localmente. Será enviado automaticamente."
 
-1. No `usePedidos` (~linha 547): remover o `setInterval` do polling e manter apenas o canal Realtime para atualizacoes
-2. Nos outros 4 hooks: manter polling a cada 30s (145 KB/ciclo = seguro)
-3. Adicionar filtro de data no `fetchPedidos`: buscar apenas pedidos dos ultimos 30 dias em vez de todos, reduzindo o volume de `pedido_itens` de 2MB para uma fracao
+### 7. Alterações por arquivo
 
-### Resultado esperado
-- Egress dos 4 hooks leves: ~7 MB/hora → ~5 GB em 700+ horas (~29 dias). Cabe no mes.
-- Pedidos atualizados via Realtime sem consumo de polling
-- Dados historicos acessiveis sob demanda (pagina admin)
+| Arquivo | Alteração |
+|---------|-----------|
+| `src/lib/offlineCache.ts` | **Novo** — cache localStorage |
+| `src/lib/offlineQueue.ts` | **Novo** — fila de pedidos offline |
+| `src/lib/connectionMonitor.ts` | **Novo** — monitor + reenvio automático |
+| `src/components/OfflineIndicator.tsx` | **Novo** — banner de status |
+| `src/hooks/useSupabaseData.ts` | Modificar `fetchEntidades/Lojas/Produtos/LojaEntidades` para salvar/ler cache. Modificar `addPedido` para usar fila offline |
+| `src/pages/FormularioPedido.tsx` | Adicionar `OfflineIndicator`, ajustar toast baseado em resultado offline |
+| `src/components/order/OrderFooter.tsx` | Adicionar badge de pedidos pendentes |
+| `src/App.tsx` | Montar `useConnectionMonitor` no nível raiz |
+
+### Riscos
+
+- localStorage tem limite de ~5MB. Para este caso de uso (cache de ~150KB + fila de pedidos) é mais que suficiente.
+- Não altera nenhuma tabela no Supabase.
+- Fluxo atual continua idêntico quando online.
 
