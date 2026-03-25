@@ -7,6 +7,7 @@ import { ProductSearch } from '@/components/order/ProductSearch';
 import { ProductCard } from '@/components/order/ProductCard';
 import { OrderFooter } from '@/components/order/OrderFooter';
 import { StoreSelect } from '@/components/order/StoreSelect';
+import { OfflineIndicator } from '@/components/OfflineIndicator';
 import { useToast } from '@/hooks/use-toast';
 import { PedidoItem, MOTIVOS_SOLICITACAO } from '@/types';
 import { Input } from '@/components/ui/input';
@@ -200,6 +201,8 @@ const FormularioPedido = () => {
     setIsSubmitting(false);
 
     if (result) {
+      const isOffline = result?.offline === true;
+      
       setUltimaLojaId(selectedLojaId!);
       
       // Reset form
@@ -213,10 +216,17 @@ const FormularioPedido = () => {
       setMatriculaFuncionario('');
       setMotivoSolicitacao('');
 
-      toast({
-        title: 'Pedido enviado com sucesso!',
-        description: `${selectedItems.length} produto(s) foram solicitados.`,
-      });
+      if (isOffline) {
+        toast({
+          title: 'Pedido salvo localmente',
+          description: 'Será enviado automaticamente quando a conexão voltar.',
+        });
+      } else {
+        toast({
+          title: 'Pedido enviado com sucesso!',
+          description: `${selectedItems.length} produto(s) foram solicitados.`,
+        });
+      }
     } else {
       toast({
         title: 'Erro ao enviar pedido',
@@ -312,6 +322,7 @@ const FormularioPedido = () => {
   return (
     <ErrorBoundary fallbackTitle="Erro no formulário" fallbackDescription="O formulário encontrou um problema. Clique abaixo para tentar novamente.">
     <div className="min-h-screen bg-background pb-24">
+      <OfflineIndicator />
       {/* Header */}
       <div className="gradient-primary text-primary-foreground">
         <div className="px-4 py-3 flex items-center justify-between">
