@@ -446,6 +446,12 @@ export function usePedidos() {
 
   const fetchPedidos = useCallback(async () => {
     if (supabaseRestricted) return;
+    
+    // Filtro: apenas pedidos dos últimos 30 dias para reduzir egress
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const filterDate = thirtyDaysAgo.toISOString();
+    
     let allPedidos: any[] = [];
     let pedidoOffset = 0;
     const pedidoPageSize = 1000;
