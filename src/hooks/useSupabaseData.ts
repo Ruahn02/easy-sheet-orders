@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade } from '@/types';
+import { saveToCache, loadFromCache } from '@/lib/offlineCache';
+import { addToQueue, removeFromQueue, markAsSent, PedidoOfflineData } from '@/lib/offlineQueue';
 
 // Flag global: para todo polling se Supabase retornar 402 (quota excedida)
 let supabaseRestricted = false;
@@ -28,8 +30,19 @@ export function useEntidades() {
       .select('*')
       .order('criado_em', { ascending: false });
 
-    if (checkRestricted(error)) return;
-    if (!error && data) {
+    if (checkRestricted(error)) {
+      const cached = loadFromCache<Entidade[]>('entidades');
+      if (cached) { setEntidades(cached); console.log('[Cache] Usando entidades do cache local'); }
+      setLoading(false);
+      return;
+    }
+    if (error) {
+      const cached = loadFromCache<Entidade[]>('entidades');
+      if (cached) { setEntidades(cached); console.log('[Cache] Usando entidades do cache local (erro de rede)'); }
+      setLoading(false);
+      return;
+    }
+    if (data) {
       const mapped = data.map(e => ({
         id: e.id,
         nome: e.nome,
@@ -43,6 +56,7 @@ export function useEntidades() {
         criadoEm: new Date(e.criado_em),
       }));
       setEntidades(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
+      saveToCache('entidades', mapped);
     }
     setLoading(false);
   }, []);
@@ -132,8 +146,13 @@ export function useLojas() {
       .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
-    if (checkRestricted(error)) return;
-    if (!error && data) {
+    if (checkRestricted(error) || error) {
+      const cached = loadFromCache<Loja[]>('lojas');
+      if (cached) { setLojas(cached); console.log('[Cache] Usando lojas do cache local'); }
+      setLoading(false);
+      return;
+    }
+    if (data) {
       const mapped = data.map(l => ({
         id: l.id,
         nome: l.nome,
@@ -142,6 +161,7 @@ export function useLojas() {
         criadoEm: new Date(l.criado_em),
       }));
       setLojas(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
+      saveToCache('lojas', mapped);
     }
     setLoading(false);
   }, []);
@@ -279,8 +299,9 @@ export function useProdutos() {
       .order('ordem', { ascending: true, nullsFirst: false })
       .order('criado_em', { ascending: false });
 
-    if (checkRestricted(produtosError)) return;
-    if (produtosError || !produtosData) {
+    if (checkRestricted(produtosError) || produtosError || !produtosData) {
+      const cached = loadFromCache<Produto[]>('produtos');
+      if (cached) { setProdutos(cached); console.log('[Cache] Usando produtos do cache local'); }
       setLoading(false);
       return;
     }
@@ -311,7 +332,7 @@ export function useProdutos() {
       criadoEm: new Date(p.criado_em),
     }));
     setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
-
+    saveToCache('produtos', mapped);
     setLoading(false);
   }, []);
 
@@ -567,69 +588,86 @@ export function usePedidos() {
   }, [fetchPedidos]);
 
   const addPedido = async (pedido: { lojaId: string; entidadeId: string; observacoes?: string; itens: PedidoItem[]; nomeSolicitante?: string; emailSolicitante?: string; nomeColaborador?: string; funcaoColaborador?: string; matriculaFuncionario?: string; motivoSolicitacao?: string }) => {
-    const { data: pedidoData, error: pedidoError } = await supabase
-      .from('pedidos')
-      .insert({
-        loja_id: pedido.lojaId,
-        entidade_id: pedido.entidadeId,
-        observacoes: pedido.observacoes || null,
-        status: 'pendente',
-        nome_solicitante: pedido.nomeSolicitante || null,
-        email_solicitante: pedido.emailSolicitante || null,
-        nome_colaborador: pedido.nomeColaborador || null,
-        funcao_colaborador: pedido.funcaoColaborador || null,
-        matricula_funcionario: pedido.matriculaFuncionario || null,
-        motivo_solicitacao: pedido.motivoSolicitacao || null,
-      } as any)
-      .select()
-      .single();
-
-    if (pedidoError || !pedidoData) {
-      console.error('Erro ao criar pedido:', pedidoError);
-      return null;
-    }
-
-    const itensInsert = pedido.itens.map(item => ({
-      pedido_id: pedidoData.id,
-      produto_id: item.produtoId,
-      quantidade: item.quantidade,
-    }));
-
-    const { error: itensError } = await supabase
-      .from('pedido_itens')
-      .insert(itensInsert);
-
-    if (itensError) {
-      console.error('Erro ao criar itens do pedido:', {
-        pedidoId: pedidoData.id,
-        quantidadeItens: itensInsert.length,
-        erro: itensError,
-        itens: itensInsert
-      });
-      
-      await supabase.from('pedidos').delete().eq('id', pedidoData.id);
-      
-      return null;
-    }
-
-    const novoPedido: Pedido = {
-      id: pedidoData.id,
+    // 1. Salvar na fila offline imediatamente (segurança)
+    const offlineData: PedidoOfflineData = {
       lojaId: pedido.lojaId,
       entidadeId: pedido.entidadeId,
       observacoes: pedido.observacoes,
-      data: new Date(pedidoData.data),
-      status: 'pendente',
-      corLinha: undefined,
+      emailSolicitante: pedido.emailSolicitante,
       itens: pedido.itens,
       nomeSolicitante: pedido.nomeSolicitante,
-      emailSolicitante: pedido.emailSolicitante,
       nomeColaborador: pedido.nomeColaborador,
       funcaoColaborador: pedido.funcaoColaborador,
       matriculaFuncionario: pedido.matriculaFuncionario,
       motivoSolicitacao: pedido.motivoSolicitacao,
     };
-    setPedidos(prev => [novoPedido, ...prev]);
-    return pedidoData;
+    const localId = addToQueue(offlineData);
+
+    // 2. Tentar enviar ao Supabase
+    try {
+      const { data: pedidoData, error: pedidoError } = await supabase
+        .from('pedidos')
+        .insert({
+          loja_id: pedido.lojaId,
+          entidade_id: pedido.entidadeId,
+          observacoes: pedido.observacoes || null,
+          status: 'pendente',
+          nome_solicitante: pedido.nomeSolicitante || null,
+          email_solicitante: pedido.emailSolicitante || null,
+          nome_colaborador: pedido.nomeColaborador || null,
+          funcao_colaborador: pedido.funcaoColaborador || null,
+          matricula_funcionario: pedido.matriculaFuncionario || null,
+          motivo_solicitacao: pedido.motivoSolicitacao || null,
+        } as any)
+        .select()
+        .single();
+
+      if (pedidoError || !pedidoData) {
+        throw pedidoError || new Error('Sem resposta');
+      }
+
+      const itensInsert = pedido.itens.map(item => ({
+        pedido_id: pedidoData.id,
+        produto_id: item.produtoId,
+        quantidade: item.quantidade,
+      }));
+
+      const { error: itensError } = await supabase
+        .from('pedido_itens')
+        .insert(itensInsert);
+
+      if (itensError) {
+        await supabase.from('pedidos').delete().eq('id', pedidoData.id);
+        throw itensError;
+      }
+
+      // 3. Sucesso — remover da fila offline
+      markAsSent(localId);
+      removeFromQueue(localId);
+
+      const novoPedido: Pedido = {
+        id: pedidoData.id,
+        lojaId: pedido.lojaId,
+        entidadeId: pedido.entidadeId,
+        observacoes: pedido.observacoes,
+        data: new Date(pedidoData.data),
+        status: 'pendente',
+        corLinha: undefined,
+        itens: pedido.itens,
+        nomeSolicitante: pedido.nomeSolicitante,
+        emailSolicitante: pedido.emailSolicitante,
+        nomeColaborador: pedido.nomeColaborador,
+        funcaoColaborador: pedido.funcaoColaborador,
+        matriculaFuncionario: pedido.matriculaFuncionario,
+        motivoSolicitacao: pedido.motivoSolicitacao,
+      };
+      setPedidos(prev => [novoPedido, ...prev]);
+      return pedidoData;
+    } catch (err) {
+      // 4. Falha — manter na fila offline, retornar objeto com flag offline
+      console.warn('[addPedido] Falha ao enviar, salvo offline:', err);
+      return { id: localId, offline: true } as any;
+    }
   };
 
   const updatePedidoStatus = async (id: string, status: 'pendente' | 'feito' | 'nao_atendido', observacoes?: string) => {
@@ -986,13 +1024,21 @@ export function useLojaEntidades() {
       .from('loja_entidades')
       .select('*');
 
-    if (!error && data) {
-      setLojaEntidades(data.map((le: any) => ({
+    if (error) {
+      const cached = loadFromCache<LojaEntidade[]>('lojaEntidades');
+      if (cached) { setLojaEntidades(cached); console.log('[Cache] Usando lojaEntidades do cache local'); }
+      setLoading(false);
+      return;
+    }
+    if (data) {
+      const mapped = data.map((le: any) => ({
         id: le.id,
         lojaId: le.loja_id,
         entidadeId: le.entidade_id,
         criadoEm: new Date(le.criado_em),
-      })));
+      }));
+      setLojaEntidades(mapped);
+      saveToCache('lojaEntidades', mapped);
     }
     setLoading(false);
   }, []);
