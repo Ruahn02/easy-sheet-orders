@@ -1,29 +1,57 @@
 
 
-## Plano: Aumentar polling de 5s para 30s + parar polling em erro 402
+## Calculo de Consumo de Egress do Supabase
 
-### Problema
-O polling a cada 5 segundos gerou excesso de requisicoes e estourou a cota de egress do Supabase (erro 402). Mesmo com o Supabase bloqueado, o polling continua disparando a cada 5 segundos, piorando a situacao.
+### Dados reais do banco
 
-### Solucao (2 partes)
+| Tabela | Linhas | Tamanho JSON estimado |
+|--------|--------|-----------------------|
+| entidades | 6 | ~2 KB |
+| lojas | 68 | ~15 KB |
+| produtos | 252 | ~90 KB |
+| pedidos | 809 | ~280 KB |
+| pedido_itens | 10.859 | ~2.100 KB |
+| loja_entidades | 188 | ~38 KB |
+| **Total por ciclo** | | **~2,5 MB** |
 
-**1. Aumentar intervalo de 5s para 30s**
-Em `src/hooks/useSupabaseData.ts`, trocar todos os `setInterval(..., 5000)` por `setInterval(..., 30000)` nos 5 hooks:
-- `useEntidades` (linha 40)
-- `useLojas` (linha 137)
-- `useProdutos` (linha 304)
-- `usePedidos` (linha 529)
-- `useLojaEntidades` (linha 981)
+O **grande vilao** e a tabela `pedido_itens` (10.859 linhas) que sozinha representa ~85% do egress por ciclo. E ela e buscada inteira a cada polling do `usePedidos`.
 
-**2. Parar polling quando receber erro 402**
-Adicionar verificacao nas funcoes fetch: se o Supabase retornar erro com "restricted" ou status 402, guardar um flag e parar de fazer novas requisicoes ate o usuario recarregar a pagina. Isso evita que o polling continue consumindo cota quando o Supabase ja esta bloqueado.
+### Limite do Supabase Free Tier: **5 GB/mes**
 
-### Resultado
-- 6x menos requisicoes (de 12/min para 2/min por hook)
-- Realtime continua funcionando como complemento
-- Se o Supabase bloquear, o polling para automaticamente
-- Seus dados estao seguros no banco, vao voltar quando a cota resetar
+### Cenarios (por aba aberta)
 
-### Risco
-Nenhum. Apenas muda o intervalo e adiciona protecao contra erro 402.
+| Intervalo | Ciclos/min | Egress/hora | Horas pra estourar 5GB |
+|-----------|-----------|-------------|------------------------|
+| **30s** | 2 | ~300 MB/h | **~16 horas** |
+| **1 min** | 1 | ~150 MB/h | **~33 horas** |
+| **5 min** | 0.2 | ~30 MB/h | **~167 horas (~7 dias)** |
+
+### Conclusao
+
+- **30 segundos**: Estoura em menos de 1 dia de uso continuo. **Nao resolve.**
+- **1 minuto**: Estoura em ~1.5 dias. **Nao resolve.**
+- **5 minutos**: Aguenta ~7 dias de uso continuo. **Ainda pode estourar** se tiver multiplas abas ou varios usuarios.
+
+### A solucao real: nao buscar `pedido_itens` no polling
+
+O problema nao e o intervalo — e buscar 10.859 linhas de `pedido_itens` a cada ciclo. A solucao correta e:
+
+1. **Remover o polling do hook `usePedidos`** e confiar apenas no **Realtime** (que ja esta configurado) para atualizacoes em tempo real — o Realtime nao consome egress significativo pois so envia os registros que mudaram.
+
+2. **Manter polling apenas nos hooks leves** (entidades, lojas, produtos, loja_entidades) que juntos somam ~145 KB por ciclo — a cada 30s isso daria apenas ~7 MB/hora, totalmente seguro.
+
+3. **Alternativa**: no `usePedidos`, buscar apenas pedidos recentes (ultimos 7 dias) em vez de todos, reduzindo drasticamente o volume.
+
+### Plano de implementacao
+
+**Arquivo**: `src/hooks/useSupabaseData.ts`
+
+1. No `usePedidos` (~linha 547): remover o `setInterval` do polling e manter apenas o canal Realtime para atualizacoes
+2. Nos outros 4 hooks: manter polling a cada 30s (145 KB/ciclo = seguro)
+3. Adicionar filtro de data no `fetchPedidos`: buscar apenas pedidos dos ultimos 30 dias em vez de todos, reduzindo o volume de `pedido_itens` de 2MB para uma fracao
+
+### Resultado esperado
+- Egress dos 4 hooks leves: ~7 MB/hora → ~5 GB em 700+ horas (~29 dias). Cabe no mes.
+- Pedidos atualizados via Realtime sem consumo de polling
+- Dados historicos acessiveis sob demanda (pagina admin)
 
