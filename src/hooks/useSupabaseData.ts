@@ -446,6 +446,12 @@ export function usePedidos() {
 
   const fetchPedidos = useCallback(async () => {
     if (supabaseRestricted) return;
+    
+    // Filtro: apenas pedidos dos últimos 30 dias para reduzir egress
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const filterDate = thirtyDaysAgo.toISOString();
+    
     let allPedidos: any[] = [];
     let pedidoOffset = 0;
     const pedidoPageSize = 1000;
@@ -455,6 +461,7 @@ export function usePedidos() {
       const { data: batch, error } = await supabase
         .from('pedidos')
         .select('*')
+        .gte('data', filterDate)
         .order('data', { ascending: false })
         .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
 
@@ -543,12 +550,8 @@ export function usePedidos() {
     fetchPedidos();
   }, [fetchPedidos]);
 
-  // Polling 30s (só com aba visível) + Realtime
+  // Apenas Realtime (sem polling) — pedidos+itens são pesados demais para polling
   useEffect(() => {
-    const poll = () => {
-      if (!document.hidden) fetchPedidos();
-    };
-    const interval = setInterval(poll, 30000);
     const channel = supabase
       .channel('pedidos-sync')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
@@ -559,7 +562,6 @@ export function usePedidos() {
       });
     channel.subscribe();
     return () => {
-      clearInterval(interval);
       try { supabase.removeChannel(channel); } catch (_) {}
     };
   }, [fetchPedidos]);
