@@ -301,55 +301,21 @@ export function useCodigoAcesso() {
 
 // ============= PRODUTOS =============
 export const useProdutos = () => {
-  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [produtos, setProdutos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchProdutos = async () => {
     setLoading(true);
 
-    try {
-      // Busca produtos
-      const { data: produtosData, error } = await supabase.from("produtos").select("*");
+    const { data: produtosData, error: produtosError } = await supabase.from("produtos").select("*");
+    if (produtosError) console.error("Erro produtos:", produtosError);
+    else console.log("Produtos:", produtosData);
 
-      if (error) throw error;
+    const { data: relData, error: relError } = await supabase.from("produtos_entidades").select("*");
+    if (relError) console.error("Erro produtos_entidades:", relError);
+    else console.log("Produtos_Entidades:", relData);
 
-      // Busca relações produtos_entidades
-      const { data: relData, error: relError } = await supabase
-        .from("produtos_entidades")
-        .select("produto_id, entidade_id");
-
-      if (relError) throw relError;
-
-      // Mapeia entidades por produto
-      const entidadesPorProduto: Record<string, string[]> = {};
-      (relData || []).forEach((rel: { produto_id: string; entidade_id: string }) => {
-        if (!entidadesPorProduto[rel.produto_id]) {
-          entidadesPorProduto[rel.produto_id] = [];
-        }
-        entidadesPorProduto[rel.produto_id].push(rel.entidade_id);
-      });
-
-      // Mapeia produtos finais
-      const mapped = (produtosData || []).map((p) => ({
-        id: p.id,
-        codigo: p.codigo,
-        nome: p.nome,
-        qtdMaxima: p.qtd_maxima,
-        fotoUrl: p.imagem_url || undefined,
-        status: p.status as "ativo" | "inativo",
-        entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
-        ordem: p.ordem ? Number(p.ordem) : undefined,
-        corCodigo: p.cor_codigo || undefined,
-        criadoEm: new Date(p.criado_em),
-      }));
-
-      console.log("Produtos carregados:", mapped);
-      setProdutos(mapped);
-    } catch (err) {
-      console.error("Erro ao buscar produtos:", err);
-      setProdutos([]);
-    }
-
+    setProdutos(produtosData || []);
     setLoading(false);
   };
 
