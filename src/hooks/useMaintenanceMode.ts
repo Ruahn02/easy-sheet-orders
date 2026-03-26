@@ -7,13 +7,13 @@ export function useMaintenanceMode() {
 
   const fetchMaintenanceMode = useCallback(async () => {
     const { data, error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .select('valor')
       .eq('chave', 'maintenance_mode')
       .single();
 
     if (!error && data) {
-      setIsMaintenanceMode(data.valor === 'true');
+      setIsMaintenanceMode((data as any).valor === 'true');
     }
     setLoading(false);
   }, []);
@@ -25,7 +25,7 @@ export function useMaintenanceMode() {
   const toggleMaintenanceMode = async () => {
     const newValue = !isMaintenanceMode;
     const { error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .update({ valor: newValue ? 'true' : 'false' })
       .eq('chave', 'maintenance_mode');
 

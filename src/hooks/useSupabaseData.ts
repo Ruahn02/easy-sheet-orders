@@ -242,13 +242,13 @@ export function useCodigoAcesso() {
 
   const fetchCodigoAcesso = useCallback(async () => {
     const { data, error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .select('valor')
       .eq('chave', 'codigo_acesso')
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAcesso(data.valor);
+      setCodigoAcesso((data as any).valor);
     }
     setLoading(false);
   }, []);
@@ -259,20 +259,20 @@ export function useCodigoAcesso() {
 
   const validarCodigo = async (codigo: string): Promise<boolean> => {
     const { data, error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .select('valor')
       .eq('chave', 'codigo_acesso')
       .maybeSingle();
 
     if (!error && data) {
-      return data.valor.toUpperCase() === codigo.toUpperCase();
+      return (data as any).valor.toUpperCase() === codigo.toUpperCase();
     }
     return false;
   };
 
   const updateCodigoAcesso = async (novoCodigo: string) => {
     const { error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .update({ valor: novoCodigo })
       .eq('chave', 'codigo_acesso');
     
@@ -307,11 +307,11 @@ export function useProdutos() {
     }
 
     const { data: relData } = await supabase
-      .from('produto_entidades')
+      .from('produtos_entidades' as any)
       .select('produto_id, entidade_id');
 
     const entidadesPorProduto: Record<string, string[]> = {};
-    (relData || []).forEach((rel: { produto_id: string; entidade_id: string }) => {
+    ((relData || []) as any[]).forEach((rel: { produto_id: string; entidade_id: string }) => {
       if (!entidadesPorProduto[rel.produto_id]) {
         entidadesPorProduto[rel.produto_id] = [];
       }
@@ -327,11 +327,11 @@ export function useProdutos() {
       status: p.status as 'ativo' | 'inativo',
       entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
       entidadeId: p.entidade_id,
-      ordem: p.ordem ?? undefined,
+      ordem: p.ordem ? Number(p.ordem) : undefined,
       corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
     }));
-    setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
+    setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped as Produto[]);
     saveToCache('produtos', mapped);
     setLoading(false);
   }, []);
@@ -379,7 +379,7 @@ export function useProdutos() {
           produto_id: data.id,
           entidade_id: entidadeId,
         }));
-        await supabase.from('produto_entidades').insert(relInserts);
+        await supabase.from('produtos_entidades' as any).insert(relInserts);
       }
       
       await fetchProdutos();
@@ -408,14 +408,14 @@ export function useProdutos() {
     if (error) return false;
 
     if (updates.entidadeIds !== undefined) {
-      await supabase.from('produto_entidades').delete().eq('produto_id', id);
+      await supabase.from('produtos_entidades' as any).delete().eq('produto_id', id);
       
       if (updates.entidadeIds.length > 0) {
         const relInserts = updates.entidadeIds.map(entidadeId => ({
           produto_id: id,
           entidade_id: entidadeId,
         }));
-        await supabase.from('produto_entidades').insert(relInserts);
+        await supabase.from('produtos_entidades' as any).insert(relInserts);
       }
     }
     
@@ -438,7 +438,7 @@ export function useProdutos() {
 
   const reorderProdutos = async (orderedIds: string[]) => {
     const updates = orderedIds.map((id, index) =>
-      supabase.from('produtos').update({ ordem: index + 1 }).eq('id', id)
+      supabase.from('produtos').update({ ordem: String(index + 1) } as any).eq('id', id)
     );
     await Promise.all(updates);
     await fetchProdutos();
@@ -518,7 +518,7 @@ export function usePedidos() {
 
       while (hasMore) {
         const { data: batch, error } = await supabase
-          .from('pedido_itens')
+          .from('pedidos_itens' as any)
           .select('*')
           .in('pedido_id', chunk)
           .order('id', { ascending: true })
@@ -633,7 +633,7 @@ export function usePedidos() {
       }));
 
       const { error: itensError } = await supabase
-        .from('pedido_itens')
+        .from('pedidos_itens' as any)
         .insert(itensInsert);
 
       if (itensError) {
@@ -709,13 +709,13 @@ export function useCodigoAdmin() {
 
   const fetchCodigoAdmin = useCallback(async () => {
     const { data, error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .select('valor')
       .eq('chave', 'codigo_admin')
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAdmin(data.valor);
+      setCodigoAdmin((data as any).valor);
     }
     setLoading(false);
   }, []);
@@ -726,7 +726,7 @@ export function useCodigoAdmin() {
 
   const updateCodigoAdmin = async (novoCodigo: string) => {
     const { error } = await supabase
-      .from('configuracoes')
+      .from('configuracoes' as any)
       .update({ valor: novoCodigo })
       .eq('chave', 'codigo_admin');
     
@@ -853,7 +853,7 @@ export function useEstoqueEstimado(
 
         while (iHasMore) {
           const { data: batch, error } = await supabase
-            .from('pedido_itens')
+            .from('pedidos_itens' as any)
             .select('pedido_id, produto_id, quantidade')
             .in('pedido_id', chunk)
             .range(iOffset, iOffset + pageSize - 1);
