@@ -248,7 +248,7 @@ export function useCodigoAcesso() {
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAcesso(data.valor);
+      setCodigoAcesso((data as any).valor);
     }
     setLoading(false);
   }, []);
@@ -265,7 +265,7 @@ export function useCodigoAcesso() {
       .maybeSingle();
 
     if (!error && data) {
-      return data.valor.toUpperCase() === codigo.toUpperCase();
+      return (data as any).valor.toUpperCase() === codigo.toUpperCase();
     }
     return false;
   };
@@ -311,7 +311,7 @@ export function useProdutos() {
       .select('produto_id, entidade_id');
 
     const entidadesPorProduto: Record<string, string[]> = {};
-    (relData || []).forEach((rel: { produto_id: string; entidade_id: string }) => {
+    (((relData || []) as any[]).forEach((rel: { produto_id: string; entidade_id: string }) => {
       if (!entidadesPorProduto[rel.produto_id]) {
         entidadesPorProduto[rel.produto_id] = [];
       }
@@ -327,7 +327,7 @@ export function useProdutos() {
       status: p.status as 'ativo' | 'inativo',
       entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
       entidadeId: p.entidade_id,
-      ordem: p.ordem ?? undefined,
+      ordem: p.ordem ? Number(p.ordem) : undefined,
       corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
     }));
@@ -438,7 +438,7 @@ export function useProdutos() {
 
   const reorderProdutos = async (orderedIds: string[]) => {
     const updates = orderedIds.map((id, index) =>
-      supabase.from('produtos').update({ ordem: index + 1 }).eq('id', id)
+      supabase.from('produtos').update({ ordem: String(index + 1) } as any).eq('id', id)
     );
     await Promise.all(updates);
     await fetchProdutos();
@@ -715,7 +715,7 @@ export function useCodigoAdmin() {
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAdmin(data.valor);
+      setCodigoAdmin((data as any).valor);
     }
     setLoading(false);
   }, []);
