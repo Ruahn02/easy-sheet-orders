@@ -14,7 +14,7 @@ export type Database = {
   }
   public: {
     Tables: {
-      configuraçoes: {
+      configuracoes: {
         Row: {
           chave: string | null
           id: string | null
