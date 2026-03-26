@@ -300,31 +300,211 @@ export function useCodigoAcesso() {
 }
 
 // ============= PRODUTOS =============
-export const useProdutos = () => {
-  const [produtos, setProdutos] = useState<any[]>([]);
+// ============= PRODUTOS =============
+export function useProdutos() {
+  const [produtos, setProdutos] = useState<Produto[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchProdutos = async () => {
-    setLoading(true);
+  const fetchProdutos = useCallback(async () => {
+    if (supabaseRestricted) return;
+    const { data: produtosData, error: produtosError } = await supabase
+      .from("produtos")
+      .select("*")
+      .order("ordem", { ascending: true, nullsFirst: false })
+      .order("criado_em", { ascending: false });
 
-    const { data: produtosData, error: produtosError } = await supabase.from("produtos").select("*");
-    if (produtosError) console.error("Erro produtos:", produtosError);
-    else console.log("Produtos:", produtosData);
+    if (checkRestricted(produtosError) || produtosError || !produtosData) {
+      const cached = loadFromCache<Produto[]>("produtos");
+      if (cached) {
+        setProdutos(cached);
+        console.log("[Cache] Usando produtos do cache local");
+      }
+      setLoading(false);
+      return;
+    }
 
-    const { data: relData, error: relError } = await supabase.from("produtos_entidades").select("*");
-    if (relError) console.error("Erro produtos_entidades:", relError);
-    else console.log("Produtos_Entidades:", relData);
+    const { data: relData } = await supabase.from("produtos_entidades" as any).select("produto_id, entidade_id");
 
-    setProdutos(produtosData || []);
+    const entidadesPorProduto: Record<string, string[]> = {};
+    ((relData || []) as any[]).forEach((rel: { produto_id: string; entidade_id: string }) => {
+      if (!entidadesPorProduto[rel.produto_id]) {
+        entidadesPorProduto[rel.produto_id] = [];
+      }
+      entidadesPorProduto[rel.produto_id].push(rel.entidade_id);
+    });
+
+    const mapped = produtosData.map((p) => ({
+      id: p.id,
+      codigo: p.codigo,
+      nome: p.nome,
+      qtdMaxima: p.qtd_maxima,
+      fotoUrl: (p as any).imagem_url || undefined,
+      status: p.status as "ativo" | "inativo",
+      entidadeIds: entidadesPorProduto[p.id] || (p.entidade_id ? [p.entidade_id] : []),
+      entidadeId: p.entidade_id,
+      ordem: p.ordem ? Number(p.ordem) : undefined,
+      corCodigo: (p as any).cor_codigo || undefined,
+      criadoEm: new Date(p.criado_em),
+    }));
+    setProdutos((prev) => (JSON.stringify(prev) === JSON.stringify(mapped) ? prev : (mapped as Produto[])));
+    saveToCache("produtos", mapped);
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
     fetchProdutos();
-  }, []);
+  }, [fetchProdutos]);
 
-  return { produtos, loading, fetchProdutos };
-};
+  // Polling 30s + Realtime
+  useEffect(() => {
+    const interval = setInterval(fetchProdutos, 30000);
+    const channel = supabase
+      .channel("produtos-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "produtos" }, () => {
+        fetchProdutos();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "produto_entidades" }, () => {
+        fetchProdutos();
+      });
+    channel.subscribe();
+    return () => {
+      clearInterval(interval);
+      try {
+        supabase.removeChannel(channel);
+      } catch (_) {}
+    };
+  }, [fetchProdutos]);
+
+  const addProduto = async (produto: {
+    codigo: string;
+    nome: string;
+    qtdMaxima: number;
+    status: "ativo" | "inativo";
+    entidadeIds: string[];
+    ordem?: number;
+    fotoUrl?: string;
+  }) => {
+    const { data, error } = await supabase
+      .from("produtos")
+      .insert({
+        codigo: produto.codigo,
+        nome: produto.nome,
+        qtd_maxima: produto.qtdMaxima,
+        status: produto.status,
+        entidade_id: produto.entidadeIds[0] || null,
+        ordem: produto.ordem ?? null,
+        imagem_url: produto.fotoUrl || null,
+      } as any)
+      .select()
+      .single();
+
+    if (!error && data) {
+      if (produto.entidadeIds.length > 0) {
+        const relInserts = produto.entidadeIds.map((entidadeId) => ({
+          produto_id: data.id,
+          entidade_id: entidadeId,
+        }));
+        await supabase.from("produtos_entidades" as any).insert(relInserts);
+      }
+
+      await fetchProdutos();
+      return data;
+    }
+    return null;
+  };
+
+  const updateProduto = async (
+    id: string,
+    updates: Partial<{
+      codigo: string;
+      nome: string;
+      qtdMaxima: number;
+      status: "ativo" | "inativo";
+      entidadeIds: string[];
+      ordem: number | undefined;
+      fotoUrl: string | undefined;
+    }>,
+  ) => {
+    const dbUpdates: Record<string, unknown> = {};
+    if (updates.codigo !== undefined) dbUpdates.codigo = updates.codigo;
+    if (updates.nome !== undefined) dbUpdates.nome = updates.nome;
+    if (updates.qtdMaxima !== undefined) dbUpdates.qtd_maxima = updates.qtdMaxima;
+    if (updates.status !== undefined) dbUpdates.status = updates.status;
+    if (updates.entidadeIds !== undefined && updates.entidadeIds.length > 0) {
+      dbUpdates.entidade_id = updates.entidadeIds[0];
+    }
+    if ("ordem" in updates) dbUpdates.ordem = updates.ordem ?? null;
+    if ("fotoUrl" in updates) dbUpdates.imagem_url = updates.fotoUrl || null;
+
+    const { error } = await supabase.from("produtos").update(dbUpdates).eq("id", id);
+
+    if (error) return false;
+
+    if (updates.entidadeIds !== undefined) {
+      await supabase
+        .from("produtos_entidades" as any)
+        .delete()
+        .eq("produto_id", id);
+
+      if (updates.entidadeIds.length > 0) {
+        const relInserts = updates.entidadeIds.map((entidadeId) => ({
+          produto_id: id,
+          entidade_id: entidadeId,
+        }));
+        await supabase.from("produtos_entidades" as any).insert(relInserts);
+      }
+    }
+
+    await fetchProdutos();
+    return true;
+  };
+
+  const deleteProduto = async (id: string) => {
+    const { error } = await supabase.from("produtos").delete().eq("id", id);
+
+    if (!error) {
+      await fetchProdutos();
+      return true;
+    }
+    return false;
+  };
+
+  const reorderProdutos = async (orderedIds: string[]) => {
+    const updates = orderedIds.map((id, index) =>
+      supabase
+        .from("produtos")
+        .update({ ordem: String(index + 1) } as any)
+        .eq("id", id),
+    );
+    await Promise.all(updates);
+    await fetchProdutos();
+  };
+
+  const updateProdutoCor = async (id: string, cor: string | undefined) => {
+    const { error } = await supabase
+      .from("produtos")
+      .update({ cor_codigo: cor || null } as any)
+      .eq("id", id);
+
+    if (!error) {
+      setProdutos((prev) => prev.map((p) => (p.id === id ? { ...p, corCodigo: cor } : p)));
+      return true;
+    }
+    return false;
+  };
+
+  return {
+    produtos,
+    loading,
+    fetchProdutos,
+    addProduto,
+    updateProduto,
+    deleteProduto,
+    reorderProdutos,
+    updateProdutoCor,
+  };
+}
+
 // ============= PEDIDOS =============
 export function usePedidos() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
