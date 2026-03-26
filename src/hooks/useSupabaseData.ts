@@ -311,7 +311,7 @@ export function useProdutos() {
       .select('produto_id, entidade_id');
 
     const entidadesPorProduto: Record<string, string[]> = {};
-    (((relData || []) as any[]).forEach((rel: { produto_id: string; entidade_id: string }) => {
+    ((relData || []) as any[]).forEach((rel: { produto_id: string; entidade_id: string }) => {
       if (!entidadesPorProduto[rel.produto_id]) {
         entidadesPorProduto[rel.produto_id] = [];
       }
@@ -331,7 +331,7 @@ export function useProdutos() {
       corCodigo: (p as any).cor_codigo || undefined,
       criadoEm: new Date(p.criado_em),
     }));
-    setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
+    setProdutos(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped as Produto[]);
     saveToCache('produtos', mapped);
     setLoading(false);
   }, []);
