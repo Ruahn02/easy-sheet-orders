@@ -45,7 +45,7 @@ async function sendPedidoToSupabase(item: PedidoOffline): Promise<boolean> {
     }));
 
     const { error: itensError } = await supabase
-      .from('pedido_itens')
+      .from('pedidos_itens' as any)
       .insert(itensInsert);
 
     if (itensError) {
