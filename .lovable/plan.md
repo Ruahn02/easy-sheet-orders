@@ -1,48 +1,46 @@
 
 
-## Plano: Corrigir erros de build (nomes de tabelas e tipos)
+## Problema
 
-### Problema raiz
+Todas as tabelas tem RLS ativado mas **nenhuma policy** foi criada. O Supabase bloqueia todo acesso por padrao quando RLS esta ativo sem policies. Por isso tudo retorna vazio.
 
-Ao reconectar o Supabase, os tipos gerados automaticamente em `src/integrations/supabase/types.ts` refletem os nomes reais das tabelas, que diferem do que o codigo usa:
+## Solucao
 
-| Codigo usa | Tabela real no banco |
-|---|---|
-| `configuracoes` | `configuraçoes` (com cedilha) |
-| `produto_entidades` | `produtos_entidades` (plural) |
-| `pedido_itens` | `pedidos_itens` (plural) |
+Criar policies de acesso publico (SELECT, INSERT, UPDATE, DELETE) para todas as tabelas que o app precisa. Este app nao usa autenticacao — as lojas acessam por codigo de acesso — entao as policies precisam ser abertas para o role `anon`.
 
-O TypeScript rejeita os nomes incorretos porque nao existem nos tipos gerados. Alem disso, o campo `ordem` na tabela `produtos` e do tipo `text` no banco, mas o tipo `Produto` espera `number`.
+### Migration SQL
 
-### Solucao
+Criar policies para as 9 tabelas:
 
-Adicionar casts `as any` nas chamadas ao Supabase onde os nomes divergem, para contornar a tipagem sem alterar o banco nem o arquivo de tipos gerado.
+| Tabela | SELECT | INSERT | UPDATE | DELETE |
+|--------|--------|--------|--------|--------|
+| configuracoes | anon | anon | anon | - |
+| entidades | anon | anon | anon | anon |
+| lojas | anon | anon | anon | anon |
+| produtos | anon | anon | anon | anon |
+| produtos_entidades | anon | anon | anon | anon |
+| loja_entidades | anon | anon | anon | anon |
+| pedidos | anon | anon | anon | anon |
+| pedidos_itens | anon | anon | anon | anon |
+| pedido_separacao_itens | anon | anon | anon | anon |
+| inventario | anon | anon | anon | anon |
 
-**Arquivo: `src/hooks/useSupabaseData.ts`**
-- Todas as chamadas `.from('configuracoes')` → `.from('configuraçoes' as any)`
-- Todas as chamadas `.from('produto_entidades')` → `.from('produtos_entidades' as any)`
-- Todas as chamadas `.from('pedido_itens')` → `.from('pedidos_itens' as any)`
-- Na linha 334 do mapeamento de produtos, converter `ordem` para number: `ordem: p.ordem ? Number(p.ordem) : undefined`
-- Na linha 441 do `reorderProdutos`, converter number para string: `ordem: String(index + 1)`
+Cada policy usa `USING (true)` para SELECT/UPDATE/DELETE e `WITH CHECK (true)` para INSERT/UPDATE.
 
-**Arquivo: `src/hooks/useMaintenanceMode.ts`**
-- Todas as chamadas `.from('configuracoes')` → `.from('configuraçoes' as any)`
-- Adicionar cast `(data as any).valor` onde acessa `.valor`
+### Tambem corrigir: tabela `configuracoes` vs `configuraçoes`
 
-**Arquivo: `src/lib/connectionMonitor.ts`**
-- Chamada `.from('pedido_itens')` → `.from('pedidos_itens' as any)`
+Nos network requests vejo que o codigo esta chamando `configuracoes` (sem cedilha) e a tabela real tambem se chama `configuracoes` (sem cedilha). Mas o codigo atual usa `configuraçoes` (com cedilha) por causa do fix anterior. Preciso verificar e corrigir para usar o nome correto.
 
-### Sobre sua duvida
+### Bug do infinite loop na pagina Inventario
 
-Nao, voce **nao precisara reorganizar** quando reconectar o banco anterior. O problema atual e apenas de tipagem (nomes de tabelas com cedilha e plural). Uma vez corrigido com os casts, vai funcionar com qualquer conexao a esse mesmo banco.
-
-A chance de erro futuro e **muito baixa** — os casts `as any` ignoram a tipagem do SDK mas as queries continuam validas no PostgreSQL. O fluxo funcional permanece identico.
+O console mostra "Maximum update depth exceeded" no componente Inventario. Preciso investigar e corrigir o useEffect com dependencias instáveis.
 
 ### Arquivos alterados
 
 | Arquivo | Alteracao |
 |---|---|
-| `src/hooks/useSupabaseData.ts` | Corrigir nomes de tabelas + tipo `ordem` |
-| `src/hooks/useMaintenanceMode.ts` | Corrigir nome `configuraçoes` |
-| `src/lib/connectionMonitor.ts` | Corrigir nome `pedidos_itens` |
+| Migration SQL | Criar RLS policies para todas as tabelas |
+| `src/hooks/useMaintenanceMode.ts` | Verificar nome correto da tabela configuracoes |
+| `src/hooks/useSupabaseData.ts` | Verificar nome correto da tabela configuracoes |
+| `src/pages/admin/Inventario.tsx` | Corrigir infinite loop |
 
