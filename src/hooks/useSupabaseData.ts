@@ -323,7 +323,7 @@ export function useProdutos() {
       return;
     }
 
-    const { data: relData } = await supabase.from("produtos_entidades" as any).select("produto_id, entidade_id");
+    const { data: relData } = await supabase.from("produto_entidades" as any).select("produto_id, entidade_id");
 
     const entidadesPorProduto: Record<string, string[]> = {};
     ((relData || []) as any[]).forEach((rel: { produto_id: string; entidade_id: string }) => {
@@ -404,7 +404,7 @@ export function useProdutos() {
           produto_id: data.id,
           entidade_id: entidadeId,
         }));
-        await supabase.from("produtos_entidades" as any).insert(relInserts);
+        await supabase.from("produto_entidades" as any).insert(relInserts);
       }
 
       await fetchProdutos();
@@ -442,7 +442,7 @@ export function useProdutos() {
 
     if (updates.entidadeIds !== undefined) {
       await supabase
-        .from("produtos_entidades" as any)
+        .from("produto_entidades" as any)
         .delete()
         .eq("produto_id", id);
 
@@ -451,7 +451,7 @@ export function useProdutos() {
           produto_id: id,
           entidade_id: entidadeId,
         }));
-        await supabase.from("produtos_entidades" as any).insert(relInserts);
+        await supabase.from("produto_entidades" as any).insert(relInserts);
       }
     }
 
@@ -473,7 +473,7 @@ export function useProdutos() {
     const updates = orderedIds.map((id, index) =>
       supabase
         .from("produtos")
-        .update({ ordem: String(index + 1) } as any)
+        .update({ ordem: index + 1 } as any)
         .eq("id", id),
     );
     await Promise.all(updates);
@@ -563,7 +563,7 @@ export function usePedidos() {
 
       while (hasMore) {
         const { data: batch, error } = await supabase
-          .from("pedidos_itens" as any)
+          .from("pedido_itens" as any)
           .select("*")
           .in("pedido_id", chunk)
           .order("id", { ascending: true })
@@ -690,7 +690,7 @@ export function usePedidos() {
         quantidade: item.quantidade,
       }));
 
-      const { error: itensError } = await supabase.from("pedidos_itens" as any).insert(itensInsert);
+      const { error: itensError } = await supabase.from("pedido_itens" as any).insert(itensInsert);
 
       if (itensError) {
         await supabase.from("pedidos").delete().eq("id", pedidoData.id);
@@ -921,7 +921,7 @@ export function useEstoqueEstimado(inventarioList: Inventario[], entidadeIds: st
 
         while (iHasMore) {
           const { data: batch, error } = await supabase
-            .from("pedidos_itens" as any)
+            .from("pedido_itens" as any)
             .select("pedido_id, produto_id, quantidade")
             .in("pedido_id", chunk)
             .range(iOffset, iOffset + pageSize - 1);
@@ -961,7 +961,7 @@ export function useEstoqueEstimado(inventarioList: Inventario[], entidadeIds: st
     } finally {
       setLoading(false);
     }
-  }, [inventarioList, entidadeIds]);
+  }, [inventarioList, JSON.stringify(entidadeIds)]);
 
   useEffect(() => {
     calcular();
