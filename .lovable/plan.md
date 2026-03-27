@@ -1,46 +1,32 @@
 
 
-## Problema
+## Plano: Restaurar conexao com banco antigo
 
-Todas as tabelas tem RLS ativado mas **nenhuma policy** foi criada. O Supabase bloqueia todo acesso por padrao quando RLS esta ativo sem policies. Por isso tudo retorna vazio.
+### Problema
+O arquivo `src/integrations/supabase/client.ts` esta hardcoded para o projeto errado (`erinfehlgalaibuyzgcl`). Precisa usar as variaveis de ambiente que apontam para `iblwavjssbjxgormmppg`.
 
-## Solucao
+### Correcoes
 
-Criar policies de acesso publico (SELECT, INSERT, UPDATE, DELETE) para todas as tabelas que o app precisa. Este app nao usa autenticacao — as lojas acessam por codigo de acesso — entao as policies precisam ser abertas para o role `anon`.
+**1. `src/integrations/supabase/client.ts`** — Usar variaveis de ambiente
+```typescript
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+```
 
-### Migration SQL
+**2. `src/hooks/useSupabaseData.ts`** — Corrigir nomes de tabelas
+- `"produtos_entidades" as any` → `"produto_entidades" as any` (4 ocorrencias: linhas 326, 407, 445, 454)
+- `"pedidos_itens" as any` → `"pedido_itens" as any` (3 ocorrencias: linhas 566, 693, 924 aproximadamente)
+- `String(index + 1)` → `index + 1` na funcao reorderProdutos (linha 476)
 
-Criar policies para as 9 tabelas:
+**3. `src/lib/connectionMonitor.ts`** — Corrigir nome da tabela
+- `"pedidos_itens" as any` → `"pedido_itens" as any`
 
-| Tabela | SELECT | INSERT | UPDATE | DELETE |
-|--------|--------|--------|--------|--------|
-| configuracoes | anon | anon | anon | - |
-| entidades | anon | anon | anon | anon |
-| lojas | anon | anon | anon | anon |
-| produtos | anon | anon | anon | anon |
-| produtos_entidades | anon | anon | anon | anon |
-| loja_entidades | anon | anon | anon | anon |
-| pedidos | anon | anon | anon | anon |
-| pedidos_itens | anon | anon | anon | anon |
-| pedido_separacao_itens | anon | anon | anon | anon |
-| inventario | anon | anon | anon | anon |
+### Resultado
+- App volta a se conectar ao banco correto (ALMOXARIFADO01)
+- Produtos, entidades, lojas, pedidos e itens carregam normalmente
+- Vinculacao de produtos a multiplas entidades funciona
+- Reordenacao de produtos funciona
 
-Cada policy usa `USING (true)` para SELECT/UPDATE/DELETE e `WITH CHECK (true)` para INSERT/UPDATE.
-
-### Tambem corrigir: tabela `configuracoes` vs `configuraçoes`
-
-Nos network requests vejo que o codigo esta chamando `configuracoes` (sem cedilha) e a tabela real tambem se chama `configuracoes` (sem cedilha). Mas o codigo atual usa `configuraçoes` (com cedilha) por causa do fix anterior. Preciso verificar e corrigir para usar o nome correto.
-
-### Bug do infinite loop na pagina Inventario
-
-O console mostra "Maximum update depth exceeded" no componente Inventario. Preciso investigar e corrigir o useEffect com dependencias instáveis.
-
-### Arquivos alterados
-
-| Arquivo | Alteracao |
-|---|---|
-| Migration SQL | Criar RLS policies para todas as tabelas |
-| `src/hooks/useMaintenanceMode.ts` | Verificar nome correto da tabela configuracoes |
-| `src/hooks/useSupabaseData.ts` | Verificar nome correto da tabela configuracoes |
-| `src/pages/admin/Inventario.tsx` | Corrigir infinite loop |
+### Risco
+Muito baixo. Sao apenas 3 arquivos com correcoes pontuais. O banco antigo ja esta com RLS policies configuradas e dados intactos.
 
