@@ -1,32 +1,39 @@
 
 
-## Plano: Restaurar conexao com banco antigo
+## Plano: Remover polling de 30s de todos os hooks
 
-### Problema
-O arquivo `src/integrations/supabase/client.ts` esta hardcoded para o projeto errado (`erinfehlgalaibuyzgcl`). Precisa usar as variaveis de ambiente que apontam para `iblwavjssbjxgormmppg`.
+### O que muda
 
-### Correcoes
+Remover os `setInterval` de 30 segundos dos 4 hooks que fazem polling. O Realtime (que ja existe) continuara funcionando normalmente para receber atualizacoes em tempo real.
 
-**1. `src/integrations/supabase/client.ts`** — Usar variaveis de ambiente
-```typescript
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-```
+### Hooks afetados em `src/hooks/useSupabaseData.ts`
 
-**2. `src/hooks/useSupabaseData.ts`** — Corrigir nomes de tabelas
-- `"produtos_entidades" as any` → `"produto_entidades" as any` (4 ocorrencias: linhas 326, 407, 445, 454)
-- `"pedidos_itens" as any` → `"pedido_itens" as any` (3 ocorrencias: linhas 566, 693, 924 aproximadamente)
-- `String(index + 1)` → `index + 1` na funcao reorderProdutos (linha 476)
+| Hook | Polling atual | Realtime | Acao |
+|---|---|---|---|
+| useEntidades | 30s interval | Sim | Remover interval |
+| useLojas | 30s interval | Sim | Remover interval |
+| useProdutos | 30s interval | Sim | Remover interval |
+| useLojaEntidades | 30s interval | Sim | Remover interval |
+| usePedidos | Nenhum | Sim | Ja esta correto |
 
-**3. `src/lib/connectionMonitor.ts`** — Corrigir nome da tabela
-- `"pedidos_itens" as any` → `"pedido_itens" as any`
+### connectionMonitor.ts
+
+O interval de 30s no connectionMonitor e **diferente** — ele so roda quando ha pedidos offline pendentes na fila. Esse sera mantido pois serve para sincronizar pedidos feitos offline.
+
+### Tambem remover
+
+- A flag `supabaseRestricted` e a funcao `checkRestricted` que pausavam polling (nao serao mais necessarias sem polling)
 
 ### Resultado
-- App volta a se conectar ao banco correto (ALMOXARIFADO01)
-- Produtos, entidades, lojas, pedidos e itens carregam normalmente
-- Vinculacao de produtos a multiplas entidades funciona
-- Reordenacao de produtos funciona
 
-### Risco
-Muito baixo. Sao apenas 3 arquivos com correcoes pontuais. O banco antigo ja esta com RLS policies configuradas e dados intactos.
+- Zero requisicoes periodicas ao Supabase
+- Dados continuam atualizando via Realtime (instantaneo)
+- Dados carregam no mount (fetch inicial)
+- Economia significativa de banda
+
+### Arquivo alterado
+
+| Arquivo | Alteracao |
+|---|---|
+| `src/hooks/useSupabaseData.ts` | Remover 4 setIntervals + flag supabaseRestricted |
 
