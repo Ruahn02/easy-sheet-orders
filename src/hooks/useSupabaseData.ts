@@ -4,19 +4,6 @@ import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade }
 import { saveToCache, loadFromCache } from "@/lib/offlineCache";
 import { addToQueue, removeFromQueue, markAsSent, PedidoOfflineData } from "@/lib/offlineQueue";
 
-// Flag global: para todo polling se Supabase retornar 402 (quota excedida)
-let supabaseRestricted = false;
-
-function checkRestricted(error: any): boolean {
-  if (!error) return false;
-  const msg = error?.message || "";
-  if (msg.includes("restricted") || msg.includes("exceed") || error?.code === "402") {
-    supabaseRestricted = true;
-    console.warn("[Polling] Supabase restrito (402). Polling pausado até recarregar a página.");
-    return true;
-  }
-  return false;
-}
 
 // ============= ENTIDADES =============
 export function useEntidades() {
@@ -24,18 +11,8 @@ export function useEntidades() {
   const [loading, setLoading] = useState(true);
 
   const fetchEntidades = useCallback(async () => {
-    if (supabaseRestricted) return;
     const { data, error } = await supabase.from("entidades").select("*").order("criado_em", { ascending: false });
 
-    if (checkRestricted(error)) {
-      const cached = loadFromCache<Entidade[]>("entidades");
-      if (cached) {
-        setEntidades(cached);
-        console.log("[Cache] Usando entidades do cache local");
-      }
-      setLoading(false);
-      return;
-    }
     if (error) {
       const cached = loadFromCache<Entidade[]>("entidades");
       if (cached) {
@@ -68,9 +45,8 @@ export function useEntidades() {
     fetchEntidades();
   }, [fetchEntidades]);
 
-  // Polling 30s + Realtime
+  // Realtime only
   useEffect(() => {
-    const interval = setInterval(fetchEntidades, 30000);
     const channel = supabase
       .channel("entidades-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "entidades" }, () => {
@@ -78,7 +54,6 @@ export function useEntidades() {
       });
     channel.subscribe();
     return () => {
-      clearInterval(interval);
       try {
         supabase.removeChannel(channel);
       } catch (_) {}
@@ -150,14 +125,13 @@ export function useLojas() {
   const [loading, setLoading] = useState(true);
 
   const fetchLojas = useCallback(async () => {
-    if (supabaseRestricted) return;
     const { data, error } = await supabase
       .from("lojas")
       .select("*")
       .order("ordem", { ascending: true, nullsFirst: false })
       .order("criado_em", { ascending: false });
 
-    if (checkRestricted(error) || error) {
+    if (error) {
       const cached = loadFromCache<Loja[]>("lojas");
       if (cached) {
         setLojas(cached);
@@ -184,9 +158,8 @@ export function useLojas() {
     fetchLojas();
   }, [fetchLojas]);
 
-  // Polling 30s + Realtime
+  // Realtime only
   useEffect(() => {
-    const interval = setInterval(fetchLojas, 30000);
     const channel = supabase
       .channel("lojas-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "lojas" }, () => {
@@ -194,7 +167,6 @@ export function useLojas() {
       });
     channel.subscribe();
     return () => {
-      clearInterval(interval);
       try {
         supabase.removeChannel(channel);
       } catch (_) {}
@@ -306,14 +278,13 @@ export function useProdutos() {
   const [loading, setLoading] = useState(true);
 
   const fetchProdutos = useCallback(async () => {
-    if (supabaseRestricted) return;
     const { data: produtosData, error: produtosError } = await supabase
       .from("produtos")
       .select("*")
       .order("ordem", { ascending: true, nullsFirst: false })
       .order("criado_em", { ascending: false });
 
-    if (checkRestricted(produtosError) || produtosError || !produtosData) {
+    if (produtosError || !produtosData) {
       const cached = loadFromCache<Produto[]>("produtos");
       if (cached) {
         setProdutos(cached);
@@ -355,9 +326,8 @@ export function useProdutos() {
     fetchProdutos();
   }, [fetchProdutos]);
 
-  // Polling 30s + Realtime
+  // Realtime only
   useEffect(() => {
-    const interval = setInterval(fetchProdutos, 30000);
     const channel = supabase
       .channel("produtos-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "produtos" }, () => {
@@ -368,7 +338,6 @@ export function useProdutos() {
       });
     channel.subscribe();
     return () => {
-      clearInterval(interval);
       try {
         supabase.removeChannel(channel);
       } catch (_) {}
@@ -511,7 +480,6 @@ export function usePedidos() {
   const [loading, setLoading] = useState(true);
 
   const fetchPedidos = useCallback(async () => {
-    if (supabaseRestricted) return;
 
     // Filtro: apenas pedidos dos últimos 30 dias para reduzir egress
     const thirtyDaysAgo = new Date();
@@ -531,8 +499,7 @@ export function usePedidos() {
         .order("data", { ascending: false })
         .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
 
-      if (error) {
-        if (checkRestricted(error)) return;
+        if (error) {
         console.error("Erro ao buscar pedidos:", error);
         break;
       }
@@ -1082,7 +1049,6 @@ export function useLojaEntidades() {
   const [loading, setLoading] = useState(true);
 
   const fetchLojaEntidades = useCallback(async () => {
-    if (supabaseRestricted) return;
     const { data, error } = await supabase.from("loja_entidades").select("*");
 
     if (error) {
@@ -1111,9 +1077,8 @@ export function useLojaEntidades() {
     fetchLojaEntidades();
   }, [fetchLojaEntidades]);
 
-  // Polling 30s + Realtime
+  // Realtime only
   useEffect(() => {
-    const interval = setInterval(fetchLojaEntidades, 30000);
     const channel = supabase
       .channel("loja-entidades-sync")
       .on("postgres_changes", { event: "*", schema: "public", table: "loja_entidades" }, () => {
@@ -1121,7 +1086,6 @@ export function useLojaEntidades() {
       });
     channel.subscribe();
     return () => {
-      clearInterval(interval);
       try {
         supabase.removeChannel(channel);
       } catch (_) {}
