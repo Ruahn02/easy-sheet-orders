@@ -475,9 +475,11 @@ export function useProdutos() {
 }
 
 // ============= PEDIDOS =============
-export function usePedidos() {
+export function usePedidos(filtros?: { lojaId?: string; entidadeId?: string }) {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const filtrosKey = `${filtros?.lojaId || ''}_${filtros?.entidadeId || ''}`;
 
   const fetchPedidos = useCallback(async () => {
 
@@ -492,11 +494,17 @@ export function usePedidos() {
     let pedidoHasMore = true;
 
     while (pedidoHasMore) {
-      const { data: batch, error } = await supabase
+      let query = supabase
         .from("pedidos")
         .select("*")
         .gte("data", filterDate)
-        .order("data", { ascending: false })
+        .order("data", { ascending: false });
+
+      // Aplicar filtros opcionais no servidor
+      if (filtros?.lojaId) query = query.eq("loja_id", filtros.lojaId);
+      if (filtros?.entidadeId) query = query.eq("entidade_id", filtros.entidadeId);
+
+      const { data: batch, error } = await query
         .range(pedidoOffset, pedidoOffset + pedidoPageSize - 1);
 
         if (error) {
@@ -577,7 +585,7 @@ export function usePedidos() {
 
     setPedidos((prev) => (JSON.stringify(prev) === JSON.stringify(pedidosFormatados) ? prev : pedidosFormatados));
     setLoading(false);
-  }, []);
+  }, [filtrosKey]);
 
   useEffect(() => {
     fetchPedidos();
@@ -771,15 +779,19 @@ export function useCodigoAdmin() {
 }
 
 // ============= INVENTÁRIO =============
-export function useInventario() {
+export function useInventario(entidadeId?: string) {
   const [inventario, setInventario] = useState<Inventario[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInventario = useCallback(async () => {
-    const { data, error } = await supabase
+    let query = supabase
       .from("inventario")
       .select("*")
       .order("data_conferencia", { ascending: false });
+
+    if (entidadeId) query = query.eq("entidade_id", entidadeId);
+
+    const { data, error } = await query;
 
     if (!error && data) {
       setInventario(
@@ -795,7 +807,7 @@ export function useInventario() {
       );
     }
     setLoading(false);
-  }, []);
+  }, [entidadeId]);
 
   useEffect(() => {
     fetchInventario();
@@ -833,7 +845,7 @@ export function useInventario() {
 }
 
 // ============= ESTOQUE ESTIMADO =============
-export function useEstoqueEstimado(inventarioList: Inventario[], entidadeIds: string[]) {
+export function useEstoqueEstimado(inventarioList: Inventario[], entidadeIds: string[], pedidosExternos?: Pedido[]) {
   const [estimativas, setEstimativas] = useState<Map<string, { saidas: number; estimado: number }>>(new Map());
   const [loading, setLoading] = useState(false);
 
@@ -852,6 +864,37 @@ export function useEstoqueEstimado(inventarioList: Inventario[], entidadeIds: st
         return i.dataConferencia < min ? i.dataConferencia : min;
       }, conferidos[0].dataConferencia);
 
+      // Se temos pedidos externos, usar eles em vez de buscar novamente
+      if (pedidosExternos) {
+        const pedidosFiltrados = pedidosExternos.filter(
+          (p) => entidadeIds.includes(p.entidadeId) && p.data > dataMinima
+        );
+
+        for (const inv of conferidos) {
+          let totalSaidas = 0;
+          for (const pedido of pedidosFiltrados) {
+            if (pedido.data > inv.dataConferencia) {
+              for (const item of pedido.itens) {
+                if (item.produtoId === inv.produtoId) {
+                  totalSaidas += item.quantidade;
+                }
+              }
+            }
+          }
+          if (totalSaidas > 0) {
+            novasEstimativas.set(inv.produtoId, {
+              saidas: totalSaidas,
+              estimado: inv.quantidade - totalSaidas,
+            });
+          }
+        }
+
+        setEstimativas(novasEstimativas);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback: buscar pedidos do Supabase (caso não tenha pedidos externos)
       let allPedidos: any[] = [];
       let offset = 0;
       const pageSize = 1000;
@@ -928,7 +971,7 @@ export function useEstoqueEstimado(inventarioList: Inventario[], entidadeIds: st
     } finally {
       setLoading(false);
     }
-  }, [inventarioList, JSON.stringify(entidadeIds)]);
+  }, [inventarioList, JSON.stringify(entidadeIds), pedidosExternos]);
 
   useEffect(() => {
     calcular();
