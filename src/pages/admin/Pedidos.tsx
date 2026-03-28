@@ -78,7 +78,6 @@ export default function Pedidos() {
   const { fetchSeparacoesMultiplos, toggleSeparacao, isSeparado } = useSeparacao();
 
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
   const [pedidoParaConcluir, setPedidoParaConcluir] = useState<string | null>(null);
