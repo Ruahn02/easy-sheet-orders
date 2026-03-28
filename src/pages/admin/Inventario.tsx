@@ -54,7 +54,9 @@ import { Produto } from '@/types';
 export default function Inventario() {
   const { entidades, loading: loadingEntidades } = useEntidades();
   const { produtos, loading: loadingProdutos } = useProdutos();
-  const { inventario, loading: loadingInventario, conferirProduto } = useInventario();
+  const { inventario, loading: loadingInventario, conferirProduto } = useInventario(
+    entidadeFiltro.length === 1 ? entidadeFiltro[0] : undefined
+  );
 
   // Filtros
   const [entidadeFiltro, setEntidadeFiltro] = useState<string[]>([]);

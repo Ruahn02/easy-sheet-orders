@@ -64,7 +64,9 @@ const CORES_DISPONIVEIS = [
 ];
 
 export default function Pedidos() {
-  const { pedidos, loading, updatePedidoStatus, updatePedidoCor } = usePedidos();
+  const { pedidos, loading, updatePedidoStatus, updatePedidoCor } = usePedidos(
+    selectedEntidadeId ? { entidadeId: selectedEntidadeId } : undefined
+  );
   const { lojas } = useLojas();
   const { produtos, updateProdutoCor } = useProdutos();
   const { entidades } = useEntidades();
