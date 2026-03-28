@@ -52,16 +52,16 @@ import { toast } from 'sonner';
 import { Produto } from '@/types';
 
 export default function Inventario() {
+  // Filtros (declarar antes dos hooks que dependem deles)
+  const [entidadeFiltro, setEntidadeFiltro] = useState<string[]>([]);
+  const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
+  const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
+
   const { entidades, loading: loadingEntidades } = useEntidades();
   const { produtos, loading: loadingProdutos } = useProdutos();
   const { inventario, loading: loadingInventario, conferirProduto } = useInventario(
     entidadeFiltro.length === 1 ? entidadeFiltro[0] : undefined
   );
-
-  // Filtros
-  const [entidadeFiltro, setEntidadeFiltro] = useState<string[]>([]);
-  const [produtoFiltro, setProdutoFiltro] = useState<string[]>([]);
-  const [statusFiltro, setStatusFiltro] = useState<string[]>([]);
 
   // Estoque estimado (baseado em saídas dos pedidos após conferência)
   const idsParaEstoque = entidadeFiltro.length > 0 ? entidadeFiltro : entidades.map(e => e.id);

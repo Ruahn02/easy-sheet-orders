@@ -64,6 +64,10 @@ const CORES_DISPONIVEIS = [
 ];
 
 export default function Pedidos() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedLojaId, setSelectedLojaId] = useState<string[]>([]);
+  const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('');
+
   const { pedidos, loading, updatePedidoStatus, updatePedidoCor } = usePedidos(
     selectedEntidadeId ? { entidadeId: selectedEntidadeId } : undefined
   );
@@ -73,9 +77,7 @@ export default function Pedidos() {
   const { toast } = useToast();
   const { fetchSeparacoesMultiplos, toggleSeparacao, isSeparado } = useSeparacao();
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLojaId, setSelectedLojaId] = useState<string[]>([]);
-  const [selectedEntidadeId, setSelectedEntidadeId] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>();
   const [endDate, setEndDate] = useState<Date | undefined>();
