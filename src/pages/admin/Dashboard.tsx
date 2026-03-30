@@ -302,6 +302,22 @@ export default function Dashboard() {
               </Badge>
             )}
             <Button
+              variant={criticalMode ? 'destructive' : 'outline'}
+              onClick={() => {
+                if (criticalMode) {
+                  deactivateCritical();
+                  toast({ title: 'Modo crítico desativado' });
+                } else {
+                  activateCritical('manual');
+                  toast({ title: 'Modo crítico ativado', description: 'Criação/edição bloqueadas. Pedidos continuam.' });
+                }
+              }}
+              className="gap-2"
+            >
+              <ShieldAlert className="h-4 w-4" />
+              {criticalMode ? 'Desativar Crítico' : 'Modo Crítico'}
+            </Button>
+            <Button
               variant={isMaintenanceMode ? 'destructive' : 'outline'}
               onClick={handleToggleMaintenance}
               disabled={isToggling || loadingMaintenance}
