@@ -1,8 +1,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { useParams, Link } from 'react-router-dom';
-import { Settings, AlertCircle, ArrowLeft, Loader2, LogOut } from 'lucide-react';
+import { Settings, AlertCircle, ArrowLeft, Loader2, LogOut, Download } from 'lucide-react';
 import { useEntidades, useProdutos, usePedidos, useLojas, useLojaEntidades } from '@/hooks/useSupabaseData';
+import { exportarPedidoPDF } from '@/lib/exportPedidoPDF';
 import { ProductSearch } from '@/components/order/ProductSearch';
 import { ProductCard } from '@/components/order/ProductCard';
 import { OrderFooter } from '@/components/order/OrderFooter';
