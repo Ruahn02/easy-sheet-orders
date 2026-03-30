@@ -3,7 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade } from "@/types";
 import { saveToCache, loadFromCache } from "@/lib/offlineCache";
 import { addToQueue, removeFromQueue, markAsSent, PedidoOfflineData } from "@/lib/offlineQueue";
+import { useCriticalMode } from "@/store/useCriticalMode";
 
+// Helper: detecta erro 402 e ativa modo crítico automaticamente
+function check402(error: any) {
+  if (error && (String(error.message || '').includes('402') || String(error.code || '').includes('402'))) {
+    try {
+      useCriticalMode.getState().activate('auto_402');
+      console.warn('[CriticalMode] Ativado automaticamente por erro 402');
+    } catch {}
+  }
+}
 
 // ============= ENTIDADES =============
 export function useEntidades() {
