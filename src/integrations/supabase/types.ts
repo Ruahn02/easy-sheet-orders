@@ -10,300 +10,398 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.4"
+    PostgrestVersion: "14.1"
   }
   public: {
     Tables: {
       configuracoes: {
         Row: {
-          chave: string | null
-          id: string | null
-          valor: string | null
+          chave: string
+          id: string
+          valor: string
         }
         Insert: {
-          chave?: string | null
-          id?: string | null
-          valor?: string | null
+          chave: string
+          id?: string
+          valor: string
         }
         Update: {
-          chave?: string | null
-          id?: string | null
-          valor?: string | null
+          chave?: string
+          id?: string
+          valor?: string
         }
         Relationships: []
       }
       entidades: {
         Row: {
-          aceitando_pedidos: boolean | null
-          agendamento_ativo: boolean | null
-          criado_em: string | null
-          horario_abertura_dia: string | null
+          aceitando_pedidos: boolean
+          agendamento_ativo: boolean
+          criado_em: string
+          horario_abertura_dia: number | null
           horario_abertura_hora: string | null
-          horario_fechamento_dia: string | null
+          horario_fechamento_dia: number | null
           horario_fechamento_hora: string | null
-          id: string | null
-          nome: string | null
-          tipo_pedido: string | null
+          id: string
+          nome: string
+          tipo_pedido: string
         }
         Insert: {
-          aceitando_pedidos?: boolean | null
-          agendamento_ativo?: boolean | null
-          criado_em?: string | null
-          horario_abertura_dia?: string | null
+          aceitando_pedidos?: boolean
+          agendamento_ativo?: boolean
+          criado_em?: string
+          horario_abertura_dia?: number | null
           horario_abertura_hora?: string | null
-          horario_fechamento_dia?: string | null
+          horario_fechamento_dia?: number | null
           horario_fechamento_hora?: string | null
-          id?: string | null
-          nome?: string | null
-          tipo_pedido?: string | null
+          id?: string
+          nome: string
+          tipo_pedido?: string
         }
         Update: {
-          aceitando_pedidos?: boolean | null
-          agendamento_ativo?: boolean | null
-          criado_em?: string | null
-          horario_abertura_dia?: string | null
+          aceitando_pedidos?: boolean
+          agendamento_ativo?: boolean
+          criado_em?: string
+          horario_abertura_dia?: number | null
           horario_abertura_hora?: string | null
-          horario_fechamento_dia?: string | null
+          horario_fechamento_dia?: number | null
           horario_fechamento_hora?: string | null
-          id?: string | null
-          nome?: string | null
-          tipo_pedido?: string | null
+          id?: string
+          nome?: string
+          tipo_pedido?: string
         }
         Relationships: []
       }
       inventario: {
         Row: {
-          data_conferencia: string | null
-          entidade_id: string | null
-          id: string | null
-          produto_id: string | null
-          quantidade: number | null
-          status: string | null
-          unidade_medida: string | null
+          data_conferencia: string
+          entidade_id: string
+          id: string
+          produto_id: string
+          quantidade: number
+          status: string
+          unidade_medida: string
         }
         Insert: {
-          data_conferencia?: string | null
-          entidade_id?: string | null
-          id?: string | null
-          produto_id?: string | null
-          quantidade?: number | null
-          status?: string | null
-          unidade_medida?: string | null
+          data_conferencia?: string
+          entidade_id: string
+          id?: string
+          produto_id: string
+          quantidade?: number
+          status?: string
+          unidade_medida?: string
         }
         Update: {
-          data_conferencia?: string | null
-          entidade_id?: string | null
-          id?: string | null
-          produto_id?: string | null
-          quantidade?: number | null
-          status?: string | null
-          unidade_medida?: string | null
+          data_conferencia?: string
+          entidade_id?: string
+          id?: string
+          produto_id?: string
+          quantidade?: number
+          status?: string
+          unidade_medida?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventario_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventario_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: true
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loja_entidades: {
         Row: {
-          criado_em: string | null
-          entidade_id: string | null
-          id: string | null
-          loja_id: string | null
+          criado_em: string
+          entidade_id: string
+          id: string
+          loja_id: string
         }
         Insert: {
-          criado_em?: string | null
-          entidade_id?: string | null
-          id?: string | null
-          loja_id?: string | null
+          criado_em?: string
+          entidade_id: string
+          id?: string
+          loja_id: string
         }
         Update: {
-          criado_em?: string | null
-          entidade_id?: string | null
-          id?: string | null
-          loja_id?: string | null
+          criado_em?: string
+          entidade_id?: string
+          id?: string
+          loja_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "loja_entidades_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loja_entidades_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lojas: {
         Row: {
-          ativo: boolean | null
-          codigo_acesso: string | null
-          criado_em: string | null
-          id: string | null
-          nome: string | null
+          ativo: boolean
+          codigo_acesso: string
+          criado_em: string
+          id: string
+          nome: string
           ordem: number | null
-          status: string | null
+          status: string
         }
         Insert: {
-          ativo?: boolean | null
-          codigo_acesso?: string | null
-          criado_em?: string | null
-          id?: string | null
-          nome?: string | null
+          ativo?: boolean
+          codigo_acesso: string
+          criado_em?: string
+          id?: string
+          nome: string
           ordem?: number | null
-          status?: string | null
+          status?: string
         }
         Update: {
-          ativo?: boolean | null
-          codigo_acesso?: string | null
-          criado_em?: string | null
-          id?: string | null
-          nome?: string | null
+          ativo?: boolean
+          codigo_acesso?: string
+          criado_em?: string
+          id?: string
+          nome?: string
           ordem?: number | null
-          status?: string | null
+          status?: string
         }
         Relationships: []
       }
-      pedido_separacao_itens: {
+      pedido_itens: {
         Row: {
-          data_registro: string | null
-          id: string | null
-          pedido_id: string | null
-          produto_id: string | null
-          separado: boolean | null
+          id: string
+          pedido_id: string
+          produto_id: string
+          quantidade: number
         }
         Insert: {
-          data_registro?: string | null
-          id?: string | null
-          pedido_id?: string | null
-          produto_id?: string | null
-          separado?: boolean | null
+          id?: string
+          pedido_id: string
+          produto_id: string
+          quantidade: number
         }
         Update: {
-          data_registro?: string | null
-          id?: string | null
-          pedido_id?: string | null
-          produto_id?: string | null
-          separado?: boolean | null
+          id?: string
+          pedido_id?: string
+          produto_id?: string
+          quantidade?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pedido_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedido_separacao_itens: {
+        Row: {
+          data_registro: string
+          id: string
+          pedido_id: string
+          produto_id: string
+          separado: boolean
+        }
+        Insert: {
+          data_registro?: string
+          id?: string
+          pedido_id: string
+          produto_id: string
+          separado?: boolean
+        }
+        Update: {
+          data_registro?: string
+          id?: string
+          pedido_id?: string
+          produto_id?: string
+          separado?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedido_separacao_itens_pedido_id_fkey"
+            columns: ["pedido_id"]
+            isOneToOne: false
+            referencedRelation: "pedidos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedido_separacao_itens_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pedidos: {
         Row: {
           cor_linha: string | null
-          data: string | null
+          data: string
           email_solicitante: string | null
-          entidade_id: string | null
+          entidade_id: string
           funcao_colaborador: string | null
-          id: string | null
-          loja_id: string | null
+          id: string
+          loja_id: string
           matricula_funcionario: string | null
           motivo_solicitacao: string | null
           nome_colaborador: string | null
           nome_solicitante: string | null
           observacoes: string | null
-          status: string | null
+          status: string
         }
         Insert: {
           cor_linha?: string | null
-          data?: string | null
+          data?: string
           email_solicitante?: string | null
-          entidade_id?: string | null
+          entidade_id: string
           funcao_colaborador?: string | null
-          id?: string | null
-          loja_id?: string | null
+          id?: string
+          loja_id: string
           matricula_funcionario?: string | null
           motivo_solicitacao?: string | null
           nome_colaborador?: string | null
           nome_solicitante?: string | null
           observacoes?: string | null
-          status?: string | null
+          status?: string
         }
         Update: {
           cor_linha?: string | null
-          data?: string | null
+          data?: string
           email_solicitante?: string | null
-          entidade_id?: string | null
+          entidade_id?: string
           funcao_colaborador?: string | null
-          id?: string | null
-          loja_id?: string | null
+          id?: string
+          loja_id?: string
           matricula_funcionario?: string | null
           motivo_solicitacao?: string | null
           nome_colaborador?: string | null
           nome_solicitante?: string | null
           observacoes?: string | null
-          status?: string | null
+          status?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_loja_id_fkey"
+            columns: ["loja_id"]
+            isOneToOne: false
+            referencedRelation: "lojas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
-      pedidos_itens: {
+      produto_entidades: {
         Row: {
-          id: string | null
-          pedido_id: string | null
-          produto_id: string | null
-          quantidade: number | null
+          criado_em: string
+          entidade_id: string
+          id: string
+          produto_id: string
         }
         Insert: {
-          id?: string | null
-          pedido_id?: string | null
-          produto_id?: string | null
-          quantidade?: number | null
+          criado_em?: string
+          entidade_id: string
+          id?: string
+          produto_id: string
         }
         Update: {
-          id?: string | null
-          pedido_id?: string | null
-          produto_id?: string | null
-          quantidade?: number | null
+          criado_em?: string
+          entidade_id?: string
+          id?: string
+          produto_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "produto_entidades_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "produto_entidades_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       produtos: {
         Row: {
-          codigo: string | null
+          codigo: string
           cor_codigo: string | null
-          criado_em: string | null
-          entidade_id: string | null
-          id: string | null
+          criado_em: string
+          entidade_id: string
+          id: string
           imagem_url: string | null
-          nome: string | null
-          ordem: string | null
-          qtd_maxima: number | null
-          status: string | null
+          nome: string
+          ordem: number | null
+          qtd_maxima: number
+          status: string
         }
         Insert: {
-          codigo?: string | null
+          codigo: string
           cor_codigo?: string | null
-          criado_em?: string | null
-          entidade_id?: string | null
-          id?: string | null
+          criado_em?: string
+          entidade_id: string
+          id?: string
           imagem_url?: string | null
-          nome?: string | null
-          ordem?: string | null
-          qtd_maxima?: number | null
-          status?: string | null
+          nome: string
+          ordem?: number | null
+          qtd_maxima?: number
+          status?: string
         }
         Update: {
-          codigo?: string | null
+          codigo?: string
           cor_codigo?: string | null
-          criado_em?: string | null
-          entidade_id?: string | null
-          id?: string | null
+          criado_em?: string
+          entidade_id?: string
+          id?: string
           imagem_url?: string | null
-          nome?: string | null
-          ordem?: string | null
-          qtd_maxima?: number | null
-          status?: string | null
+          nome?: string
+          ordem?: number | null
+          qtd_maxima?: number
+          status?: string
         }
-        Relationships: []
-      }
-      produtos_entidades: {
-        Row: {
-          criado_em: string | null
-          entidade_id: string | null
-          id: string | null
-          produto_id: string | null
-        }
-        Insert: {
-          criado_em?: string | null
-          entidade_id?: string | null
-          id?: string | null
-          produto_id?: string | null
-        }
-        Update: {
-          criado_em?: string | null
-          entidade_id?: string | null
-          id?: string | null
-          produto_id?: string | null
-        }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "produtos_entidade_id_fkey"
+            columns: ["entidade_id"]
+            isOneToOne: false
+            referencedRelation: "entidades"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
