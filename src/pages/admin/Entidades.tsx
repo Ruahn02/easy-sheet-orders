@@ -389,7 +389,7 @@ export default function Entidades() {
               </div>
 
               <div className="flex gap-2 pt-2 border-t border-border">
-                <Button size="sm" variant="ghost" onClick={() => handleOpenModal(entidade)}>
+                <Button size="sm" variant="ghost" onClick={() => handleOpenModal(entidade)} disabled={criticalMode}>
                   <Pencil className="h-4 w-4 mr-1" />
                   Editar
                 </Button>
@@ -398,6 +398,7 @@ export default function Entidades() {
                   variant="ghost"
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={() => handleDeleteClick(entidade.id)}
+                  disabled={criticalMode}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Excluir
