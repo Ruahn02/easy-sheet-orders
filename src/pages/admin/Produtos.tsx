@@ -41,6 +41,7 @@ export default function Produtos() {
   const { produtos, loading, addProduto, updateProduto, deleteProduto, reorderProdutos } = useProdutos();
   const { entidades } = useEntidades();
   const { uploadImage } = useImageUpload();
+  const { criticalMode } = useCriticalMode();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -274,6 +275,7 @@ export default function Produtos() {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
+        <CriticalModeBanner />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
@@ -281,12 +283,12 @@ export default function Produtos() {
           </div>
           <div className="flex gap-2">
             {entidadesFiltro.length === 1 && (
-              <Button variant="outline" onClick={() => setIsReorderOpen(true)}>
+              <Button variant="outline" onClick={() => setIsReorderOpen(true)} disabled={criticalMode}>
                 <ArrowUpDown className="h-4 w-4 mr-2" />
                 Reordenar Catálogo
               </Button>
             )}
-            <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
+            <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground" disabled={criticalMode}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Produto
             </Button>
