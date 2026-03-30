@@ -25,6 +25,7 @@ export default function Dashboard() {
   const { produtos, loading: loadingProdutos } = useProdutos();
   const { entidades, loading: loadingEntidades } = useEntidades();
   const { isMaintenanceMode, toggleMaintenanceMode, loading: loadingMaintenance } = useMaintenanceMode();
+  const { criticalMode, activate: activateCritical, deactivate: deactivateCritical } = useCriticalMode();
   const { toast } = useToast();
 
   // Filtros
