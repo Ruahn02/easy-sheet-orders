@@ -768,6 +768,8 @@ export function usePedidos(filtros?: { lojaId?: string; entidadeId?: string }) {
 }
 
 // ============= CÓDIGO ADMIN =============
+const CACHE_CODIGO_ADMIN = 'cache_codigo_admin';
+
 export function useCodigoAdmin() {
   const [codigoAdmin, setCodigoAdmin] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -780,7 +782,17 @@ export function useCodigoAdmin() {
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAdmin((data as any).valor);
+      const valor = (data as any).valor;
+      setCodigoAdmin(valor);
+      try { localStorage.setItem(CACHE_CODIGO_ADMIN, valor); } catch {}
+    } else {
+      try {
+        const cached = localStorage.getItem(CACHE_CODIGO_ADMIN);
+        if (cached) {
+          setCodigoAdmin(cached);
+          console.log("[Cache] Usando código admin do cache local");
+        }
+      } catch {}
     }
     setLoading(false);
   }, []);
@@ -797,6 +809,7 @@ export function useCodigoAdmin() {
 
     if (!error) {
       setCodigoAdmin(novoCodigo);
+      try { localStorage.setItem(CACHE_CODIGO_ADMIN, novoCodigo); } catch {}
       return true;
     }
     return false;
