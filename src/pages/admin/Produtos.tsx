@@ -386,12 +386,13 @@ export default function Produtos() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleToggleStatus(produto)}
+                          disabled={criticalMode}
                           className={produto.status === 'ativo' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}
                           title={produto.status === 'ativo' ? 'Inativar' : 'Ativar'}
                         >
                           {produto.status === 'ativo' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleOpenModal(produto)}>
+                        <Button size="sm" variant="outline" onClick={() => handleOpenModal(produto)} disabled={criticalMode}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -399,6 +400,7 @@ export default function Produtos() {
                           variant="outline"
                           className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                           onClick={() => handleDeleteClick(produto.id)}
+                          disabled={criticalMode}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
