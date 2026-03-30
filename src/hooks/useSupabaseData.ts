@@ -24,6 +24,7 @@ export function useEntidades() {
     const { data, error } = await supabase.from("entidades").select("*").order("criado_em", { ascending: false });
 
     if (error) {
+      check402(error);
       const cached = loadFromCache<Entidade[]>("entidades");
       if (cached) {
         setEntidades(cached);
@@ -142,6 +143,7 @@ export function useLojas() {
       .order("criado_em", { ascending: false });
 
     if (error) {
+      check402(error);
       const cached = loadFromCache<Loja[]>("lojas");
       if (cached) {
         setLojas(cached);
@@ -322,6 +324,7 @@ export function useProdutos() {
       .order("criado_em", { ascending: false });
 
     if (produtosError || !produtosData) {
+      if (produtosError) check402(produtosError);
       const cached = loadFromCache<Produto[]>("produtos");
       if (cached) {
         setProdutos(cached);
