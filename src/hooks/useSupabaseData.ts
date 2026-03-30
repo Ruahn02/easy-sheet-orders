@@ -221,6 +221,8 @@ export function useLojas() {
 }
 
 // ============= CÓDIGO DE ACESSO GLOBAL =============
+const CACHE_CODIGO_ACESSO = 'cache_codigo_acesso';
+
 export function useCodigoAcesso() {
   const [codigoAcesso, setCodigoAcesso] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -233,7 +235,18 @@ export function useCodigoAcesso() {
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAcesso((data as any).valor);
+      const valor = (data as any).valor;
+      setCodigoAcesso(valor);
+      try { localStorage.setItem(CACHE_CODIGO_ACESSO, valor); } catch {}
+    } else {
+      // Fallback: usar cache local
+      try {
+        const cached = localStorage.getItem(CACHE_CODIGO_ACESSO);
+        if (cached) {
+          setCodigoAcesso(cached);
+          console.log("[Cache] Usando código de acesso do cache local");
+        }
+      } catch {}
     }
     setLoading(false);
   }, []);
@@ -243,15 +256,28 @@ export function useCodigoAcesso() {
   }, [fetchCodigoAcesso]);
 
   const validarCodigo = async (codigo: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from("configuracoes" as any)
-      .select("valor")
-      .eq("chave", "codigo_acesso")
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("configuracoes" as any)
+        .select("valor")
+        .eq("chave", "codigo_acesso")
+        .maybeSingle();
 
-    if (!error && data) {
-      return (data as any).valor.toUpperCase() === codigo.toUpperCase();
-    }
+      if (!error && data) {
+        const valor = (data as any).valor;
+        try { localStorage.setItem(CACHE_CODIGO_ACESSO, valor); } catch {}
+        return valor.toUpperCase() === codigo.toUpperCase();
+      }
+    } catch {}
+
+    // Fallback: comparar com cache local
+    try {
+      const cached = localStorage.getItem(CACHE_CODIGO_ACESSO);
+      if (cached) {
+        console.log("[Cache] Validando código via cache local (Supabase indisponível)");
+        return cached.toUpperCase() === codigo.toUpperCase();
+      }
+    } catch {}
     return false;
   };
 
@@ -263,6 +289,7 @@ export function useCodigoAcesso() {
 
     if (!error) {
       setCodigoAcesso(novoCodigo);
+      try { localStorage.setItem(CACHE_CODIGO_ACESSO, novoCodigo); } catch {}
       return true;
     }
     return false;
