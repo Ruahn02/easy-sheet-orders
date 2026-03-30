@@ -205,6 +205,25 @@ const FormularioPedido = () => {
       const isOffline = result?.offline === true;
       
       setUltimaLojaId(selectedLojaId!);
+
+      // Preparar dados para PDF antes de limpar o form
+      const pdfData = {
+        id: isOffline ? undefined : result.id,
+        lojaNome: selectedLoja?.nome || 'Loja',
+        entidadeNome: entidade?.nome || 'Pedido',
+        data: new Date(),
+        observacoes: observacoes.trim() || undefined,
+        emailSolicitante: emailSolicitante.trim() || undefined,
+        nomeSolicitante: nomeSolicitante.trim() || undefined,
+        nomeColaborador: nomeColaborador.trim() || undefined,
+        funcaoColaborador: funcaoColaborador.trim() || undefined,
+        matriculaFuncionario: matriculaFuncionario.trim() || undefined,
+        motivoSolicitacao: motivoSolicitacao.trim() || undefined,
+        itens: selectedItems.map(([produtoId, qty]) => {
+          const p = produtos.find(pr => pr.id === produtoId);
+          return { produtoNome: p?.nome || 'Produto', produtoCodigo: p?.codigo || '', quantidade: qty };
+        }),
+      };
       
       // Reset form
       setQuantities({});
@@ -221,11 +240,23 @@ const FormularioPedido = () => {
         toast({
           title: 'Pedido salvo localmente',
           description: 'Será enviado automaticamente quando a conexão voltar.',
+          action: (
+            <Button size="sm" variant="outline" onClick={() => exportarPedidoPDF(pdfData)}>
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
+          ),
         });
       } else {
         toast({
           title: 'Pedido enviado com sucesso!',
-          description: `${selectedItems.length} produto(s) foram solicitados.`,
+          description: `${pdfData.itens.length} produto(s) foram solicitados.`,
+          action: (
+            <Button size="sm" variant="outline" onClick={() => exportarPedidoPDF(pdfData)}>
+              <Download className="h-4 w-4 mr-1" />
+              PDF
+            </Button>
+          ),
         });
       }
     } else {
