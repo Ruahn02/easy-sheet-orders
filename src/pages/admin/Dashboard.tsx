@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
-import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle } from 'lucide-react';
+import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle, ShieldAlert, ShieldOff } from 'lucide-react';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
 import { LojasAnalytics } from '@/components/admin/LojasAnalytics';
+import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { format, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subDays, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -15,6 +16,7 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useMaintenanceMode } from '@/hooks/useMaintenanceMode';
+import { useCriticalMode } from '@/store/useCriticalMode';
 import { useToast } from '@/hooks/use-toast';
 
 export default function Dashboard() {
