@@ -3,7 +3,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { Entidade, Loja, Produto, Pedido, PedidoItem, Inventario, LojaEntidade } from "@/types";
 import { saveToCache, loadFromCache } from "@/lib/offlineCache";
 import { addToQueue, removeFromQueue, markAsSent, PedidoOfflineData } from "@/lib/offlineQueue";
+import { useCriticalMode } from "@/store/useCriticalMode";
 
+// Helper: detecta erro 402 e ativa modo crítico automaticamente
+function check402(error: any) {
+  if (error && (String(error.message || '').includes('402') || String(error.code || '').includes('402'))) {
+    try {
+      useCriticalMode.getState().activate('auto_402');
+      console.warn('[CriticalMode] Ativado automaticamente por erro 402');
+    } catch {}
+  }
+}
 
 // ============= ENTIDADES =============
 export function useEntidades() {
@@ -14,6 +24,7 @@ export function useEntidades() {
     const { data, error } = await supabase.from("entidades").select("*").order("criado_em", { ascending: false });
 
     if (error) {
+      check402(error);
       const cached = loadFromCache<Entidade[]>("entidades");
       if (cached) {
         setEntidades(cached);
@@ -132,6 +143,7 @@ export function useLojas() {
       .order("criado_em", { ascending: false });
 
     if (error) {
+      check402(error);
       const cached = loadFromCache<Loja[]>("lojas");
       if (cached) {
         setLojas(cached);
@@ -221,6 +233,8 @@ export function useLojas() {
 }
 
 // ============= CÓDIGO DE ACESSO GLOBAL =============
+const CACHE_CODIGO_ACESSO = 'cache_codigo_acesso';
+
 export function useCodigoAcesso() {
   const [codigoAcesso, setCodigoAcesso] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -233,7 +247,18 @@ export function useCodigoAcesso() {
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAcesso((data as any).valor);
+      const valor = (data as any).valor;
+      setCodigoAcesso(valor);
+      try { localStorage.setItem(CACHE_CODIGO_ACESSO, valor); } catch {}
+    } else {
+      // Fallback: usar cache local
+      try {
+        const cached = localStorage.getItem(CACHE_CODIGO_ACESSO);
+        if (cached) {
+          setCodigoAcesso(cached);
+          console.log("[Cache] Usando código de acesso do cache local");
+        }
+      } catch {}
     }
     setLoading(false);
   }, []);
@@ -243,15 +268,28 @@ export function useCodigoAcesso() {
   }, [fetchCodigoAcesso]);
 
   const validarCodigo = async (codigo: string): Promise<boolean> => {
-    const { data, error } = await supabase
-      .from("configuracoes" as any)
-      .select("valor")
-      .eq("chave", "codigo_acesso")
-      .maybeSingle();
+    try {
+      const { data, error } = await supabase
+        .from("configuracoes" as any)
+        .select("valor")
+        .eq("chave", "codigo_acesso")
+        .maybeSingle();
 
-    if (!error && data) {
-      return (data as any).valor.toUpperCase() === codigo.toUpperCase();
-    }
+      if (!error && data) {
+        const valor = (data as any).valor;
+        try { localStorage.setItem(CACHE_CODIGO_ACESSO, valor); } catch {}
+        return valor.toUpperCase() === codigo.toUpperCase();
+      }
+    } catch {}
+
+    // Fallback: comparar com cache local
+    try {
+      const cached = localStorage.getItem(CACHE_CODIGO_ACESSO);
+      if (cached) {
+        console.log("[Cache] Validando código via cache local (Supabase indisponível)");
+        return cached.toUpperCase() === codigo.toUpperCase();
+      }
+    } catch {}
     return false;
   };
 
@@ -263,6 +301,7 @@ export function useCodigoAcesso() {
 
     if (!error) {
       setCodigoAcesso(novoCodigo);
+      try { localStorage.setItem(CACHE_CODIGO_ACESSO, novoCodigo); } catch {}
       return true;
     }
     return false;
@@ -285,6 +324,7 @@ export function useProdutos() {
       .order("criado_em", { ascending: false });
 
     if (produtosError || !produtosData) {
+      if (produtosError) check402(produtosError);
       const cached = loadFromCache<Produto[]>("produtos");
       if (cached) {
         setProdutos(cached);
@@ -741,6 +781,8 @@ export function usePedidos(filtros?: { lojaId?: string; entidadeId?: string }) {
 }
 
 // ============= CÓDIGO ADMIN =============
+const CACHE_CODIGO_ADMIN = 'cache_codigo_admin';
+
 export function useCodigoAdmin() {
   const [codigoAdmin, setCodigoAdmin] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -753,7 +795,17 @@ export function useCodigoAdmin() {
       .maybeSingle();
 
     if (!error && data) {
-      setCodigoAdmin((data as any).valor);
+      const valor = (data as any).valor;
+      setCodigoAdmin(valor);
+      try { localStorage.setItem(CACHE_CODIGO_ADMIN, valor); } catch {}
+    } else {
+      try {
+        const cached = localStorage.getItem(CACHE_CODIGO_ADMIN);
+        if (cached) {
+          setCodigoAdmin(cached);
+          console.log("[Cache] Usando código admin do cache local");
+        }
+      } catch {}
     }
     setLoading(false);
   }, []);
@@ -770,6 +822,7 @@ export function useCodigoAdmin() {
 
     if (!error) {
       setCodigoAdmin(novoCodigo);
+      try { localStorage.setItem(CACHE_CODIGO_ADMIN, novoCodigo); } catch {}
       return true;
     }
     return false;

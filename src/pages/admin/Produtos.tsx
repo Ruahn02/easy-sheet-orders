@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2, X, Upload, ArrowUpDown } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { useEntidades, useProdutos } from '@/hooks/useSupabaseData';
+import { useCriticalMode } from '@/store/useCriticalMode';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +41,7 @@ export default function Produtos() {
   const { produtos, loading, addProduto, updateProduto, deleteProduto, reorderProdutos } = useProdutos();
   const { entidades } = useEntidades();
   const { uploadImage } = useImageUpload();
+  const { criticalMode } = useCriticalMode();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -272,6 +275,7 @@ export default function Produtos() {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
+        <CriticalModeBanner />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Produtos</h1>
@@ -279,12 +283,12 @@ export default function Produtos() {
           </div>
           <div className="flex gap-2">
             {entidadesFiltro.length === 1 && (
-              <Button variant="outline" onClick={() => setIsReorderOpen(true)}>
+              <Button variant="outline" onClick={() => setIsReorderOpen(true)} disabled={criticalMode}>
                 <ArrowUpDown className="h-4 w-4 mr-2" />
                 Reordenar Catálogo
               </Button>
             )}
-            <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
+            <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground" disabled={criticalMode}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Produto
             </Button>
@@ -382,12 +386,13 @@ export default function Produtos() {
                           size="sm"
                           variant="outline"
                           onClick={() => handleToggleStatus(produto)}
+                          disabled={criticalMode}
                           className={produto.status === 'ativo' ? 'text-red-500 hover:bg-red-50' : 'text-green-500 hover:bg-green-50'}
                           title={produto.status === 'ativo' ? 'Inativar' : 'Ativar'}
                         >
                           {produto.status === 'ativo' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => handleOpenModal(produto)}>
+                        <Button size="sm" variant="outline" onClick={() => handleOpenModal(produto)} disabled={criticalMode}>
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
@@ -395,6 +400,7 @@ export default function Produtos() {
                           variant="outline"
                           className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                           onClick={() => handleDeleteClick(produto.id)}
+                          disabled={criticalMode}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

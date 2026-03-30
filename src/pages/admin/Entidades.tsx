@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key, Loader2, Clock } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { useEntidades, useProdutos, usePedidos, useCodigoAdmin } from '@/hooks/useSupabaseData';
+import { useCriticalMode } from '@/store/useCriticalMode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -39,6 +41,7 @@ export default function Entidades() {
   const { produtos } = useProdutos();
   const { pedidos } = usePedidos();
   const { codigoAdmin } = useCodigoAdmin();
+  const { criticalMode } = useCriticalMode();
   const { toast } = useToast();
 
   const baseUrl = window.location.origin;
@@ -227,6 +230,7 @@ export default function Entidades() {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
+        <CriticalModeBanner />
         {/* Seção de Acessos do Sistema */}
         <div className="rounded-lg border border-primary bg-card p-4 space-y-4">
           <h2 className="font-semibold text-foreground flex items-center gap-2">
@@ -296,7 +300,7 @@ export default function Entidades() {
             <h1 className="text-2xl font-bold text-foreground">Tipos de Pedido</h1>
             <p className="text-muted-foreground">Controle central do sistema - cada tipo gera um link público próprio</p>
           </div>
-          <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
+          <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground" disabled={criticalMode}>
             <Plus className="h-4 w-4 mr-2" />
             Novo Tipo
           </Button>
@@ -385,7 +389,7 @@ export default function Entidades() {
               </div>
 
               <div className="flex gap-2 pt-2 border-t border-border">
-                <Button size="sm" variant="ghost" onClick={() => handleOpenModal(entidade)}>
+                <Button size="sm" variant="ghost" onClick={() => handleOpenModal(entidade)} disabled={criticalMode}>
                   <Pencil className="h-4 w-4 mr-1" />
                   Editar
                 </Button>
@@ -394,6 +398,7 @@ export default function Entidades() {
                   variant="ghost"
                   className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                   onClick={() => handleDeleteClick(entidade.id)}
+                  disabled={criticalMode}
                 >
                   <Trash2 className="h-4 w-4 mr-1" />
                   Excluir

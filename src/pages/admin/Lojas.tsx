@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Plus, Pencil, Trash2, Store, Loader2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { useLojas, useEntidades, useLojaEntidades } from '@/hooks/useSupabaseData';
+import { useCriticalMode } from '@/store/useCriticalMode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +39,7 @@ export default function Lojas() {
   const { lojas, loading, addLoja, updateLoja, deleteLoja } = useLojas();
   const { entidades } = useEntidades();
   const { lojaEntidades, setPermissoes, getEntidadesPermitidas } = useLojaEntidades();
+  const { criticalMode } = useCriticalMode();
   const { toast } = useToast();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -132,12 +135,13 @@ export default function Lojas() {
   return (
     <AdminLayout>
       <div className="space-y-6 animate-fade-in">
+        <CriticalModeBanner />
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Lojas</h1>
             <p className="text-muted-foreground">Gerencie as lojas/setores do sistema</p>
           </div>
-          <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground">
+          <Button onClick={() => handleOpenModal()} className="gradient-primary text-primary-foreground" disabled={criticalMode}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Loja
           </Button>
@@ -178,7 +182,7 @@ export default function Lojas() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
-                      <Button size="sm" variant="outline" onClick={() => handleOpenModal(loja)}>
+                      <Button size="sm" variant="outline" onClick={() => handleOpenModal(loja)} disabled={criticalMode}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
@@ -186,6 +190,7 @@ export default function Lojas() {
                         variant="outline"
                         className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
                         onClick={() => handleDeleteClick(loja.id)}
+                        disabled={criticalMode}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
