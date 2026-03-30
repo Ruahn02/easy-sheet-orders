@@ -333,7 +333,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Filtros */}
+        <CriticalModeBanner showDeactivate />
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">

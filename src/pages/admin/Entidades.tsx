@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Link2, Copy, ExternalLink, ToggleLeft, ToggleRight, Key, Loader2, Clock } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { useEntidades, useProdutos, usePedidos, useCodigoAdmin } from '@/hooks/useSupabaseData';
+import { useCriticalMode } from '@/store/useCriticalMode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';

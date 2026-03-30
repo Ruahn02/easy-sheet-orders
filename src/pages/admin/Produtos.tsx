@@ -1,7 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Plus, Pencil, Trash2, Package, Eye, EyeOff, Search, Loader2, X, Upload, ArrowUpDown } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { useEntidades, useProdutos } from '@/hooks/useSupabaseData';
+import { useCriticalMode } from '@/store/useCriticalMode';
 import { useImageUpload } from '@/hooks/useImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
