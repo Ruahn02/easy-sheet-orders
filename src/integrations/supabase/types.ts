@@ -261,6 +261,7 @@ export type Database = {
         Row: {
           cor_linha: string | null
           data: string
+          data_conclusao: string | null
           email_solicitante: string | null
           entidade_id: string
           funcao_colaborador: string | null
@@ -276,6 +277,7 @@ export type Database = {
         Insert: {
           cor_linha?: string | null
           data?: string
+          data_conclusao?: string | null
           email_solicitante?: string | null
           entidade_id: string
           funcao_colaborador?: string | null
@@ -291,6 +293,7 @@ export type Database = {
         Update: {
           cor_linha?: string | null
           data?: string
+          data_conclusao?: string | null
           email_solicitante?: string | null
           entidade_id?: string
           funcao_colaborador?: string | null
