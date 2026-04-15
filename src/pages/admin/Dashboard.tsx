@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ClipboardList, Store, Package, Filter, TrendingUp, BarChart3, Calendar, Loader2, Clock, CheckCircle, ShoppingCart, PackageX, ExternalLink, Wrench, XCircle, ShieldAlert, ShieldOff } from 'lucide-react';
 import { ProdutosAnalytics } from '@/components/admin/ProdutosAnalytics';
+import { ProdutividadeChart } from '@/components/admin/ProdutividadeChart';
 import { LojasAnalytics } from '@/components/admin/LojasAnalytics';
 import { CriticalModeBanner } from '@/components/admin/CriticalModeBanner';
 import { format, startOfDay, endOfDay, startOfWeek, startOfMonth, startOfQuarter, startOfYear, subDays, subMonths } from 'date-fns';
@@ -649,6 +650,17 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Gráfico de Produtividade */}
+        <ProdutividadeChart
+          pedidos={pedidos}
+          entidades={entidades}
+          lojas={lojas}
+          entidadesFiltro={entidadesFiltro}
+          lojaFiltro={lojaFiltro}
+          dataInicio={dataInicio}
+          dataFim={dataFim}
+        />
 
         {/* Charts Section */}
         <div className="grid lg:grid-cols-2 gap-6">
