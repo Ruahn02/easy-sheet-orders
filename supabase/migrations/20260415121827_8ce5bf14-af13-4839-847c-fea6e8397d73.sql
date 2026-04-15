@@ -1,0 +1,1 @@
+ALTER TABLE pedidos ADD COLUMN data_conclusao timestamp with time zone DEFAULT NULL;
