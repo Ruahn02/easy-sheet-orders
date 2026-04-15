@@ -108,7 +108,7 @@ export function useEntidades() {
     if (updates.horarioFechamentoDia !== undefined) dbUpdates.horario_fechamento_dia = updates.horarioFechamentoDia;
     if (updates.horarioFechamentoHora !== undefined) dbUpdates.horario_fechamento_hora = updates.horarioFechamentoHora;
 
-    const { error } = await supabase.from("entidades").update(dbUpdates).eq("id", id);
+    const { error } = await supabase.from("entidades").update(dbUpdates as any).eq("id", id);
 
     if (!error) {
       await fetchEntidades();
@@ -210,7 +210,7 @@ export function useLojas() {
     if (updates.status !== undefined) dbUpdates.status = updates.status;
     if ("ordem" in updates) dbUpdates.ordem = updates.ordem ?? null;
 
-    const { error } = await supabase.from("lojas").update(dbUpdates).eq("id", id);
+    const { error } = await supabase.from("lojas").update(dbUpdates as any).eq("id", id);
 
     if (!error) {
       await fetchLojas();
@@ -445,7 +445,7 @@ export function useProdutos() {
     if ("ordem" in updates) dbUpdates.ordem = updates.ordem ?? null;
     if ("fotoUrl" in updates) dbUpdates.imagem_url = updates.fotoUrl || null;
 
-    const { error } = await supabase.from("produtos").update(dbUpdates).eq("id", id);
+    const { error } = await supabase.from("produtos").update(dbUpdates as any).eq("id", id);
 
     if (error) return false;
 
@@ -620,6 +620,7 @@ export function usePedidos(filtros?: { lojaId?: string; entidadeId?: string }) {
         funcaoColaborador: (p as any).funcao_colaborador || undefined,
         matriculaFuncionario: (p as any).matricula_funcionario || undefined,
         motivoSolicitacao: (p as any).motivo_solicitacao || undefined,
+        dataConclusao: (p as any).data_conclusao ? new Date((p as any).data_conclusao) : undefined,
       };
     });
 
@@ -748,14 +749,25 @@ export function usePedidos(filtros?: { lojaId?: string; entidadeId?: string }) {
   ) => {
     const updates: Record<string, unknown> = { status };
     if (observacoes !== undefined) updates.observacoes = observacoes;
+    // Gravar data_conclusao quando feito, limpar quando outro status
+    if (status === 'feito') {
+      updates.data_conclusao = new Date().toISOString();
+    } else {
+      updates.data_conclusao = null;
+    }
 
-    const { error } = await supabase.from("pedidos").update(updates).eq("id", id);
+    const { error } = await supabase.from("pedidos").update(updates as any).eq("id", id);
 
     if (!error) {
       setPedidos((prev) =>
         prev.map((p) =>
           p.id === id
-            ? { ...p, status: status as Pedido["status"], ...(observacoes !== undefined ? { observacoes } : {}) }
+            ? {
+                ...p,
+                status: status as Pedido["status"],
+                ...(observacoes !== undefined ? { observacoes } : {}),
+                dataConclusao: status === 'feito' ? new Date() : undefined,
+              }
             : p,
         ),
       );

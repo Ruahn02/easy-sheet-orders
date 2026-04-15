@@ -54,6 +54,7 @@ export interface Pedido {
   funcaoColaborador?: string;
   matriculaFuncionario?: string;
   motivoSolicitacao?: string;
+  dataConclusao?: Date;
 }
 
 export interface PedidoComDetalhes extends Pedido {
